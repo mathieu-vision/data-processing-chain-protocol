@@ -64,7 +64,7 @@ The data processing chain represents the sequence of services the data should go
 
 ### Direct Integrations with Other BBs
 
-Interaction with other building blocks is essential to ensuring the functionalities of the Data Processing Chain. It is crucial to integrate the data processing chain chain into the contract, as this is where the chain will be stored. Additionally, integration with the catalogue is necessary to enable the creation and selection of the chain by participants.
+Interaction with other building blocks is essential to ensuring the functionalities of the Data Processing Chain. It is crucial to integrate the data processing chain into the contract, as this is where the chain will be stored. Additionally, integration with the catalogue is necessary to enable the creation and selection of the chain by participants.
 - [Contract](https://github.com/Prometheus-X-association/contract-manager)
 - [Catalogue](https://github.com/Prometheus-X-association/catalog-api)
 - [Dataspace Connector](https://github.com/Prometheus-x-association/dataspace-connector)
