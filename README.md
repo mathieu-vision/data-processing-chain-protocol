@@ -1,2 +1,3 @@
-# data-processing-chain-protocol
-Component &amp; protocol for data processing chains
+# Data Processing Chain Protocol
+
+Specification can be found [here](./docs/design-document.md).
