@@ -10,23 +10,28 @@ graph LR
     B --> D
 ```
 
+## Infrastructure Services
+
+A data processing service, as it acts as a data consumer and data provider, can be defined in a specific Service Offering that would be tagged as an “Infrastructure Service” and provide a Service Resource (for Input) & a Data Resource (for output). This is then represented as an Infrastructure Service-Tagged Service Offering.
+
+An instance of a service needs to reference a Participant for the system to be aware of what participant is providing such service and which dataspace connector is going to be used by this data processing node whenever called by the data processing chain.
+
+An infrastructure service:
+- Can be considered both data consumer and data provider
+- Can provide interoperability services
+- Can provide tracking / monitoring services
+- Can have specific requirements in the way it receives input data & information
+- Can have parameters that should be provided to it on top of the data to configure the data processing
 
 ## Technical usage scenarios & Features
 
-A Building Block, as it acts as a data consumer and data provider, can be defined in a specific Service Offering that would be tagged as an “Infrastructure Service” and provide a Service Resource (for Input) & a Data Resource (for output). This would then be represented as an Infrastructure Service-Tagged Service Offering.
-
-This is needed as the term “Building Block” in itself does not represent an “instance” of the service that enables the BB functionalities. On top of that, an instance needs to reference a Participant for the system to be aware of what participant is providing such service and which PDC is going to be used by this data processing node whenever called by the data processing chain.
-
 ### Features/main functionalities
 
-Infrastructure services, in this Protocol, are components that need input and provide output.
+- Support for infrastructure services in the dataspace
+- Creation and modification of data processing chains within data space use cases
+- Support for management of a data processing chain within the data sharing protocol
+- Provision of information for data processing within use case contracts
 
-- It can be considered both data consumers and data providers
-- It can provide interoperability services
-- It can provide tracking / monitoring services
-- It can have specific requirements in the way it receives input data & information
-- It can have parameters that should be provided to it on top of the data to configure the data processing
-- Its requirements must meet overall extra-functional requirements of data sharing as well (in terms of privacy, robustness, throughput, etc.), which have to be measured along the chain
 
 ## The Data Processing Chain
 
@@ -40,12 +45,20 @@ The data processing chain represents the sequence of services the data should go
 
 ## Requirements
 
+#### Data Processing Chain
+- CAN be defined in a dataspace use case
+- CAN be modified by a use case orchestrator
+- MUST provide clear information to infrastructure services about the chain
+- MUST be processed by dataspace connectors
+
+#### Infrastructure Services
 - SHOULD be defined in the catalogue
 - SHOULD have a technical representation linked to a catalogue participant
-- MUST to have a Participant that runs an instance of the Infrastructure service to be able to use it
-- MUST use a Data Space Connector to handle data flow
+- MUST be hosted and enabled by a participant
+- MUST use a Dataspace Connector to handle data flow
 
-- The data exchange contracts (Bilateral & Ecosystem) should be improved to hold the data exchange flow information and from which to which infrastructure service the data should travel
+#### Contracts
+- MUST hold the data exchange flow information and from which to which infrastructure service the data should travel
 
 ## Integrations
 
@@ -228,9 +241,9 @@ sequenceDiagram
 
 ## Configuration and deployment settings
 
-The Building Block Chain reports logs on the successful execution of data processing through the chain. If a component in the chain takes too long or fails to respond, a warning is logged.
-Additionally, as mentioned earlier the Building Blocks accept JSON input to provide supplementary information on data transformations. This JSON can include specific parameters to configure the processing, such as target date formats, repositories to use, or other relevant metadata for the transformation.
+The Data Processing Chain reports logs on the successful execution of data processing through the chain. If a component in the chain takes too long or fails to respond, a warning is logged.
 
+Additionally, as mentioned earlier the nodes accept JSON input to provide supplementary information on data transformations. This JSON can include specific parameters to configure the processing, such as target date formats, repositories to use, or other relevant metadata for the transformation.
 
 ## Test specification
 
