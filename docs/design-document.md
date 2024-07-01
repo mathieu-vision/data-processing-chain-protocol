@@ -191,17 +191,21 @@ graph TD
     Con1 -.->|Notifies progress| ConC
     Conn -.->|Notifies progress| ConC
 
-    classDef orchestratorClass fill:#009030,stroke:#555,stroke-width:2px;
-    classDef contractClass fill:#404050,stroke:#333,stroke-width:2px;
-    classDef bbClass fill:#e0a0a0,stroke:#333,stroke-width:2px;
-    classDef connectorClass fill:#8093af,stroke:#333,stroke-width:2px;
-    classDef attributeClass stroke:#555,stroke-width:1px;
+    classDef orchestratorClass fill:#009030,stroke:#004010,stroke-width:2px,color:#002000;
+    classDef contractClass fill:#A0A0C0,stroke:#606080,stroke-width:2px,color:#404060;
+    classDef bbClass fill:#e0a0a0,stroke:#a06060,stroke-width:2px,color:#804040;
+    classDef connectorClass fill:#8093f0,stroke:#4053B0,stroke-width:2px,color:#203390;
+    classDef attributeClass fill:#F0F0F0,stroke:#A0A0A0,stroke-width:1px,color:#606060;
+    classDef providerConsumerClass fill:#90EE90,stroke:#2E8B57,stroke-width:2px,color:#006400;
+    classDef subgraphClass fill:#FFE4B5,stroke:#DEB887,stroke-width:2px,color:#8B4513;
 
     class O orchestratorClass;
     class Contract,Chain,CO1,COn contractClass;
     class BB1Config,BBnConfig,BBnConfig2 bbClass;
     class Con1,Conn connectorClass;
     class a1,a2,a3,a4 attributeClass;
+    class P,ConC providerConsumerClass;
+    class Connector1,Connectorn subgraphClass;
 ```
 
 
@@ -246,12 +250,12 @@ sequenceDiagram
     participant PC as Provider Connector
     participant C as Contract
     
-    box rgb(50, 50, 50) BB1 Connector
+    box rgba(100, 105, 130, 0.5) BB1 Connector
     participant BB1C as Connector
     participant BB1 as Infrastructure Service 1
     end
     
-    box rgb(50, 50, 50) BBn Connector
+    box rgba(100, 105, 130, 0.5) BBn Connector
     participant BBnC as Connector
     participant BBn as Infrastructure Service n
     end
