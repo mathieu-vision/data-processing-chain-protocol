@@ -60,6 +60,8 @@ The data processing chain represents the sequence of services the data should go
 #### Contracts
 - MUST hold the data exchange flow information and from which to which infrastructure service the data should travel
 
+## 
+
 ## Integrations
 
 ### Direct Integrations with Other BBs
@@ -160,9 +162,9 @@ graph TD
     Chain -->|Consists of| COn
 
     CO1 -->|Contains| a1[Connector Self-Description 1]
-    CO1 -->|Contains| a2[Building Block URI 1]
+    CO1 -->|Contains| a2[Infrastructure Service URI 1]
     COn -->|Contains| a3[Connector Self-Description n]
-    COn -->|Contains| a4[Building Block URI n]
+    COn -->|Contains| a4[Infrastructure Service URI n]
 
     P -->|Sends data| Con1([Connector 1])
     Con1 -->|Processes data| Con1
@@ -183,24 +185,57 @@ graph TD
     end
     subgraph Connector n
         Conn
-        BBnConfig2[Building Block n]
+        BBnConfig2[Infrastructure Service n]
     end
 
     Con1 -.->|Notifies progress| ConC
     Conn -.->|Notifies progress| ConC
 
-    classDef orchestratorClass fill:#009030,stroke:#555,stroke-width:2px;
-    classDef contractClass fill:#404050,stroke:#333,stroke-width:2px;
-    classDef bbClass fill:#e0a0a0,stroke:#333,stroke-width:2px;
-    classDef connectorClass fill:#8093af,stroke:#333,stroke-width:2px;
-    classDef attributeClass stroke:#555,stroke-width:1px;
+    classDef orchestratorClass fill:#009030,stroke:#004010,stroke-width:2px,color:#002000;
+    classDef contractClass fill:#A0A0C0,stroke:#606080,stroke-width:2px,color:#404060;
+    classDef bbClass fill:#e0a0a0,stroke:#a06060,stroke-width:2px,color:#804040;
+    classDef connectorClass fill:#8093f0,stroke:#4053B0,stroke-width:2px,color:#203390;
+    classDef attributeClass fill:#F0F0F0,stroke:#A0A0A0,stroke-width:1px,color:#606060;
+    classDef providerConsumerClass fill:#90EE90,stroke:#2E8B57,stroke-width:2px,color:#006400;
+    classDef subgraphClass fill:#FFE4B5,stroke:#DEB887,stroke-width:2px,color:#8B4513;
 
     class O orchestratorClass;
     class Contract,Chain,CO1,COn contractClass;
     class BB1Config,BBnConfig,BBnConfig2 bbClass;
     class Con1,Conn connectorClass;
     class a1,a2,a3,a4 attributeClass;
+    class P,ConC providerConsumerClass;
+    class Connector1,Connectorn subgraphClass;
 ```
+
+
+## Development Roadmap
+
+To implement the Data Processing Chain functionality, several components of the dataspace will need to be modified or extended. Here's an overview of the required developments:
+
+1. Contract Building Block Improvement:
+   - Add new endpoints to inject, store, and update infrastructure service chains.
+   - Modify the "ecosystem" contract model to accommodate these changes.
+
+2. Service Offering Model Update:
+   - Extend the service offering model to include an "Infrastructure Service" tag.
+   - Implement functionality for service offerings to return log information and execution progress updates.
+
+3. Connector Modifications:
+   - Improve the connector to execute infrastructure services.
+   - Modify the connector to be able to:
+     - Receive and input data into the infrastructure service.
+     - Send transformed data to the connector hosting the next infrastructure service in the chain.
+     - Send final data to the consumer connector at the end of the chain.
+
+4. Catalogue Improvements:
+   - Update to support the extended service offering model with the "Infrastructure Service" tag.
+   - Implement functionality to interact with the new contract endpoints, allowing the orchestrator to manage chains.
+
+5. Catalogue UI Updates:
+   - Implement necessary UX improvements for chain visualization and manipulation.
+
+These developments will enable the creation, management, and execution of data processing chains within the dataspace, improving its capabilities for data transformations and data flow control.
 
 
 ## Dynamic Behaviour
@@ -215,14 +250,14 @@ sequenceDiagram
     participant PC as Provider Connector
     participant C as Contract
     
-    box rgb(50, 50, 50) BB1 Connector
+    box rgba(100, 105, 130, 0.5) BB1 Connector
     participant BB1C as Connector
-    participant BB1 as Building Block 1
+    participant BB1 as Infrastructure Service 1
     end
     
-    box rgb(50, 50, 50) BBn Connector
+    box rgba(100, 105, 130, 0.5) BBn Connector
     participant BBnC as Connector
-    participant BBn as Building Block n
+    participant BBn as Infrastructure Service n
     end
 
     CC->>C: Request data processing chain
