@@ -1,17 +1,19 @@
 import { NodeStatus } from '../types/types';
-
+import { setTimeout } from 'timers';
 export class ChainNode {
   private id: string;
   private service: any;
   private dependencies: string[];
   private status: NodeStatus.Type;
   private error?: Error;
+  private delay: number;
 
   constructor(id: string, service: any, dependencies: string[] = []) {
     this.id = id;
     this.service = service;
     this.dependencies = dependencies;
     this.status = NodeStatus.PENDING;
+    this.delay = 0;
   }
 
   getId(): string {
@@ -22,9 +24,18 @@ export class ChainNode {
     return this.dependencies.every((dep) => executedNodes.has(dep));
   }
 
+  setDelay(delay: number): void {
+    this.delay = delay;
+  }
+
   async execute(data: any): Promise<any> {
     try {
       this.status = NodeStatus.IN_PROGRESS;
+
+      if (this.delay > 0) {
+        await this.sleep(this.delay);
+      }
+
       const result = await this.service(data);
       this.status = NodeStatus.COMPLETED;
       return result;
@@ -33,6 +44,10 @@ export class ChainNode {
       this.error = error as Error;
       throw error;
     }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   getStatus(): NodeStatus.Type {
