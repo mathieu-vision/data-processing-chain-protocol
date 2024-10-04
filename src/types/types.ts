@@ -6,7 +6,7 @@ export interface ChainState {
 export namespace NodeStatus {
   export type Type =
     | 'pending'
-    | 'in-progress'
+    | 'in-progress' // running
     | 'completed'
     | 'failed'
     | 'paused';
@@ -24,11 +24,11 @@ export namespace NodeSignal {
     | 'node_pause'
     | 'node_delay'
     | 'node_run'
-    | 'node_data_send';
+    | 'node_send_data';
   export const NODE_CREATE: Type = 'node_create';
   export const NODE_DELETE: Type = 'node_delete';
   export const NODE_PAUSE: Type = 'node_pause';
   export const NODE_DELAY: Type = 'node_delay';
   export const NODE_RUN: Type = 'node_run';
-  export const NODE_DATA_SEND: Type = 'node_data_send';
+  export const NODE_SEND_DATA: Type = 'node_send_data';
 }

@@ -1,141 +1,127 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { ConnectorInterface } from '../core/ConnectorInterface';
 import { NodeMonitoring } from '../core/NodeMonitoring';
 import { ProgressTracker } from '../core/ProgressTracker';
-import { NodeStatus } from '../types/types';
+import { NodeSignal } from '../types/types';
+import { NodeSupervisor } from '../core/NodeSupervisor';
+import { NodeSupervisorInterface } from '../core/NodeSupervisorInterface';
+import { NodeProcessor } from '../core/NodeProcessor';
 
-describe('ConnectorInterface Chain Execution', function () {
-  let connectors: Map<string, ConnectorInterface>;
+describe('Virtual Connector Chain Execution', function () {
+  let nodeSupervisor: NodeSupervisor;
   let nodeMonitoring: NodeMonitoring;
-  let progressTracker: ProgressTracker;
-
-  const processor1 = sinon.stub().resolves('Connector 1 output');
-  const processor2 = sinon.stub().resolves('Connector 2 output');
-  const processor3 = sinon.stub().resolves('Connector 3 output');
+  let supervisorInterface: NodeSupervisorInterface;
 
   beforeEach(function () {
-    connectors = new Map<string, ConnectorInterface>();
-
-    const connector1 = new ConnectorInterface(
-      'connector1',
-      processor1,
-      [],
-      connectors,
-    );
-    const connector2 = new ConnectorInterface(
-      'connector2',
-      processor2,
-      ['connector1'],
-      connectors,
-    );
-    const connector3 = new ConnectorInterface(
-      'connector3',
-      processor3,
-      ['connector2'],
-      connectors,
-    );
-
-    connectors.set('connector1', connector1);
-    connectors.set('connector2', connector2);
-    connectors.set('connector3', connector3);
-
-    connector1.setNextConnector('connector2');
-    connector2.setNextConnector('connector3');
-
-    connector1.setMonitoringConnector('monitoringConnector');
-    connector2.setMonitoringConnector('monitoringConnector');
-    connector3.setMonitoringConnector('monitoringConnector');
-
-    progressTracker = new ProgressTracker(connectors.size);
-    nodeMonitoring = new NodeMonitoring(
-      Array.from(connectors.values()).map((c) => c.getNode()),
-      progressTracker,
-    );
+    const progressTracker = new ProgressTracker(3);
+    nodeMonitoring = new NodeMonitoring([], progressTracker);
+    nodeSupervisor = new NodeSupervisor(nodeMonitoring);
+    supervisorInterface = new NodeSupervisorInterface(nodeSupervisor);
   });
 
-  afterEach(function () {
-    sinon.restore();
-  });
+  it('should create and execute a chain of nodes', async function () {
+    const node1Id = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [],
+    });
+    const node2Id = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [node1Id],
+    });
+    const node3Id = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [node2Id],
+    });
 
-  it('should execute the chain and pass data correctly', async function () {
-    const initialData = 'Initial data';
+    const processor1 = new NodeProcessor();
+    const processor2 = new NodeProcessor();
+    const processor3 = new NodeProcessor();
 
-    const result = await connectors
-      .get('connector1')!
-      .process(initialData, nodeMonitoring);
+    sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
+    sinon.stub(processor2, 'digest').resolves({ result2: 'data2' });
+    sinon.stub(processor3, 'digest').resolves({ result3: 'data3' });
 
-    expect(result).to.equal('Connector 3 output');
+    await nodeSupervisor.addProcessors(node1Id, [processor1]);
+    await nodeSupervisor.addProcessors(node2Id, [processor2]);
+    await nodeSupervisor.addProcessors(node3Id, [processor3]);
 
-    expect(processor1.calledWith(initialData)).to.be.true;
-    expect(processor2.calledWith('Connector 1 output')).to.be.true;
-    expect(processor3.calledWith('Connector 2 output')).to.be.true;
+    await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node1Id,
+      data: { initial: 'data' },
+    });
+
+    await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node2Id,
+      data: { initial: 'data', result1: 'data1' },
+    });
+
+    await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node3Id,
+      data: { initial: 'data', result1: 'data1', result2: 'data2' },
+    });
 
     const chainState = nodeMonitoring.getChainState();
-    expect(chainState.completed).to.have.members([
-      'connector1',
-      'connector2',
-      'connector3',
-    ]);
+    expect(chainState.completed).to.have.members([node1Id, node2Id, node3Id]);
     expect(chainState.pending).to.be.empty;
     expect(chainState.failed).to.be.empty;
-
-    connectors.forEach((connector) => {
-      expect(connector.getNode().getStatus()).to.equal(NodeStatus.COMPLETED);
-    });
   });
 
-  it('should handle errors in the chain', async function () {
-    const errorMessage = 'Processor 2 Error';
-    processor2.rejects(new Error(errorMessage));
+  it('should handle node failure in the chain', async function () {
+    const node1Id = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [],
+    });
+    const node2Id = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [node1Id],
+    });
 
-    const initialData = 'Initial data';
+    const failingProcessor = new NodeProcessor();
+    sinon
+      .stub(failingProcessor, 'digest')
+      .rejects(new Error('Processor failed'));
 
-    try {
-      await connectors.get('connector1')!.process(initialData, nodeMonitoring);
-      expect.fail('Should have thrown an error');
-    } catch (error) {
-      expect(error).to.be.an('error').with.property('message', errorMessage);
-    }
+    await nodeSupervisor.addProcessors(node2Id, [failingProcessor]);
+
+    await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node1Id,
+      data: { initial: 'data' },
+    });
+
+    await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node2Id,
+      data: { initial: 'data' },
+    });
 
     const chainState = nodeMonitoring.getChainState();
-    expect(chainState.completed).to.have.members(['connector1']);
-    expect(chainState.failed).to.have.members(['connector2']);
-    expect(chainState.pending).to.have.members(['connector3']);
-
-    expect(connectors.get('connector1')!.getNode().getStatus()).to.equal(
-      NodeStatus.COMPLETED,
-    );
-    expect(connectors.get('connector2')!.getNode().getStatus()).to.equal(
-      NodeStatus.FAILED,
-    );
-    expect(connectors.get('connector3')!.getNode().getStatus()).to.equal(
-      NodeStatus.PENDING,
-    );
+    expect(chainState.completed).to.have.members([node1Id]);
+    expect(chainState.failed).to.have.members([node2Id]);
   });
 
-  it('should not execute nodes with unmet dependencies', async function () {
-    const connectorX = new ConnectorInterface(
-      'connectorX',
-      sinon.stub(),
-      ['nonexistent'],
-      connectors,
-    );
-    connectors.set('connectorX', connectorX);
-    nodeMonitoring = new NodeMonitoring(
-      Array.from(connectors.values()).map((c) => c.getNode()),
-      progressTracker,
-    );
+  it('should respect node dependencies', async function () {
+    const node1Id = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [],
+    });
+    const node2Id = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [node1Id],
+    });
 
-    try {
-      await connectorX.process('data', nodeMonitoring);
-      expect.fail('Should have thrown an error');
-    } catch (error) {
-      expect(error)
-        .to.be.an('error')
-        .with.property('message', 'Node connectorX cannot execute yet.');
-    }
+    expect(nodeMonitoring.canExecuteNode(node1Id)).to.be.true;
+    expect(nodeMonitoring.canExecuteNode(node2Id)).to.be.false;
 
-    expect(connectorX.getNode().getStatus()).to.equal(NodeStatus.PENDING);
+    await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node1Id,
+      data: { initial: 'data' },
+    });
+
+    expect(nodeMonitoring.canExecuteNode(node2Id)).to.be.true;
   });
 });

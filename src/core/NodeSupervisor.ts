@@ -1,10 +1,11 @@
-import { ChainNode } from './ChainNode';
+import { Node } from './Node';
 import { NodeStatus } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
+import { NodeProcessor } from './NodeProcessor';
 
 export class NodeSupervisor {
-  private nodes: Map<string, ChainNode>;
+  private nodes: Map<string, Node>;
   private nodeMonitoring: NodeMonitoring;
 
   constructor(nodeMonitoring: NodeMonitoring) {
@@ -12,18 +13,26 @@ export class NodeSupervisor {
     this.nodeMonitoring = nodeMonitoring;
   }
 
-  async createNode(params: any): Promise<void> {
-    const { nodeId, processor, dependencies } = params;
-
-    if (this.nodes.has(nodeId)) {
-      Logger.warn({ message: `Node ${nodeId} already exists.` });
-      return;
-    }
-
-    const node = new ChainNode(nodeId, processor, dependencies);
+  async createNode(dependencies: string[] = []): Promise<string> {
+    const node = new Node(dependencies);
+    const nodeId = node.getId();
     this.nodes.set(nodeId, node);
     this.nodeMonitoring.addNode(node);
     Logger.info({ message: `Node ${nodeId} created.` });
+    return nodeId;
+  }
+
+  async addProcessors(
+    nodeId: string,
+    processors: NodeProcessor[],
+  ): Promise<void> {
+    const node = this.nodes.get(nodeId);
+    if (node) {
+      node.addProcessors(processors);
+      Logger.info({ message: `Processors added to Node ${nodeId}.` });
+    } else {
+      Logger.warn({ message: `Node ${nodeId} not found.` });
+    }
   }
 
   async deleteNode(nodeId: string): Promise<void> {
@@ -67,7 +76,8 @@ export class NodeSupervisor {
         const error = err as Error;
         this.nodeMonitoring.updateNodeStatus(nodeId, NodeStatus.FAILED, error);
         Logger.error({
-          message: `Node ${nodeId} execution failed.` /*, error */,
+          message: `Node ${nodeId} execution failed.` /*,
+          error,*/,
         });
       }
     } else {

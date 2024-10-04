@@ -1,17 +1,14 @@
 import { ChainState, NodeStatus } from '../types/types';
 import { ProgressTracker } from './ProgressTracker';
-import { ChainNode } from './ChainNode';
+import { Node } from './Node';
 import { Logger } from '../libs/Logger';
 
 export class NodeMonitoring {
-  private nodes: ChainNode[];
+  private nodes: Node[];
   private nodeStatusMap: Map<string, NodeStatus.Type>;
   private progressTracker: ProgressTracker | null;
 
-  constructor(
-    chainNodes: ChainNode[],
-    progressTracker: ProgressTracker | null,
-  ) {
+  constructor(chainNodes: Node[], progressTracker: ProgressTracker | null) {
     this.nodes = chainNodes;
     this.progressTracker = progressTracker;
     this.nodeStatusMap = new Map();
@@ -20,7 +17,7 @@ export class NodeMonitoring {
     });
   }
 
-  addNode(node: ChainNode): void {
+  addNode(node: Node): void {
     if (!this.nodes.find((n) => n.getId() === node.getId())) {
       this.nodes.push(node);
       this.nodeStatusMap.set(node.getId(), node.getStatus());

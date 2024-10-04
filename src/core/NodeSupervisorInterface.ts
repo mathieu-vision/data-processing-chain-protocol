@@ -1,5 +1,5 @@
-import { Logger } from 'libs/Logger';
-import { NodeSignal } from 'types/types';
+import { Logger } from '../libs/Logger';
+import { NodeSignal } from '../types/types';
 import { NodeSupervisor } from './NodeSupervisor';
 
 interface SupervisorPayload {
@@ -26,7 +26,7 @@ export class NodeSupervisorInterface {
         return this.nodeSupervisor.delayNode(payload.id, payload.delay);
       case NodeSignal.NODE_RUN:
         return this.nodeSupervisor.runNode(payload.id, payload.data);
-      case NodeSignal.NODE_DATA_SEND:
+      case NodeSignal.NODE_SEND_DATA:
         return this.nodeSupervisor.sendNodeData(payload.id, payload.data);
       default:
         Logger.warn({
