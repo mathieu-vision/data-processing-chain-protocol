@@ -43,10 +43,13 @@ describe('Basic Node and NodeMonitoring Tests', function () {
 
     node.addProcessors([processor1, processor2]);
 
-    const results = await node.execute({ initial: 'data' });
+    const promises = await node.execute({ initial: 'data' });
+    const results = await Promise.all(promises);
 
     expect(results).to.have.length(1);
-    expect(results[0]).to.deep.equal({ result2: 'data2' });
+    expect(results[0], 'Expect on results[0]').to.deep.equal({
+      result2: 'data2',
+    });
 
     expect(
       (processor1.digest as sinon.SinonStub).calledWith({ initial: 'data' }),
@@ -73,11 +76,16 @@ describe('Basic Node and NodeMonitoring Tests', function () {
     node.addProcessors([processor1, processor2]);
     node.addProcessors([processor3, processor4]);
 
-    const results = await node.execute({ initial: 'data' });
+    const promises = await node.execute({ initial: 'data' });
+    const results = await Promise.all(promises);
 
     expect(results).to.have.length(2);
-    expect(results[0]).to.deep.equal({ result2: 'data2' });
-    expect(results[1]).to.deep.equal({ result4: 'data4' });
+    expect(results[0], 'Expect on results[0]').to.deep.equal({
+      result2: 'data2',
+    });
+    expect(results[1], 'Expect on results[1]').to.deep.equal({
+      result4: 'data4',
+    });
 
     expect(
       (processor1.digest as sinon.SinonStub).calledWith({ initial: 'data' }),
@@ -104,14 +112,18 @@ describe('Basic Node and NodeMonitoring Tests', function () {
 
     node.addProcessors([failingProcessor]);
 
+    const promises = await node.execute({ initial: 'data' });
+
     try {
-      await node.execute({ initial: 'data' });
+      await Promise.all(promises);
       expect.fail('Should have thrown an error');
     } catch (error) {
       expect(error)
         .to.be.an('error')
         .with.property('message', 'Processor failed');
     }
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(node.getStatus()).to.equal(NodeStatus.FAILED);
     expect(node.getError())

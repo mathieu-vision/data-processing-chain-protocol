@@ -63,6 +63,8 @@ describe('Virtual Connector Chain Execution', function () {
       data: { initial: 'data', result1: 'data1', result2: 'data2' },
     });
 
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
     const chainState = nodeMonitoring.getChainState();
     expect(chainState.completed).to.have.members([node1Id, node2Id, node3Id]);
     expect(chainState.pending).to.be.empty;
@@ -98,6 +100,8 @@ describe('Virtual Connector Chain Execution', function () {
       data: { initial: 'data' },
     });
 
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const chainState = nodeMonitoring.getChainState();
     expect(chainState.completed).to.have.members([node1Id]);
     expect(chainState.failed).to.have.members([node2Id]);
@@ -121,6 +125,8 @@ describe('Virtual Connector Chain Execution', function () {
       id: node1Id,
       data: { initial: 'data' },
     });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(nodeMonitoring.canExecuteNode(node2Id)).to.be.true;
   });

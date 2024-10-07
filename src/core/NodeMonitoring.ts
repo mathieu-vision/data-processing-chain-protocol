@@ -77,6 +77,7 @@ export class NodeMonitoring {
     return { completed, pending, failed };
   }
 
+  // Todo: review
   canExecuteNode(nodeId: string): boolean {
     const node = this.nodes.find((n) => n.getId() === nodeId);
     if (node) {

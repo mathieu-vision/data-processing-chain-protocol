@@ -67,6 +67,7 @@ export default [
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/await-thenable': 'error',
       '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
   {
