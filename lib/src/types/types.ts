@@ -4,6 +4,7 @@ export type ProcessorPipeline = NodeProcessor[];
 
 // Todo: review
 export type PipelineData = any;
+
 export namespace DataType {
   export type Type = 'raw' | 'compressed';
   export const RAW: Type = 'raw';
@@ -51,4 +52,9 @@ export namespace NodeSignal {
   export const NODE_DELAY: Type = 'node_delay';
   export const NODE_RUN: Type = 'node_run';
   export const NODE_SEND_DATA: Type = 'node_send_data';
+}
+
+export interface SupervisorPayload {
+  signal: NodeSignal.Type;
+  [key: string]: any;
 }

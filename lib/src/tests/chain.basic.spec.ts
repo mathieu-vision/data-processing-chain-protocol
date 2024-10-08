@@ -6,7 +6,6 @@ import { ProgressTracker } from '../core/ProgressTracker';
 import { NodeStatus } from '../types/types';
 import { NodeProcessor } from '../core/NodeProcessor';
 import { NodeSupervisor } from '../core/NodeSupervisor';
-import { NodeSupervisorInterface } from '../core/NodeSupervisorInterface';
 import { NodeSignal } from '../types/types';
 
 describe('Node System Tests', function () {
@@ -14,14 +13,13 @@ describe('Node System Tests', function () {
   let nodeMonitoring: NodeMonitoring;
   let progressTracker: ProgressTracker;
   let nodeSupervisor: NodeSupervisor;
-  let supervisorInterface: NodeSupervisorInterface;
 
   beforeEach(function () {
     nodes = [new Node(), new Node(['node1']), new Node(['node2'])];
     progressTracker = new ProgressTracker(nodes.length);
     nodeMonitoring = new NodeMonitoring(nodes, progressTracker);
-    nodeSupervisor = new NodeSupervisor(nodeMonitoring);
-    supervisorInterface = new NodeSupervisorInterface(nodeSupervisor);
+    nodeSupervisor = new NodeSupervisor();
+    nodeSupervisor.setMonitoring(nodeMonitoring);
   });
 
   it('should create nodes with correct dependencies', function () {
@@ -47,7 +45,7 @@ describe('Node System Tests', function () {
     sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
     sinon.stub(processor2, 'digest').resolves({ result2: 'data2' });
 
-    node.addProcessors([processor1, processor2]);
+    node.addPipeline([processor1, processor2]);
 
     await node.execute({ initial: 'data' });
 
@@ -68,7 +66,7 @@ describe('Node System Tests', function () {
       .stub(failingProcessor, 'digest')
       .rejects(new Error('Processor failed'));
 
-    node.addProcessors([failingProcessor]);
+    node.addPipeline([failingProcessor]);
 
     await node.execute({ initial: 'data' });
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -90,16 +88,16 @@ describe('Node System Tests', function () {
     expect(chainState.failed).to.have.length(1);
   });
 
-  it('should create and run a node through the supervisor interface', async function () {
-    const nodeId = await supervisorInterface.handleRequest({
+  it('should create and run a node through the supervisor', async function () {
+    const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [],
-    });
+    })) as string;
 
     const processor = new NodeProcessor();
     sinon.stub(processor, 'digest').resolves({ result: 'processed data' });
 
-    await supervisorInterface.handleRequest({
+    await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: nodeId,
       data: { initial: 'data' },
@@ -111,12 +109,12 @@ describe('Node System Tests', function () {
   });
 
   it('should send data to a node through the supervisor interface', async function () {
-    const nodeId = await supervisorInterface.handleRequest({
+    const nodeId = await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [],
     });
 
-    await supervisorInterface.handleRequest({
+    await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_SEND_DATA,
       id: nodeId,
       data: { newData: 'test' },

@@ -7,6 +7,7 @@ import {
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
 import { Logger } from '../libs/Logger';
+import { NodeSupervisor } from './NodeSupervisor';
 
 export class Node {
   private id: string;
@@ -18,9 +19,11 @@ export class Node {
   private progress: number;
   private dataType: DataType.Type;
   private executionQueue: Promise<void>;
+  private output: PipelineData[];
 
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
+    this.output = [];
     this.pipelines = [];
     this.dependencies = dependencies;
     this.status = NodeStatus.PENDING;
@@ -34,10 +37,11 @@ export class Node {
     return this.id;
   }
 
-  addProcessors(pipeline: ProcessorPipeline): void {
+  addPipeline(pipeline: ProcessorPipeline): void {
     this.pipelines.push(pipeline);
   }
 
+  // digest the data through successive processing stages
   private async processPipeline(
     pipeline: ProcessorPipeline,
     data: PipelineData,
@@ -73,9 +77,12 @@ export class Node {
             setImmediate(async () => {
               try {
                 const batchPromises = pipelineBatch.map((pipeline) =>
-                  this.processPipeline(pipeline, data).then(() => {
-                    this.updateProgress();
-                  }),
+                  this.processPipeline(pipeline, data).then(
+                    (pipelineData: PipelineData) => {
+                      this.output.push(pipelineData);
+                      this.updateProgress();
+                    },
+                  ),
                 );
                 await Promise.all(batchPromises);
                 resolve();
@@ -98,8 +105,14 @@ export class Node {
     return this.executionQueue;
   }
 
-  async sendData(data: PipelineData): Promise<void> {
+  async sendData(): Promise<void> {
+    // make sure the queue has finished
     await this.executionQueue;
+
+    Logger.info({ message: `${JSON.stringify(this.output, null, 2)}` });
+
+    NodeSupervisor.terminate(this.id, this.output);
+
     // Todo: write the logic to send the data
     Logger.info({ message: `Sending data to node ${this.id}.` });
   }

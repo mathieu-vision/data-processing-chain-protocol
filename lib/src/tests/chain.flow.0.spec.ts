@@ -4,34 +4,32 @@ import { NodeMonitoring } from '../core/NodeMonitoring';
 import { ProgressTracker } from '../core/ProgressTracker';
 import { NodeSignal } from '../types/types';
 import { NodeSupervisor } from '../core/NodeSupervisor';
-import { NodeSupervisorInterface } from '../core/NodeSupervisorInterface';
 import { NodeProcessor } from '../core/NodeProcessor';
 
 describe('Virtual Connector Chain Execution', function () {
   let nodeSupervisor: NodeSupervisor;
   let nodeMonitoring: NodeMonitoring;
-  let supervisorInterface: NodeSupervisorInterface;
 
   beforeEach(function () {
     const progressTracker = new ProgressTracker(3);
     nodeMonitoring = new NodeMonitoring([], progressTracker);
-    nodeSupervisor = new NodeSupervisor(nodeMonitoring);
-    supervisorInterface = new NodeSupervisorInterface(nodeSupervisor);
+    nodeSupervisor = new NodeSupervisor();
+    nodeSupervisor.setMonitoring(nodeMonitoring);
   });
 
   it('should create and execute a chain of nodes', async function () {
-    const node1Id = await supervisorInterface.handleRequest({
+    const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [],
-    });
-    const node2Id = await supervisorInterface.handleRequest({
+    })) as string;
+    const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [node1Id],
-    });
-    const node3Id = await supervisorInterface.handleRequest({
+    })) as string;
+    const node3Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [node2Id],
-    });
+    })) as string;
 
     const processor1 = new NodeProcessor();
     const processor2 = new NodeProcessor();
@@ -45,19 +43,19 @@ describe('Virtual Connector Chain Execution', function () {
     await nodeSupervisor.addProcessors(node2Id, [processor2]);
     await nodeSupervisor.addProcessors(node3Id, [processor3]);
 
-    await supervisorInterface.handleRequest({
+    await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: node1Id,
       data: { initial: 'data' },
     });
 
-    await supervisorInterface.handleRequest({
+    await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: node2Id,
       data: { initial: 'data', result1: 'data1' },
     });
 
-    await supervisorInterface.handleRequest({
+    await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: node3Id,
       data: { initial: 'data', result1: 'data1', result2: 'data2' },
@@ -72,14 +70,14 @@ describe('Virtual Connector Chain Execution', function () {
   });
 
   it('should handle node failure in the chain', async function () {
-    const node1Id = await supervisorInterface.handleRequest({
+    const node1Id = await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [],
     });
-    const node2Id = await supervisorInterface.handleRequest({
+    const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [node1Id],
-    });
+    })) as string;
 
     const failingProcessor = new NodeProcessor();
     sinon
@@ -88,13 +86,13 @@ describe('Virtual Connector Chain Execution', function () {
 
     await nodeSupervisor.addProcessors(node2Id, [failingProcessor]);
 
-    await supervisorInterface.handleRequest({
+    await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: node1Id,
       data: { initial: 'data' },
     });
 
-    await supervisorInterface.handleRequest({
+    await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: node2Id,
       data: { initial: 'data' },
@@ -108,19 +106,19 @@ describe('Virtual Connector Chain Execution', function () {
   });
 
   it('should respect node dependencies', async function () {
-    const node1Id = await supervisorInterface.handleRequest({
+    const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [],
-    });
-    const node2Id = await supervisorInterface.handleRequest({
+    })) as string;
+    const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [node1Id],
-    });
+    })) as string;
 
     expect(nodeMonitoring.canExecuteNode(node1Id)).to.be.true;
     expect(nodeMonitoring.canExecuteNode(node2Id)).to.be.false;
 
-    await supervisorInterface.handleRequest({
+    await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: node1Id,
       data: { initial: 'data' },
