@@ -4,3 +4,4 @@ dist
 !.env*sample
 logs
 src/logs
+.npmrc
