@@ -4,19 +4,20 @@ import {
   PipelineData,
   ProcessorPipeline,
 } from '../types/types';
-import { setTimeout } from 'timers';
+import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
 import { Logger } from '../libs/Logger';
+
 export class Node {
   private id: string;
   private pipelines: ProcessorPipeline[];
-  // Todo: manage external dependencies
-  private dependencies: string[];
+  private dependencies: string[]; // Todo
   private status: NodeStatus.Type;
   private error?: Error;
   private delay: number;
   private progress: number;
   private dataType: DataType.Type;
+  private executionQueue: Promise<void>;
 
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
@@ -26,6 +27,7 @@ export class Node {
     this.delay = 0;
     this.progress = 0;
     this.dataType = DataType.RAW;
+    this.executionQueue = Promise.resolve();
   }
 
   getId(): string {
@@ -56,44 +58,50 @@ export class Node {
     }
   }
 
-  async execute(data: PipelineData): Promise<Promise<PipelineData>[]> {
-    try {
-      this.updateStatus(NodeStatus.IN_PROGRESS);
-      if (this.delay > 0) {
-        await this.sleep(this.delay);
-      }
+  async execute(data: PipelineData): Promise<void> {
+    this.executionQueue = this.executionQueue.then(async () => {
+      try {
+        this.updateStatus(NodeStatus.IN_PROGRESS);
+        if (this.delay > 0) {
+          await this.sleep(this.delay);
+        }
 
-      const generator = this.getPipelineGenerator(this.pipelines, 3);
-      // Using promises to ensure the container/connector execution is not blocked while processing large amounts of data
-      const promises: Promise<PipelineData>[] = [];
+        const generator = this.getPipelineGenerator(this.pipelines, 3);
 
-      for (const pipelines of generator) {
-        const batchPromises = pipelines.map((pipeline) =>
-          this.processPipeline(pipeline, data).then((result) => {
-            this.updateProgress();
-            return result;
-          }),
-        );
-        promises.push(...batchPromises);
-      }
+        for (const pipelineBatch of generator) {
+          await new Promise<void>((resolve, reject) => {
+            setImmediate(async () => {
+              try {
+                const batchPromises = pipelineBatch.map((pipeline) =>
+                  this.processPipeline(pipeline, data).then(() => {
+                    this.updateProgress();
+                  }),
+                );
+                await Promise.all(batchPromises);
+                resolve();
+              } catch (error) {
+                reject(error);
+              }
+            });
+          });
+        }
 
-      Promise.all(promises)
-        .then(() => {
-          this.updateStatus(NodeStatus.COMPLETED);
-        })
-        .catch((error) => {
-          this.updateStatus(NodeStatus.FAILED, error);
+        this.updateStatus(NodeStatus.COMPLETED);
+      } catch (error) {
+        this.updateStatus(NodeStatus.FAILED, error as Error);
+        Logger.error({
+          message: `Node ${this.id} execution failed: ${error}`,
         });
+      }
+    });
 
-      return promises;
-    } catch (error) {
-      this.error = error as Error;
-      this.updateStatus(NodeStatus.FAILED, this.error);
-      Logger.error({
-        message: `Node ${this.id} execution failed: ${this.error}`,
-      });
-      throw error;
-    }
+    return this.executionQueue;
+  }
+
+  async sendData(data: PipelineData): Promise<void> {
+    await this.executionQueue;
+    // Todo: write the logic to send the data
+    Logger.info({ message: `Sending data to node ${this.id}.` });
   }
 
   private updateProgress(): void {
@@ -103,37 +111,6 @@ export class Node {
   getProgress(): number {
     return this.progress;
   }
-
-  /*
-  async execute(data: any): Promise<any[]> {
-    try {
-      this.status = NodeStatus.IN_PROGRESS;
-      if (this.delay > 0) {
-        await this.sleep(this.delay);
-      }
-
-      const generator = this.getPipelineGenerator(this.pipelines, 3);
-
-      let results: any = [];
-      for (const pipelines of generator) {
-        const batches = await Promise.all(
-          pipelines.map((pipeline) => this.processPipeline(pipeline, data)),
-        );
-        results = results.concat(batches);
-      }
-
-      this.status = NodeStatus.COMPLETED;
-      return results;
-    } catch (error) {
-      this.status = NodeStatus.FAILED;
-      this.error = error as Error;
-      Logger.error({
-        message: `Node ${this.id} execution failed: ${this.error}`,
-      });
-      throw error;
-    }
-  }
-  */
 
   canExecute(executedNodes: Set<string>): boolean {
     return this.dependencies.every((dep) => executedNodes.has(dep));
@@ -165,7 +142,6 @@ export class Node {
       this.error = error;
     }
   }
-
   getError(): Error | undefined {
     return this.error;
   }

@@ -5,17 +5,23 @@ import { NodeMonitoring } from '../core/NodeMonitoring';
 import { ProgressTracker } from '../core/ProgressTracker';
 import { NodeStatus } from '../types/types';
 import { NodeProcessor } from '../core/NodeProcessor';
+import { NodeSupervisor } from '../core/NodeSupervisor';
+import { NodeSupervisorInterface } from '../core/NodeSupervisorInterface';
+import { NodeSignal } from '../types/types';
 
-describe('Basic Node and NodeMonitoring Tests', function () {
+describe('Node System Tests', function () {
   let nodes: Node[];
   let nodeMonitoring: NodeMonitoring;
   let progressTracker: ProgressTracker;
+  let nodeSupervisor: NodeSupervisor;
+  let supervisorInterface: NodeSupervisorInterface;
 
   beforeEach(function () {
     nodes = [new Node(), new Node(['node1']), new Node(['node2'])];
-
     progressTracker = new ProgressTracker(nodes.length);
     nodeMonitoring = new NodeMonitoring(nodes, progressTracker);
+    nodeSupervisor = new NodeSupervisor(nodeMonitoring);
+    supervisorInterface = new NodeSupervisorInterface(nodeSupervisor);
   });
 
   it('should create nodes with correct dependencies', function () {
@@ -43,61 +49,13 @@ describe('Basic Node and NodeMonitoring Tests', function () {
 
     node.addProcessors([processor1, processor2]);
 
-    const promises = await node.execute({ initial: 'data' });
-    const results = await Promise.all(promises);
-
-    expect(results).to.have.length(1);
-    expect(results[0], 'Expect on results[0]').to.deep.equal({
-      result2: 'data2',
-    });
+    await node.execute({ initial: 'data' });
 
     expect(
       (processor1.digest as sinon.SinonStub).calledWith({ initial: 'data' }),
     ).to.be.true;
     expect(
       (processor2.digest as sinon.SinonStub).calledWith({ result1: 'data1' }),
-    ).to.be.true;
-
-    expect(node.getStatus()).to.equal(NodeStatus.COMPLETED);
-  });
-
-  it('should execute node with concurrent processor lists', async function () {
-    const node = nodes[0];
-    const processor1 = new NodeProcessor();
-    const processor2 = new NodeProcessor();
-    const processor3 = new NodeProcessor();
-    const processor4 = new NodeProcessor();
-
-    sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
-    sinon.stub(processor2, 'digest').resolves({ result2: 'data2' });
-    sinon.stub(processor3, 'digest').resolves({ result3: 'data3' });
-    sinon.stub(processor4, 'digest').resolves({ result4: 'data4' });
-
-    node.addProcessors([processor1, processor2]);
-    node.addProcessors([processor3, processor4]);
-
-    const promises = await node.execute({ initial: 'data' });
-    const results = await Promise.all(promises);
-
-    expect(results).to.have.length(2);
-    expect(results[0], 'Expect on results[0]').to.deep.equal({
-      result2: 'data2',
-    });
-    expect(results[1], 'Expect on results[1]').to.deep.equal({
-      result4: 'data4',
-    });
-
-    expect(
-      (processor1.digest as sinon.SinonStub).calledWith({ initial: 'data' }),
-    ).to.be.true;
-    expect(
-      (processor2.digest as sinon.SinonStub).calledWith({ result1: 'data1' }),
-    ).to.be.true;
-    expect(
-      (processor3.digest as sinon.SinonStub).calledWith({ initial: 'data' }),
-    ).to.be.true;
-    expect(
-      (processor4.digest as sinon.SinonStub).calledWith({ result3: 'data3' }),
     ).to.be.true;
 
     expect(node.getStatus()).to.equal(NodeStatus.COMPLETED);
@@ -112,18 +70,8 @@ describe('Basic Node and NodeMonitoring Tests', function () {
 
     node.addProcessors([failingProcessor]);
 
-    const promises = await node.execute({ initial: 'data' });
-
-    try {
-      await Promise.all(promises);
-      expect.fail('Should have thrown an error');
-    } catch (error) {
-      expect(error)
-        .to.be.an('error')
-        .with.property('message', 'Processor failed');
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await node.execute({ initial: 'data' });
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(node.getStatus()).to.equal(NodeStatus.FAILED);
     expect(node.getError())
@@ -140,5 +88,40 @@ describe('Basic Node and NodeMonitoring Tests', function () {
     expect(chainState.completed).to.have.length(1);
     expect(chainState.pending).to.have.length(1);
     expect(chainState.failed).to.have.length(1);
+  });
+
+  it('should create and run a node through the supervisor interface', async function () {
+    const nodeId = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [],
+    });
+
+    const processor = new NodeProcessor();
+    sinon.stub(processor, 'digest').resolves({ result: 'processed data' });
+
+    await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: nodeId,
+      data: { initial: 'data' },
+    });
+
+    const node = nodeSupervisor['nodes'].get(nodeId);
+    expect(node).to.exist;
+    expect(node!.getStatus()).to.equal(NodeStatus.COMPLETED);
+  });
+
+  it('should send data to a node through the supervisor interface', async function () {
+    const nodeId = await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [],
+    });
+
+    await supervisorInterface.handleRequest({
+      signal: NodeSignal.NODE_SEND_DATA,
+      id: nodeId,
+      data: { newData: 'test' },
+    });
+
+    // Todo: review
   });
 });

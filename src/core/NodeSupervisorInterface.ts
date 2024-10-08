@@ -25,9 +25,11 @@ export class NodeSupervisorInterface {
       case NodeSignal.NODE_DELAY:
         return this.nodeSupervisor.delayNode(payload.id, payload.delay);
       case NodeSignal.NODE_RUN:
-        return this.nodeSupervisor.runNode(payload.id, payload.data);
+        await this.nodeSupervisor.runNode(payload.id, payload.data);
+        return { message: `Node ${payload.id} execution started` };
       case NodeSignal.NODE_SEND_DATA:
-        return this.nodeSupervisor.sendNodeData(payload.id, payload.data);
+        await this.nodeSupervisor.sendNodeData(payload.id, payload.data);
+        return { message: `Data sent to node ${payload.id}` };
       default:
         Logger.warn({
           message: `Unknown signal received: ${payload.signal}`,

@@ -7,11 +7,9 @@ import { NodeProcessor } from './NodeProcessor';
 export class NodeSupervisor {
   private nodes: Map<string, Node>;
   private nodeMonitoring: NodeMonitoring;
-  private promises: Map<string, Promise<PipelineData[]>>;
 
   constructor(nodeMonitoring: NodeMonitoring) {
     this.nodes = new Map();
-    this.promises = new Map();
     this.nodeMonitoring = nodeMonitoring;
   }
 
@@ -70,64 +68,25 @@ export class NodeSupervisor {
   async runNode(nodeId: string, data: PipelineData): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
-      try {
-        const results = await node.execute(data);
-        const promise = Promise.all(results);
-        promise.catch((error) => {
-          Logger.error({
-            message: `An error occurred while executing node ${nodeId}: ${error.message}`,
-          });
-        });
-        this.promises.set(nodeId, promise);
-      } catch (err) {
-        const error = err as Error;
-        Logger.error({
-          message: `Node ${nodeId} execution failed: ${error.message}`,
-        });
-      }
+      await node.execute(data);
     } else {
       Logger.warn({ message: `Node ${nodeId} not found.` });
     }
   }
 
-  /*
-  async runNode(nodeId: string, data: any): Promise<void> {
-    const node = this.nodes.get(nodeId);
-    if (node) {
-      try {
-        const result = await node.execute(data);
-        this.nodeMonitoring.updateNodeStatus(nodeId, NodeStatus.COMPLETED);
-        Logger.info({ message: `Node ${nodeId} executed successfully.` });
-      } catch (err) {
-        const error = err as Error;
-        this.nodeMonitoring.updateNodeStatus(nodeId, NodeStatus.FAILED, error);
-        Logger.error({
-          message: `Node ${nodeId} execution failed: ${error.message}`,
-        });
-      }
-    } else {
-      Logger.warn({ message: `Node ${nodeId} not found.` });
-    }
-  }
-  */
-
-  // todo: review
   async sendNodeData(nodeId: string, data: PipelineData): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
-      // Todo: wait for promise to resolve
-      const promise = this.promises.get(nodeId);
-
-      await this.runNode(nodeId, data);
+      try {
+        await node.sendData(data);
+      } catch (err) {
+        const error = err as Error;
+        Logger.error({
+          message: `Node ${nodeId} execution failed: ${error.message}`,
+        });
+      }
     } else {
-      await this.sendDataToRemoteNode(nodeId, data);
+      Logger.warn({ message: `Node ${nodeId} not found.` });
     }
-  }
-
-  private async sendDataToRemoteNode(
-    nodeId: string,
-    data: PipelineData,
-  ): Promise<void> {
-    Logger.info({ message: `Sending data to remote node ${nodeId}.` });
   }
 }
