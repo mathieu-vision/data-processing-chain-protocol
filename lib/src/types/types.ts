@@ -3,7 +3,7 @@ import { NodeProcessor } from '../core/NodeProcessor';
 export type ProcessorPipeline = NodeProcessor[];
 
 // Todo: review
-export type PipelineData = any;
+export type PipelineData = unknown;
 
 export interface CallbackPayload {
   targetId: string;
@@ -31,7 +31,7 @@ export namespace CombineStrategy {
   export const CUSTOM: Type = 'custom';
 }
 
-export type CombineFonction = (_dataSets: PipelineData[]) => any[];
+export type CombineFonction = (_dataSets: PipelineData[]) => unknown[];
 
 export interface ChainState {
   completed: string[];
@@ -71,4 +71,12 @@ export namespace NodeSignal {
 export interface SupervisorPayload {
   signal: NodeSignal.Type;
   [key: string]: any;
+}
+
+export interface BrodcastMessage {
+  signal: NodeSignal.Type;
+  chain: {
+    id: string;
+    config: { services: string[] }[];
+  };
 }

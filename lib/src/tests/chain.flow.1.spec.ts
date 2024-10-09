@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
+import { Node } from '../core/Node';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { NodeProcessor } from '../core/NodeProcessor';
 import { NodeSignal, PipelineData } from '../types/types';
@@ -10,7 +11,7 @@ describe('Node Supervisor Flow Test', function () {
 
   beforeEach(function () {
     nodeSupervisor = NodeSupervisor.retrieveService();
-    terminateStub = sinon.stub(NodeSupervisor, 'terminate');
+    terminateStub = sinon.stub(Node.prototype as any, 'terminate');
   });
 
   afterEach(function () {

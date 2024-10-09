@@ -4,6 +4,7 @@ import {
   PipelineData,
   ProcessorPipeline,
   NodeType,
+  NodeSignal,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -13,7 +14,8 @@ import { NodeSupervisor } from './NodeSupervisor';
 export class Node {
   private id: string;
   private pipelines: ProcessorPipeline[];
-  private dependencies: string[]; // Todo
+  // Todo:
+  private dependencies: string[];
   private status: NodeStatus.Type;
   private error?: Error;
   private delay: number;
@@ -113,12 +115,54 @@ export class Node {
     await this.executionQueue;
     // tmp
     Logger.info({ message: `${JSON.stringify(this.output, null, 2)}` });
-    await NodeSupervisor.terminate(this.id, this.output);
+    await Node.terminate(this.id, this.output);
     Logger.info({ message: `Sending data to node ${this.id}.` });
   }
 
   private updateProgress(): void {
     this.progress += 1 / this.pipelines.length;
+  }
+
+  private static async terminate(nodeId: string, pipelineData: PipelineData[]) {
+    // todo: format data
+    await Node.moveToNextNode(nodeId, pipelineData);
+  }
+
+  private static async moveToNextNode(
+    nodeId: string,
+    pipelineData: PipelineData[],
+  ) {
+    const supervisor = NodeSupervisor.retrieveService();
+    const nodes = supervisor.getNodes();
+    const currentNode = nodes.get(nodeId);
+
+    if (!currentNode) {
+      Logger.warn({
+        message: `Node ${nodeId} not found for moving to next node.`,
+      });
+      return;
+    }
+    const nextNodeInfo = currentNode.getNextNodeInfo();
+    if (nextNodeInfo) {
+      if (nextNodeInfo.type === NodeType.LOCAL) {
+        await supervisor.handleRequest({
+          id: nextNodeInfo.id,
+          data: pipelineData,
+          signal: NodeSignal.NODE_CREATE,
+        });
+      } else if (nextNodeInfo.type === NodeType.EXTERNAL) {
+        supervisor.callbackOutput({
+          targetId: nextNodeInfo.id,
+          data: pipelineData,
+        });
+      }
+    } else {
+      Logger.info({ message: `End of pipeline reached by node ${nodeId}.` });
+    }
+    await supervisor.handleRequest({
+      id: nodeId,
+      signal: NodeSignal.NODE_DELETE,
+    });
   }
 
   getProgress(): number {

@@ -5,18 +5,28 @@ import {
   NodeStatus,
   PipelineData,
   SupervisorPayload,
-  NodeType,
   CallbackPayload,
+  BrodcastMessage,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
 import { NodeProcessor } from './NodeProcessor';
+import { randomUUID } from 'node:crypto';
+
+type ChainConfig = {
+  services: string[];
+  location: 'local' | 'remote';
+};
 
 export class NodeSupervisor {
+  private uid: string = 'to be set from outside';
   private static instance: NodeSupervisor;
   private nodes: Map<string, Node>;
   private nodeMonitoring?: NodeMonitoring;
-  private callbackOutput: Callback;
+  private broadcastFunction: (message: any) => Promise<void> = async () => {};
+  private chainConfig: ChainConfig[] = [];
+  callbackOutput: Callback;
+
   constructor() {
     this.nodes = new Map();
     this.callbackOutput = (_payload: CallbackPayload) => {};
@@ -28,6 +38,16 @@ export class NodeSupervisor {
 
   setMonitoring(nodeMonitoring: NodeMonitoring): void {
     this.nodeMonitoring = nodeMonitoring;
+  }
+
+  setBroadcastFunction(
+    broadcastFunction: (message: any) => Promise<void>,
+  ): void {
+    this.broadcastFunction = broadcastFunction;
+  }
+
+  setChainConfig(config: ChainConfig[]): void {
+    this.chainConfig = config;
   }
 
   public static retrieveService(): NodeSupervisor {
@@ -115,6 +135,50 @@ export class NodeSupervisor {
     }
   }
 
+  async startChain(): Promise<void> {
+    const localConfigs = this.chainConfig.filter(
+      (config) => config.location === 'local',
+    );
+    const remoteConfigs = this.chainConfig.filter(
+      (config) => config.location === 'remote',
+    );
+
+    for (const config of localConfigs) {
+      // Todo: pass chain info to node
+      await this.createNode();
+    }
+
+    if (remoteConfigs.length > 0) {
+      await this.broadcastNodeCreationSignal();
+    }
+  }
+
+  async broadcastNodeCreationSignal(): Promise<void> {
+    const timestamp = Date.now();
+    const chainId = `${this.uid}-${timestamp}-${randomUUID().slice(0, 8)}`;
+
+    const message: BrodcastMessage = {
+      signal: NodeSignal.NODE_CREATE,
+      chain: {
+        id: chainId,
+        config: this.chainConfig.map((config) => ({
+          services: config.services,
+        })),
+      },
+    };
+
+    try {
+      await this.broadcastFunction(message);
+      Logger.info({
+        message: `Node creation signal broadcasted with chainId: ${chainId}`,
+      });
+    } catch (error) {
+      Logger.error({
+        message: `Failed to broadcast node creation signal: ${error}`,
+      });
+    }
+  }
+
   // Todo: move data to a dedicated input method
   private async runNode(nodeId: string, data: PipelineData): Promise<void> {
     const node = this.nodes.get(nodeId);
@@ -141,38 +205,8 @@ export class NodeSupervisor {
     }
   }
 
-  public static async terminate(nodeId: string, pipelineData: PipelineData[]) {
-    // todo: format data
-    await NodeSupervisor.moveToNextNode(nodeId, pipelineData);
-  }
-
-  public static async moveToNextNode(
-    nodeId: string,
-    pipelineData: PipelineData[],
-  ) {
-    const supervisor = NodeSupervisor.retrieveService();
-    const currentNode = supervisor.nodes.get(nodeId);
-
-    if (!currentNode) {
-      Logger.warn({
-        message: `Node ${nodeId} not found for moving to next node.`,
-      });
-      return;
-    }
-    const nextNodeInfo = currentNode.getNextNodeInfo();
-    if (nextNodeInfo) {
-      if (nextNodeInfo.type === NodeType.LOCAL) {
-        await supervisor.runNode(nextNodeInfo.id, pipelineData);
-      } else if (nextNodeInfo.type === NodeType.EXTERNAL) {
-        supervisor.callbackOutput({
-          targetId: nextNodeInfo.id,
-          data: pipelineData,
-        });
-      }
-    } else {
-      Logger.info({ message: `End of pipeline reached by node ${nodeId}.` });
-    }
-    await supervisor.deleteNode(nodeId);
+  getNodes(): Map<string, Node> {
+    return this.nodes;
   }
 }
 
