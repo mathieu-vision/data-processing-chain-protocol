@@ -31,9 +31,9 @@ describe('Virtual Connector Chain Execution', function () {
       params: [node2Id],
     })) as string;
 
-    const processor1 = new NodeProcessor();
-    const processor2 = new NodeProcessor();
-    const processor3 = new NodeProcessor();
+    const processor1 = new NodeProcessor('');
+    const processor2 = new NodeProcessor('');
+    const processor3 = new NodeProcessor('');
 
     sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
     sinon.stub(processor2, 'digest').resolves({ result2: 'data2' });
@@ -79,7 +79,7 @@ describe('Virtual Connector Chain Execution', function () {
       params: [node1Id],
     })) as string;
 
-    const failingProcessor = new NodeProcessor();
+    const failingProcessor = new NodeProcessor('');
     sinon
       .stub(failingProcessor, 'digest')
       .rejects(new Error('Processor failed'));

@@ -3,6 +3,7 @@ import {
   NodeStatus,
   PipelineData,
   ProcessorPipeline,
+  NodeType,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -20,6 +21,7 @@ export class Node {
   private dataType: DataType.Type;
   private executionQueue: Promise<void>;
   private output: PipelineData[];
+  private nextNodeInfo: { id: string; type: NodeType.Location } | null;
 
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
@@ -31,6 +33,7 @@ export class Node {
     this.progress = 0;
     this.dataType = DataType.RAW;
     this.executionQueue = Promise.resolve();
+    this.nextNodeInfo = null;
   }
 
   getId(): string {
@@ -108,12 +111,9 @@ export class Node {
   async sendData(): Promise<void> {
     // make sure the queue has finished
     await this.executionQueue;
-
+    // tmp
     Logger.info({ message: `${JSON.stringify(this.output, null, 2)}` });
-
-    NodeSupervisor.terminate(this.id, this.output);
-
-    // Todo: write the logic to send the data
+    await NodeSupervisor.terminate(this.id, this.output);
     Logger.info({ message: `Sending data to node ${this.id}.` });
   }
 
@@ -161,5 +161,13 @@ export class Node {
 
   getProcessors(): ProcessorPipeline[] {
     return this.pipelines;
+  }
+
+  setNextNode(id: string, type: NodeType.Location): void {
+    this.nextNodeInfo = { id, type };
+  }
+
+  getNextNodeInfo(): { id: string; type: NodeType.Location } | null {
+    return this.nextNodeInfo;
   }
 }

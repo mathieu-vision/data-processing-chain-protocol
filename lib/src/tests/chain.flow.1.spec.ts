@@ -23,7 +23,7 @@ describe('Node Supervisor Flow Test', function () {
       params: [],
     })) as string;
 
-    const processor1 = new NodeProcessor();
+    const processor1 = new NodeProcessor('');
     sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
 
     await nodeSupervisor.addProcessors(nodeId, [processor1]);
@@ -52,8 +52,8 @@ describe('Node Supervisor Flow Test', function () {
       params: [],
     })) as string;
 
-    const processor1 = new NodeProcessor();
-    const processor2 = new NodeProcessor();
+    const processor1 = new NodeProcessor('');
+    const processor2 = new NodeProcessor('');
 
     sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
     sinon.stub(processor2, 'digest').resolves({ processed: 'data2' });
@@ -86,7 +86,7 @@ describe('Node Supervisor Flow Test', function () {
       params: [],
     })) as string;
 
-    const processor1 = new NodeProcessor();
+    const processor1 = new NodeProcessor('');
     sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
 
     await nodeSupervisor.addProcessors(nodeId, [processor1]);

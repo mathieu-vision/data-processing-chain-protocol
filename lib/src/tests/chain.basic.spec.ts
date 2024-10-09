@@ -39,8 +39,8 @@ describe('Node System Tests', function () {
 
   it('should execute node with processors', async function () {
     const node = nodes[0];
-    const processor1 = new NodeProcessor();
-    const processor2 = new NodeProcessor();
+    const processor1 = new NodeProcessor('');
+    const processor2 = new NodeProcessor('');
 
     sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
     sinon.stub(processor2, 'digest').resolves({ result2: 'data2' });
@@ -61,7 +61,7 @@ describe('Node System Tests', function () {
 
   it('should handle node execution failure', async function () {
     const node = nodes[0];
-    const failingProcessor = new NodeProcessor();
+    const failingProcessor = new NodeProcessor('');
     sinon
       .stub(failingProcessor, 'digest')
       .rejects(new Error('Processor failed'));
@@ -94,7 +94,7 @@ describe('Node System Tests', function () {
       params: [],
     })) as string;
 
-    const processor = new NodeProcessor();
+    const processor = new NodeProcessor('');
     sinon.stub(processor, 'digest').resolves({ result: 'processed data' });
 
     await nodeSupervisor.handleRequest({

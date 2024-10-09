@@ -1,8 +1,15 @@
-import { PipelineData } from 'types/types';
+import { PipelineData, ProcessorCallback } from 'types/types';
 
 export class NodeProcessor {
-  async digest(data: PipelineData): Promise<any> {
-    // Todo : call related service to transform of manipulate data
-    return {};
+  static callbackService: ProcessorCallback;
+  private targetId: string;
+  constructor(targetId: string) {
+    this.targetId = targetId;
+  }
+  static setCallbackService(callbackService: ProcessorCallback): void {
+    NodeProcessor.callbackService = callbackService;
+  }
+  async digest(data: PipelineData): Promise<PipelineData> {
+    return NodeProcessor.callbackService({ targetId: this.targetId, data });
   }
 }

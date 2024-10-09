@@ -1,9 +1,12 @@
 import { Node } from './Node';
 import {
+  Callback,
   NodeSignal,
   NodeStatus,
   PipelineData,
   SupervisorPayload,
+  NodeType,
+  CallbackPayload,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
@@ -13,9 +16,14 @@ export class NodeSupervisor {
   private static instance: NodeSupervisor;
   private nodes: Map<string, Node>;
   private nodeMonitoring?: NodeMonitoring;
-
+  private callbackOutput: Callback;
   constructor() {
     this.nodes = new Map();
+    this.callbackOutput = (_payload: CallbackPayload) => {};
+  }
+
+  setCallbackOutput(callback: Callback): void {
+    this.callbackOutput = callback;
   }
 
   setMonitoring(nodeMonitoring: NodeMonitoring): void {
@@ -133,8 +141,38 @@ export class NodeSupervisor {
     }
   }
 
-  public static terminate(nodeId: string, pipelineData: PipelineData[]) {
-    // Todo: delete node and pass data to next node
+  public static async terminate(nodeId: string, pipelineData: PipelineData[]) {
+    // todo: format data
+    await NodeSupervisor.moveToNextNode(nodeId, pipelineData);
+  }
+
+  public static async moveToNextNode(
+    nodeId: string,
+    pipelineData: PipelineData[],
+  ) {
+    const supervisor = NodeSupervisor.retrieveService();
+    const currentNode = supervisor.nodes.get(nodeId);
+
+    if (!currentNode) {
+      Logger.warn({
+        message: `Node ${nodeId} not found for moving to next node.`,
+      });
+      return;
+    }
+    const nextNodeInfo = currentNode.getNextNodeInfo();
+    if (nextNodeInfo) {
+      if (nextNodeInfo.type === NodeType.LOCAL) {
+        await supervisor.runNode(nextNodeInfo.id, pipelineData);
+      } else if (nextNodeInfo.type === NodeType.EXTERNAL) {
+        supervisor.callbackOutput({
+          targetId: nextNodeInfo.id,
+          data: pipelineData,
+        });
+      }
+    } else {
+      Logger.info({ message: `End of pipeline reached by node ${nodeId}.` });
+    }
+    await supervisor.deleteNode(nodeId);
   }
 }
 
