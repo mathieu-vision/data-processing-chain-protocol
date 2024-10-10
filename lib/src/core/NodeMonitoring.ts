@@ -3,7 +3,7 @@ import { ProgressTracker } from './ProgressTracker';
 import { Node } from './Node';
 import { Logger } from '../libs/Logger';
 
-// Todo: review
+// Todo: need a full review
 export class NodeMonitoring {
   private nodes: Node[];
   private nodeStatusMap: Map<string, NodeStatus.Type>;
@@ -20,9 +20,12 @@ export class NodeMonitoring {
 
   addNode(node: Node): void {
     if (!this.nodes.find((n) => n.getId() === node.getId())) {
+      const newIndex = this.nodes.length;
       this.nodes.push(node);
       this.nodeStatusMap.set(node.getId(), node.getStatus());
-      Logger.info({ message: `Node ${node.getId()} added to monitoring.` });
+      Logger.info({
+        message: `Node ${node.getId()} added to monitoring at index ${newIndex}.`,
+      });
     } else {
       Logger.warn({
         message: `Node ${node.getId()} is already being monitored.`,

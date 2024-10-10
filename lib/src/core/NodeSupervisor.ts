@@ -10,6 +10,7 @@ import {
   ChainConfig,
   ChainRelation,
   NodeConfig,
+  NodeType,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
@@ -17,33 +18,38 @@ import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
 
 export class NodeSupervisor {
-  private uid: string = 'to be set from outside';
+  private uid: string;
   private static instance: NodeSupervisor;
   private nodes: Map<string, Node>;
   private chains: Map<string, ChainRelation>;
 
   private nodeMonitoring?: NodeMonitoring;
   private broadcastSetup: (message: any) => Promise<void> = async () => {};
-  callbackOutput: Callback;
+  remoteServiceCallback: Callback;
 
   constructor() {
+    this.uid = '@supervisor:default';
     this.nodes = new Map();
     this.chains = new Map();
-    this.callbackOutput = (_payload: CallbackPayload) => {};
+    this.remoteServiceCallback = (_payload: CallbackPayload) => {};
   }
 
-  setCallbackOutput(callback: Callback): void {
-    this.callbackOutput = callback;
+  setRemoteServiceCallback(callback: Callback): void {
+    this.remoteServiceCallback = callback;
   }
 
   setMonitoring(nodeMonitoring: NodeMonitoring): void {
     this.nodeMonitoring = nodeMonitoring;
   }
 
-  setBroadcastCreationCallback(
+  setBroadcastSetupCallback(
     broadcastSetup: (message: any) => Promise<void>,
   ): void {
     this.broadcastSetup = broadcastSetup;
+  }
+
+  setUid(uid: string) {
+    this.uid = `@supervisor:${uid}`;
   }
 
   static retrieveService(): NodeSupervisor {
@@ -160,6 +166,9 @@ export class NodeSupervisor {
       config,
     };
     this.chains.set(chainId, relation);
+    Logger.info({
+      message: `Chain ${chainId} created`,
+    });
     return chainId;
   }
 
@@ -169,10 +178,10 @@ export class NodeSupervisor {
       throw new Error(`Chain ${chainId} not found`);
     }
     const chainConfig: ChainConfig = chain.config;
-    const localConfigs = chainConfig.filter(
+    const localConfigs: NodeConfig[] = chainConfig.filter(
       (config) => config.location === 'local',
     );
-    const remoteConfigs = chainConfig.filter(
+    const remoteConfigs: NodeConfig[] = chainConfig.filter(
       (config) => config.location === 'remote',
     );
 
@@ -180,8 +189,26 @@ export class NodeSupervisor {
       const rootNodeId = await this.setupNode(localConfigs[0]);
       chain.rootNodeId = rootNodeId;
 
+      let prevNodeId = rootNodeId;
       for (let i = 1; i < localConfigs.length; i++) {
-        await this.setupNode(localConfigs[i]);
+        const currentNodeId = await this.setupNode(localConfigs[i]);
+        const prevNode = this.nodes.get(prevNodeId);
+        if (prevNode) {
+          prevNode.setNextNodeInfo(currentNodeId, NodeType.LOCAL);
+        }
+        prevNodeId = currentNodeId;
+      }
+
+      // Todo: Review:
+      // Tmp, set the last local node to point to the first remote service
+      if (remoteConfigs.length > 0 && remoteConfigs[0].services.length > 0) {
+        const lastLocalNode = this.nodes.get(prevNodeId);
+        if (lastLocalNode) {
+          lastLocalNode.setNextNodeInfo(
+            remoteConfigs[0].services[0],
+            NodeType.EXTERNAL,
+          );
+        }
       }
     }
 
@@ -247,7 +274,6 @@ export class NodeSupervisor {
     }
   }
 
-  // Todo: move data to a dedicated input method
   private async runNode(nodeId: string, data: PipelineData): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
@@ -265,7 +291,7 @@ export class NodeSupervisor {
       } catch (err) {
         const error = err as Error;
         Logger.error({
-          message: `Node ${nodeId} execution failed: ${error.message}`,
+          message: `Node ${nodeId} send data failed: ${error.message}`,
         });
       }
     } else {

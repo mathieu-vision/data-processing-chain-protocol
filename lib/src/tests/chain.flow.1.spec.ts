@@ -105,6 +105,7 @@ describe('Virtual Connector Chain Execution', function () {
     expect(chainState.failed).to.have.members([node2Id]);
   });
 
+  // todo: fix dependencies
   it('should respect node dependencies', async function () {
     const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
@@ -112,11 +113,12 @@ describe('Virtual Connector Chain Execution', function () {
     })) as string;
     const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
+      // dependencies
       params: [node1Id],
     })) as string;
 
-    expect(nodeMonitoring.canExecuteNode(node1Id)).to.be.true;
-    expect(nodeMonitoring.canExecuteNode(node2Id)).to.be.false;
+    expect(nodeMonitoring.canExecuteNode(node1Id), 'a').to.be.true;
+    expect(nodeMonitoring.canExecuteNode(node2Id), 'b').to.be.false;
 
     await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
@@ -126,6 +128,6 @@ describe('Virtual Connector Chain Execution', function () {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(nodeMonitoring.canExecuteNode(node2Id)).to.be.true;
+    expect(nodeMonitoring.canExecuteNode(node2Id), 'c').to.be.true;
   });
 });

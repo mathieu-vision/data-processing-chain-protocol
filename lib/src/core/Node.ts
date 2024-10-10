@@ -42,6 +42,10 @@ export class Node {
     this.config = null;
   }
 
+  private updateProgress(): void {
+    this.progress += 1 / this.pipelines.length;
+  }
+
   setConfig(config: NodeConfig): void {
     this.config = config;
   }
@@ -83,6 +87,7 @@ export class Node {
     this.executionQueue = this.executionQueue.then(async () => {
       try {
         this.updateStatus(NodeStatus.IN_PROGRESS);
+        // todo: monitor this step
         if (this.delay > 0) {
           await this.sleep(this.delay);
         }
@@ -98,6 +103,7 @@ export class Node {
                     (pipelineData: PipelineData) => {
                       this.output.push(pipelineData);
                       this.updateProgress();
+                      // todo: monitor this step
                     },
                   ),
                 );
@@ -119,30 +125,32 @@ export class Node {
       }
     });
 
-    return this.executionQueue;
+    const supervisor = NodeSupervisor.retrieveService();
+    await supervisor.handleRequest({
+      id: this.id,
+      signal: NodeSignal.NODE_SEND_DATA,
+    });
   }
 
+  // ...
   async sendData(): Promise<void> {
     // make sure the queue has finished
     await this.executionQueue;
     // tmp
     Logger.info({ message: `${JSON.stringify(this.output, null, 2)}` });
+    Logger.info({ message: `Sending data from node ${this.id}.` });
     await Node.terminate(this.id, this.output);
-    Logger.info({ message: `Sending data to node ${this.id}.` });
-  }
-
-  private updateProgress(): void {
-    this.progress += 1 / this.pipelines.length;
   }
 
   private static async terminate(nodeId: string, pipelineData: PipelineData[]) {
     // todo: format data
-    await Node.moveToNextNode(nodeId, pipelineData);
+    const data = pipelineData[0]; // tmp
+    await Node.moveToNextNode(nodeId, data);
   }
 
   private static async moveToNextNode(
     nodeId: string,
-    pipelineData: PipelineData[],
+    pipelineData: PipelineData,
   ) {
     const supervisor = NodeSupervisor.retrieveService();
     const nodes = supervisor.getNodes();
@@ -160,10 +168,11 @@ export class Node {
         await supervisor.handleRequest({
           id: nextNodeInfo.id,
           data: pipelineData,
-          signal: NodeSignal.NODE_CREATE,
+          signal: NodeSignal.NODE_RUN,
         });
       } else if (nextNodeInfo.type === NodeType.EXTERNAL) {
-        supervisor.callbackOutput({
+        supervisor.remoteServiceCallback({
+          // nextNodeInfo.id needs to be the next remote target service uid
           targetId: nextNodeInfo.id,
           data: pipelineData,
         });
@@ -219,7 +228,7 @@ export class Node {
     return this.pipelines;
   }
 
-  setNextNode(id: string, type: NodeType.Location): void {
+  setNextNodeInfo(id: string, type: NodeType.Location): void {
     this.nextNodeInfo = { id, type };
   }
 
