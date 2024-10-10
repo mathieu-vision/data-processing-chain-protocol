@@ -1,6 +1,6 @@
-import { NodeProcessor } from '../core/NodeProcessor';
+import { PipelineProcessor } from '../core/PipelineProcessor';
 
-export type ProcessorPipeline = NodeProcessor[];
+export type ProcessorPipeline = PipelineProcessor[];
 
 // Todo: review
 export type PipelineData = unknown;
@@ -54,12 +54,14 @@ export namespace NodeStatus {
 
 export namespace NodeSignal {
   export type Type =
+    | 'node_setup'
     | 'node_create'
     | 'node_delete'
     | 'node_pause'
     | 'node_delay'
     | 'node_run'
     | 'node_send_data';
+  export const NODE_SETUP: Type = 'node_setup';
   export const NODE_CREATE: Type = 'node_create';
   export const NODE_DELETE: Type = 'node_delete';
   export const NODE_PAUSE: Type = 'node_pause';
@@ -71,12 +73,23 @@ export namespace NodeSignal {
 export interface SupervisorPayload {
   signal: NodeSignal.Type;
   [key: string]: any;
+  /*
+  config?: ChainConfig;
+  params?: string[];
+  id?: string;
+  data?: PipelineData;
+*/
 }
+
+export type ChainConfig = {
+  services: string[];
+  location?: 'local' | 'remote';
+};
 
 export interface BrodcastMessage {
   signal: NodeSignal.Type;
   chain: {
     id: string;
-    config: { services: string[] }[];
+    config: ChainConfig[];
   };
 }

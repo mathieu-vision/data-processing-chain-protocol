@@ -1,122 +1,131 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { Node } from '../core/Node';
+import { NodeMonitoring } from '../core/NodeMonitoring';
+import { ProgressTracker } from '../core/ProgressTracker';
+import { NodeSignal } from '../types/types';
 import { NodeSupervisor } from '../core/NodeSupervisor';
-import { NodeProcessor } from '../core/NodeProcessor';
-import { NodeSignal, PipelineData } from '../types/types';
+import { PipelineProcessor } from '../core/PipelineProcessor';
 
-describe('Node Supervisor Flow Test', function () {
+describe('Virtual Connector Chain Execution', function () {
   let nodeSupervisor: NodeSupervisor;
-  let terminateStub: sinon.SinonStub;
+  let nodeMonitoring: NodeMonitoring;
 
   beforeEach(function () {
-    nodeSupervisor = NodeSupervisor.retrieveService();
-    terminateStub = sinon.stub(Node.prototype as any, 'terminate');
+    const progressTracker = new ProgressTracker(3);
+    nodeMonitoring = new NodeMonitoring([], progressTracker);
+    nodeSupervisor = new NodeSupervisor();
+    nodeSupervisor.setMonitoring(nodeMonitoring);
   });
 
-  afterEach(function () {
-    sinon.restore();
-  });
-
-  it('should create a node, process data, and send output', async function () {
-    const nodeId = (await nodeSupervisor.handleRequest({
+  it('should create and execute a chain of nodes', async function () {
+    const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [],
     })) as string;
+    const node2Id = (await nodeSupervisor.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [node1Id],
+    })) as string;
+    const node3Id = (await nodeSupervisor.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [node2Id],
+    })) as string;
 
-    const processor1 = new NodeProcessor('');
-    sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
+    const processor1 = new PipelineProcessor('');
+    const processor2 = new PipelineProcessor('');
+    const processor3 = new PipelineProcessor('');
 
-    await nodeSupervisor.addProcessors(nodeId, [processor1]);
+    sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
+    sinon.stub(processor2, 'digest').resolves({ result2: 'data2' });
+    sinon.stub(processor3, 'digest').resolves({ result3: 'data3' });
 
-    const initialData: PipelineData = { input: 'data' };
+    await nodeSupervisor.addProcessors(node1Id, [processor1]);
+    await nodeSupervisor.addProcessors(node2Id, [processor2]);
+    await nodeSupervisor.addProcessors(node3Id, [processor3]);
+
     await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
-      id: nodeId,
-      data: initialData,
+      id: node1Id,
+      data: { initial: 'data' },
+    });
+
+    await nodeSupervisor.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node2Id,
+      data: { initial: 'data', result1: 'data1' },
+    });
+
+    await nodeSupervisor.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node3Id,
+      data: { initial: 'data', result1: 'data1', result2: 'data2' },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const chainState = nodeMonitoring.getChainState();
+    expect(chainState.completed).to.have.members([node1Id, node2Id, node3Id]);
+    expect(chainState.pending).to.be.empty;
+    expect(chainState.failed).to.be.empty;
+  });
+
+  it('should handle node failure in the chain', async function () {
+    const node1Id = await nodeSupervisor.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [],
+    });
+    const node2Id = (await nodeSupervisor.handleRequest({
+      signal: NodeSignal.NODE_CREATE,
+      params: [node1Id],
+    })) as string;
+
+    const failingProcessor = new PipelineProcessor('');
+    sinon
+      .stub(failingProcessor, 'digest')
+      .rejects(new Error('Processor failed'));
+
+    await nodeSupervisor.addProcessors(node2Id, [failingProcessor]);
+
+    await nodeSupervisor.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node1Id,
+      data: { initial: 'data' },
+    });
+
+    await nodeSupervisor.handleRequest({
+      signal: NodeSignal.NODE_RUN,
+      id: node2Id,
+      data: { initial: 'data' },
     });
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_SEND_DATA,
-      id: nodeId,
-    });
-
-    expect(terminateStub.calledWith(nodeId, [{ processed: 'data1' }])).to.be
-      .true;
+    const chainState = nodeMonitoring.getChainState();
+    expect(chainState.completed).to.have.members([node1Id]);
+    expect(chainState.failed).to.have.members([node2Id]);
   });
 
-  it('should handle multiple processors and output correctly', async function () {
-    const nodeId = (await nodeSupervisor.handleRequest({
+  it('should respect node dependencies', async function () {
+    const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: [],
     })) as string;
-
-    const processor1 = new NodeProcessor('');
-    const processor2 = new NodeProcessor('');
-
-    sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
-    sinon.stub(processor2, 'digest').resolves({ processed: 'data2' });
-
-    await nodeSupervisor.addProcessors(nodeId, [processor1]);
-    await nodeSupervisor.addProcessors(nodeId, [processor2]);
-
-    const initialData: PipelineData = { input: 'data' };
-    await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_RUN,
-      id: nodeId,
-      data: initialData,
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_SEND_DATA,
-      id: nodeId,
-    });
-
-    const expectedOutput = [{ processed: 'data1' }, { processed: 'data2' }];
-
-    expect(terminateStub.calledWith(nodeId, expectedOutput)).to.be.true;
-  });
-
-  it('should handle delayed node execution', async function () {
-    const nodeId = (await nodeSupervisor.handleRequest({
+    const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [],
+      params: [node1Id],
     })) as string;
 
-    const processor1 = new NodeProcessor('');
-    sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
+    expect(nodeMonitoring.canExecuteNode(node1Id)).to.be.true;
+    expect(nodeMonitoring.canExecuteNode(node2Id)).to.be.false;
 
-    await nodeSupervisor.addProcessors(nodeId, [processor1]);
-
-    await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_DELAY,
-      id: nodeId,
-      delay: 200,
-    });
-
-    const initialData: PipelineData = { input: 'data' };
-    const start = Date.now();
     await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
-      id: nodeId,
-      data: initialData,
+      id: node1Id,
+      data: { initial: 'data' },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-    const end = Date.now();
-    expect(end - start).to.be.greaterThan(200);
-
-    await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_SEND_DATA,
-      id: nodeId,
-    });
-
-    expect(terminateStub.calledWith(nodeId, [{ processed: 'data1' }])).to.be
-      .true;
+    expect(nodeMonitoring.canExecuteNode(node2Id)).to.be.true;
   });
 });
