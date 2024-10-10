@@ -25,12 +25,12 @@ describe('Node Supervisor Chain Flow Test', function () {
   });
 
   it('should create and execute a chain of local nodes', async function () {
-    const chainConfig: ChainConfig[] = [
+    const chainConfig: ChainConfig = [
       { services: ['service1'], location: 'local' },
       { services: ['service2'], location: 'local' },
       { services: ['service3'], location: 'local' },
     ];
-    nodeSupervisor.setChainConfig(chainConfig);
+    const chainId = nodeSupervisor.createChain(chainConfig);
 
     const processor1 = new PipelineProcessor('service1');
     const processor2 = new PipelineProcessor('service2');
@@ -42,7 +42,7 @@ describe('Node Supervisor Chain Flow Test', function () {
 
     const createNodeSpy = sinon.spy(nodeSupervisor, 'createNode' as any);
 
-    await nodeSupervisor.prepareChainDistribution();
+    await nodeSupervisor.prepareChainDistribution(chainId);
 
     expect(createNodeSpy.callCount).to.equal(3);
     expect(broadcastCallback.called).to.be.false;

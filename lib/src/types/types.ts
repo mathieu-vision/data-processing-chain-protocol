@@ -81,15 +81,22 @@ export interface SupervisorPayload {
 */
 }
 
-export type ChainConfig = {
+export type NodeConfig = {
   services: string[];
+  chainId?: string;
   location?: 'local' | 'remote';
 };
 
+export type ChainConfig = NodeConfig[];
 export interface BrodcastMessage {
   signal: NodeSignal.Type;
   chain: {
     id: string;
-    config: ChainConfig[];
+    config: ChainConfig;
   };
+}
+
+export interface ChainRelation {
+  rootNodeId?: string;
+  config: ChainConfig;
 }

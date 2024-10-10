@@ -8,6 +8,8 @@ import {
   CallbackPayload,
   BrodcastMessage,
   ChainConfig,
+  ChainRelation,
+  NodeConfig,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
@@ -18,13 +20,15 @@ export class NodeSupervisor {
   private uid: string = 'to be set from outside';
   private static instance: NodeSupervisor;
   private nodes: Map<string, Node>;
+  private chains: Map<string, ChainRelation>;
+
   private nodeMonitoring?: NodeMonitoring;
   private broadcastSetup: (message: any) => Promise<void> = async () => {};
-  private chainConfig: ChainConfig[] = [];
   callbackOutput: Callback;
 
   constructor() {
     this.nodes = new Map();
+    this.chains = new Map();
     this.callbackOutput = (_payload: CallbackPayload) => {};
   }
 
@@ -42,11 +46,7 @@ export class NodeSupervisor {
     this.broadcastSetup = broadcastSetup;
   }
 
-  setChainConfig(config: ChainConfig[]): void {
-    this.chainConfig = config;
-  }
-
-  public static retrieveService(): NodeSupervisor {
+  static retrieveService(): NodeSupervisor {
     if (!NodeSupervisor.instance) {
       const instance = new NodeSupervisor();
       NodeSupervisor.instance = instance;
@@ -72,6 +72,8 @@ export class NodeSupervisor {
       case NodeSignal.NODE_SEND_DATA:
         return await this.sendNodeData(payload.id);
       //
+      // Todo: add prepareChain
+      // Todo: add startChain
       default:
         Logger.warn({
           message: `Unknown signal received: ${payload.signal}`,
@@ -79,7 +81,7 @@ export class NodeSupervisor {
     }
   }
 
-  private async createNode(config: ChainConfig): Promise<string> {
+  private async createNode(config: NodeConfig): Promise<string> {
     const node = new Node();
     const nodeId = node.getId();
     node.setConfig(config);
@@ -89,6 +91,18 @@ export class NodeSupervisor {
     }
     Logger.info({
       message: `Node ${nodeId} created with config: ${JSON.stringify(config)}`,
+    });
+    return nodeId;
+  }
+
+  private async setupNode(config: NodeConfig): Promise<string> {
+    const nodeId = await this.createNode(config);
+    const processors = config.services.map(
+      (service) => new PipelineProcessor(service),
+    );
+    await this.addProcessors(nodeId, processors);
+    Logger.info({
+      message: `Node ${nodeId} setup completed with ${processors.length} processors`,
     });
     return nodeId;
   }
@@ -111,7 +125,7 @@ export class NodeSupervisor {
     if (this.nodes.has(nodeId)) {
       this.nodes.delete(nodeId);
       if (this.nodeMonitoring) {
-        this.nodeMonitoring.removeNode(nodeId);
+        this.nodeMonitoring.deleteNode(nodeId);
       }
       Logger.info({ message: `Node ${nodeId} deleted.` });
     } else {
@@ -139,38 +153,47 @@ export class NodeSupervisor {
     }
   }
 
-  async prepareChainDistribution(): Promise<void> {
-    const localConfigs = this.chainConfig.filter(
+  createChain(config: ChainConfig): string {
+    const timestamp = Date.now();
+    const chainId = `${this.uid}-${timestamp}-${randomUUID().slice(0, 8)}`;
+    const relation: ChainRelation = {
+      config,
+    };
+    this.chains.set(chainId, relation);
+    return chainId;
+  }
+
+  async prepareChainDistribution(chainId: string): Promise<void> {
+    const chain = this.chains.get(chainId);
+    if (!chain) {
+      throw new Error(`Chain ${chainId} not found`);
+    }
+    const chainConfig: ChainConfig = chain.config;
+    const localConfigs = chainConfig.filter(
       (config) => config.location === 'local',
     );
-    const remoteConfigs = this.chainConfig.filter(
+    const remoteConfigs = chainConfig.filter(
       (config) => config.location === 'remote',
     );
 
-    for (const config of localConfigs) {
-      await this.setupNode(config);
+    if (localConfigs.length > 0) {
+      const rootNodeId = await this.setupNode(localConfigs[0]);
+      chain.rootNodeId = rootNodeId;
+
+      for (let i = 1; i < localConfigs.length; i++) {
+        await this.setupNode(localConfigs[i]);
+      }
     }
 
     if (remoteConfigs.length > 0) {
-      await this.broadcastNodeSetupSignal(remoteConfigs);
+      await this.broadcastNodeSetupSignal(chainId, remoteConfigs);
     }
   }
 
-  private async setupNode(config: ChainConfig): Promise<void> {
-    const nodeId = await this.createNode(config);
-    const processors = config.services.map(
-      (service) => new PipelineProcessor(service),
-    );
-    await this.addProcessors(nodeId, processors);
-    Logger.info({
-      message: `Node ${nodeId} setup completed with ${processors.length} processors`,
-    });
-  }
-
-  async broadcastNodeSetupSignal(remoteConfigs: ChainConfig[]): Promise<void> {
-    const timestamp = Date.now();
-    const chainId = `${this.uid}-${timestamp}-${randomUUID().slice(0, 8)}`;
-
+  async broadcastNodeSetupSignal(
+    chainId: string,
+    remoteConfigs: ChainConfig,
+  ): Promise<void> {
     const message: BrodcastMessage = {
       signal: NodeSignal.NODE_SETUP,
       chain: {
@@ -188,6 +211,39 @@ export class NodeSupervisor {
       Logger.error({
         message: `Failed to broadcast node creation signal: ${error}`,
       });
+    }
+  }
+
+  async startChain(chainId: string, data: PipelineData): Promise<void> {
+    const chain = this.chains.get(chainId);
+    if (!chain) {
+      Logger.warn({ message: `Chain ${chainId} not found.` });
+      return;
+    }
+    const rootNodeId = chain.rootNodeId;
+    if (!rootNodeId) {
+      Logger.error({
+        message: `Root node ID for chain ${chainId} not found.`,
+      });
+      return;
+    }
+
+    const rootNode = this.nodes.get(rootNodeId);
+
+    if (!rootNode) {
+      Logger.error({
+        message: `Root node ${rootNodeId} for chain ${chainId} not found.`,
+      });
+      return;
+    }
+
+    try {
+      await this.runNode(rootNodeId, data);
+      Logger.info({
+        message: `Chain ${chainId} started with root node ${rootNodeId}.`,
+      });
+    } catch (error) {
+      Logger.error({ message: `Failed to start chain ${chainId}: ${error}` });
     }
   }
 

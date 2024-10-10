@@ -3,6 +3,7 @@ import { ProgressTracker } from './ProgressTracker';
 import { Node } from './Node';
 import { Logger } from '../libs/Logger';
 
+// Todo: review
 export class NodeMonitoring {
   private nodes: Node[];
   private nodeStatusMap: Map<string, NodeStatus.Type>;
@@ -29,7 +30,7 @@ export class NodeMonitoring {
     }
   }
 
-  removeNode(nodeId: string): void {
+  deleteNode(nodeId: string): void {
     const index = this.nodes.findIndex((n) => n.getId() === nodeId);
     if (index !== -1) {
       this.nodes.splice(index, 1);

@@ -6,6 +6,7 @@ import {
   NodeType,
   NodeSignal,
   ChainConfig,
+  NodeConfig,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -25,6 +26,7 @@ export class Node {
   private executionQueue: Promise<void>;
   private output: PipelineData[];
   private nextNodeInfo: { id: string; type: NodeType.Location } | null;
+  private config: NodeConfig | null;
 
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
@@ -37,15 +39,14 @@ export class Node {
     this.dataType = DataType.RAW;
     this.executionQueue = Promise.resolve();
     this.nextNodeInfo = null;
+    this.config = null;
   }
 
-  private config: ChainConfig | null = null;
-
-  setConfig(config: ChainConfig): void {
+  setConfig(config: NodeConfig): void {
     this.config = config;
   }
 
-  getConfig(): ChainConfig | null {
+  getConfig(): NodeConfig | null {
     return this.config;
   }
 

@@ -17,7 +17,11 @@ export class PipelineDataCombiner {
   }
 
   private union(dataSets: PipelineData[]): PipelineData {
-    return Array.from(new Set(this.merge(dataSets)));
+    const mergedData = this.merge(dataSets);
+    if (Array.isArray(mergedData)) {
+      return Array.from(new Set(mergedData));
+    }
+    throw new Error('PipelineData must be an array.');
   }
 
   applyStrategy(dataSets: PipelineData[]): PipelineData {
