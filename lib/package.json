@@ -1,5 +1,5 @@
 {
-  "name": "Data Processing Chain Protocol Library",
+  "name": "dpcp-library",
   "version": "1.0.0-alpha.0",
   "description": "",
   "main": "./dist/index.js",
