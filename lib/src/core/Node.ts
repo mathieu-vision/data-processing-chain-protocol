@@ -50,6 +50,9 @@ export class Node {
     this.config = config;
   }
 
+  getExecutionQueue(): Promise<void> {
+    return this.executionQueue;
+  }
   getConfig(): NodeConfig | null {
     return this.config;
   }
@@ -136,8 +139,6 @@ export class Node {
   async sendData(): Promise<void> {
     // make sure the queue has finished
     await this.executionQueue;
-    // tmp
-    Logger.info({ message: `${JSON.stringify(this.output, null, 2)}` });
     Logger.info({ message: `Sending data from node ${this.id}.` });
     await Node.terminate(this.id, this.output);
   }

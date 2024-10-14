@@ -48,6 +48,7 @@ describe('Node System Tests', function () {
     node.addPipeline([processor1, processor2]);
 
     await node.execute({ initial: 'data' });
+    await node.getExecutionQueue();
 
     expect(
       (processor1.digest as sinon.SinonStub).calledWith({ initial: 'data' }),

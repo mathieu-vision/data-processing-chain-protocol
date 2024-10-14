@@ -10,6 +10,12 @@ export class PipelineProcessor {
     PipelineProcessor.callbackService = callbackService;
   }
   async digest(data: PipelineData): Promise<PipelineData> {
-    return PipelineProcessor.callbackService({ targetId: this.targetId, data });
+    if (PipelineProcessor.callbackService) {
+      return PipelineProcessor.callbackService({
+        targetId: this.targetId,
+        data,
+      });
+    }
+    return {};
   }
 }

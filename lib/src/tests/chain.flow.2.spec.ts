@@ -11,7 +11,7 @@ describe('Node Supervisor Flow Test', function () {
 
   beforeEach(function () {
     nodeSupervisor = NodeSupervisor.retrieveService();
-    terminateStub = sinon.stub(Node.prototype as any, 'terminate');
+    terminateStub = sinon.stub(Node as any, 'terminate');
   });
 
   afterEach(function () {
