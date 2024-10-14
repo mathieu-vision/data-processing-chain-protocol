@@ -20,6 +20,16 @@ export {
   ProcessorCallback,
   CombineStrategy,
   CombineFonction,
+  //
+  SupervisorPayloadSetup,
+  SupervisorPayloadCreate,
+  SupervisorPayloadDelete,
+  SupervisorPayloadPause,
+  SupervisorPayloadDelay,
+  SupervisorPayloadRun,
+  SupervisorPayloadSendData,
+  ChainState,
+  DataType,
 } from './types/types';
 
 export { NodeMonitoring } from './core/NodeMonitoring';

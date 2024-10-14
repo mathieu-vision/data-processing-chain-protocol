@@ -6,6 +6,7 @@ export type ProcessorPipeline = PipelineProcessor[];
 export type PipelineData = unknown;
 
 export interface CallbackPayload {
+  chainId?: string;
   targetId: string;
   data: unknown;
 }
@@ -70,16 +71,62 @@ export namespace NodeSignal {
   export const NODE_SEND_DATA: Type = 'node_send_data';
 }
 
+export type SupervisorPayloadSetup = {
+  signal: typeof NodeSignal.NODE_SETUP;
+  config: NodeConfig;
+};
+
+export type SupervisorPayloadCreate = {
+  signal: typeof NodeSignal.NODE_CREATE;
+  params: NodeConfig;
+};
+
+export type SupervisorPayloadDelete = {
+  signal: typeof NodeSignal.NODE_DELETE;
+  id: string;
+};
+
+export type SupervisorPayloadPause = {
+  signal: typeof NodeSignal.NODE_PAUSE;
+  id: string;
+};
+
+export type SupervisorPayloadDelay = {
+  signal: typeof NodeSignal.NODE_DELAY;
+  id: string;
+  delay: number;
+};
+
+export type SupervisorPayloadRun = {
+  signal: typeof NodeSignal.NODE_RUN;
+  id: string;
+  data: PipelineData;
+};
+
+export type SupervisorPayloadSendData = {
+  signal: typeof NodeSignal.NODE_SEND_DATA;
+  id: string;
+};
+
+export type SupervisorPayload =
+  | SupervisorPayloadSetup
+  | SupervisorPayloadCreate
+  | SupervisorPayloadDelete
+  | SupervisorPayloadPause
+  | SupervisorPayloadDelay
+  | SupervisorPayloadRun
+  | SupervisorPayloadSendData;
+
+/*
 export interface SupervisorPayload {
   signal: NodeSignal.Type;
   [key: string]: any;
-  /*
-  config?: ChainConfig;
-  params?: string[];
-  id?: string;
-  data?: PipelineData;
-*/
+  // config?: ChainConfig;
+  // params?: string[];
+  // id?: string;
+  // data?: PipelineData;
 }
+*/
 
 export type NodeConfig = {
   services: string[];

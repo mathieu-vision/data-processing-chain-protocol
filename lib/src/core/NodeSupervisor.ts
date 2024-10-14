@@ -11,6 +11,13 @@ import {
   ChainRelation,
   NodeConfig,
   NodeType,
+  SupervisorPayloadSetup,
+  SupervisorPayloadCreate,
+  SupervisorPayloadDelay,
+  SupervisorPayloadDelete,
+  SupervisorPayloadPause,
+  SupervisorPayloadRun,
+  SupervisorPayloadSendData,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
@@ -24,7 +31,8 @@ export class NodeSupervisor {
   private chains: Map<string, ChainRelation>;
 
   private nodeMonitoring?: NodeMonitoring;
-  private broadcastSetup: (message: any) => Promise<void> = async () => {};
+  private broadcastSetup: (_message: BrodcastMessage) => Promise<void> =
+    async () => {};
   remoteServiceCallback: Callback;
 
   constructor() {
@@ -43,7 +51,7 @@ export class NodeSupervisor {
   }
 
   setBroadcastSetupCallback(
-    broadcastSetup: (message: any) => Promise<void>,
+    broadcastSetup: (_message: BrodcastMessage) => Promise<void>,
   ): void {
     this.broadcastSetup = broadcastSetup;
   }
@@ -65,20 +73,28 @@ export class NodeSupervisor {
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
     switch (payload.signal) {
       case NodeSignal.NODE_SETUP:
-        return this.setupNode(payload.config);
+        return this.setupNode((payload as SupervisorPayloadSetup).config);
       case NodeSignal.NODE_CREATE:
-        return this.createNode(payload.params);
+        return this.createNode((payload as SupervisorPayloadCreate).params);
       case NodeSignal.NODE_DELETE:
-        return this.deleteNode(payload.id);
+        return this.deleteNode((payload as SupervisorPayloadDelete).id);
       case NodeSignal.NODE_PAUSE:
-        return this.pauseNode(payload.id);
+        return this.pauseNode((payload as SupervisorPayloadPause).id);
       case NodeSignal.NODE_DELAY:
-        return this.delayNode(payload.id, payload.delay);
+        return this.delayNode(
+          (payload as SupervisorPayloadDelay).id,
+          (payload as SupervisorPayloadDelay).delay,
+        );
       case NodeSignal.NODE_RUN:
-        return await this.runNode(payload.id, payload.data);
+        return await this.runNode(
+          (payload as SupervisorPayloadRun).id,
+          (payload as SupervisorPayloadRun).data,
+        );
       //
       case NodeSignal.NODE_SEND_DATA:
-        return await this.sendNodeData(payload.id);
+        return await this.sendNodeData(
+          (payload as SupervisorPayloadSendData).id,
+        );
       //
       // Todo: add prepareChain
       // Todo: add startChain

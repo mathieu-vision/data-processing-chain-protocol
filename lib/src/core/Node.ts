@@ -174,6 +174,7 @@ export class Node {
       } else if (nextNodeInfo.type === NodeType.EXTERNAL) {
         supervisor.remoteServiceCallback({
           // nextNodeInfo.id needs to be the next remote target service uid
+          chainId: currentNode.getConfig()?.chainId,
           targetId: nextNodeInfo.id,
           data: pipelineData,
         });
