@@ -60,6 +60,8 @@ export class NodeSupervisor {
     return NodeSupervisor.instance;
   }
 
+  //
+
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
     switch (payload.signal) {
       case NodeSignal.NODE_SETUP:
@@ -301,6 +303,36 @@ export class NodeSupervisor {
 
   getNodes(): Map<string, Node> {
     return this.nodes;
+  }
+
+  //
+  getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[] {
+    const chain = this.chains.get(chainId);
+    if (!chain) {
+      return [];
+    }
+
+    return Array.from(this.nodes.values()).filter((node) => {
+      const nodeConfig = chain.config.find((config) =>
+        config.services.includes(node.getId()),
+      );
+      return nodeConfig && nodeConfig.services.includes(serviceUid);
+    });
+  }
+
+  getNodesByService(serviceUid: string): Node[] {
+    return Array.from(this.nodes.values()).filter((node) => {
+      const chainConfigs = Array.from(this.chains.values()).map(
+        (chain) => chain.config,
+      );
+      return chainConfigs.some((configs) =>
+        configs.some(
+          (config) =>
+            config.services.includes(node.getId()) &&
+            config.services.includes(serviceUid),
+        ),
+      );
+    });
   }
 }
 
