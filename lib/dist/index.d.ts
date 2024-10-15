@@ -191,6 +191,7 @@ declare class NodeSupervisor {
     private pauseNode;
     private delayNode;
     createChain(config: ChainConfig): string;
+    private updateChain;
     prepareChainDistribution(chainId: string): Promise<void>;
     broadcastNodeSetupSignal(chainId: string, remoteConfigs: ChainConfig): Promise<void>;
     startChain(chainId: string, data: PipelineData): Promise<void>;

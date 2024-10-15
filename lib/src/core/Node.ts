@@ -5,7 +5,6 @@ import {
   ProcessorPipeline,
   NodeType,
   NodeSignal,
-  ChainConfig,
   NodeConfig,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';

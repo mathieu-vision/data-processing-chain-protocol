@@ -218,7 +218,9 @@ export class LiteConnector {
     // Required broadcast setup callback
     this.nodeSupervisor.setBroadcastSetupCallback(
       async (message: BrodcastMessage): Promise<void> => {
-        Logger.info({ message: JSON.stringify(message, null, 2) });
+        Logger.info({
+          message: `Broadcast message: ${JSON.stringify(message, null, 2)}`,
+        });
         const chainConfigs: ChainConfig = message.chain.config;
         const chainId: string = message.chain.id;
         for (const config of chainConfigs) {
@@ -261,29 +263,34 @@ export class LiteConnector {
       },
     );
 
-    // Required remote service callback
+    // Required remote service callback example:
     this.nodeSupervisor.setRemoteServiceCallback(
       async (payload: CallbackPayload) => {
+        Logger.info({
+          message: `Service callback payload: ${JSON.stringify(payload, null, 2)}`,
+        });
         try {
           if (!payload.chainId) {
             throw new Error('payload.chainId is undefined');
           }
 
-          const nextConnectorUrl = process.env.NEXT_CONNECTOR;
+          const nextConnectorUrl = this.serviceConnectorMap.get(
+            payload.targetId,
+          );
           if (!nextConnectorUrl) {
-            throw new Error('NEXT_CONNECTOR environment variable is not set');
+            throw new Error(
+              `Next connector URI not found for the following target service: ${payload.targetId}`,
+            );
           }
 
           const url = new URL(path.posix.join(nextConnectorUrl, '/node/run'));
-
-          await axios.post(url.href, {
+          Logger.info({
+            message: `Sending data to next connector on: ${url.href}`,
+          });
+          await axios.put(url.href, {
             chainId: payload.chainId,
             targetId: payload.targetId,
             data: payload.data,
-          });
-
-          Logger.info({
-            message: `Data sent to next connector: ${nextConnectorUrl}`,
           });
         } catch (error) {
           Logger.error({

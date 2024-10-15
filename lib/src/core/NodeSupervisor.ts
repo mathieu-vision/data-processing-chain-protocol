@@ -123,6 +123,9 @@ export class NodeSupervisor {
   }
 
   private async setupNode(config: NodeConfig): Promise<string> {
+    // todo: map nodeId to services
+    console.log(`${this.ctn}: ${JSON.stringify(config, null, 2)}`);
+    this.updateChain([config]);
     const nodeId = await this.createNode(config);
     const processors = config.services.map(
       (service) => new PipelineProcessor(service),
@@ -199,6 +202,30 @@ export class NodeSupervisor {
     return chainId;
   }
 
+  private updateChain(config: ChainConfig): string {
+    if (config.length === 0 || !config[0].chainId) {
+      throw new Error('Invalid chain configuration');
+    }
+    const chainId = config[0].chainId;
+    let relation = this.chains.get(chainId);
+
+    if (relation) {
+      relation.config = relation.config.concat(config);
+      Logger.info({
+        message: `${this.ctn}: Chain ${chainId} updated with ${config.length} new configurations`,
+      });
+    } else {
+      relation = {
+        config: config,
+      };
+      this.chains.set(chainId, relation);
+      Logger.info({
+        message: `${this.ctn}: Chain ${chainId} created with ${config.length} configurations`,
+      });
+    }
+    return chainId;
+  }
+
   async prepareChainDistribution(chainId: string): Promise<void> {
     const chain = this.chains.get(chainId);
     if (!chain) {
@@ -213,12 +240,15 @@ export class NodeSupervisor {
     );
 
     if (localConfigs.length > 0) {
-      const rootNodeId = await this.setupNode(localConfigs[0]);
+      const rootNodeId = await this.setupNode({ ...localConfigs[0], chainId });
       chain.rootNodeId = rootNodeId;
 
       let prevNodeId = rootNodeId;
       for (let i = 1; i < localConfigs.length; i++) {
-        const currentNodeId = await this.setupNode(localConfigs[i]);
+        const currentNodeId = await this.setupNode({
+          ...localConfigs[i],
+          chainId,
+        });
         const prevNode = this.nodes.get(prevNodeId);
         if (prevNode) {
           prevNode.setNextNodeInfo(currentNodeId, NodeType.LOCAL);
@@ -335,10 +365,16 @@ export class NodeSupervisor {
   //
   getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[] {
     const chain = this.chains.get(chainId);
+    console.log(
+      JSON.stringify(chain, null, 2),
+      'chain <<<<',
+      chainId,
+      '<<< chainID',
+    );
     if (!chain) {
       return [];
     }
-
+    // todo: review / fix, needs a map between services and nodeId
     return Array.from(this.nodes.values()).filter((node) => {
       const nodeConfig = chain.config.find((config) =>
         config.services.includes(node.getId()),
