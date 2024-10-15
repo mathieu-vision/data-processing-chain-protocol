@@ -40,13 +40,18 @@ export class LiteConnector {
   }
 
   private setupRoutes() {
+    // public
     this.app.post(
       '/configure-service-connector',
       this.configureServiceConnector.bind(this),
     );
+    // public
     this.app.post('/chain/create', this.createChain.bind(this));
+    // private
     this.app.post('/node/setup', this.setupNode.bind(this));
+    // public
     this.app.put('/chain/start', this.startChain.bind(this));
+    // private
     this.app.put('/node/run', this.runNode.bind(this));
   }
 
@@ -55,28 +60,48 @@ export class LiteConnector {
     req: Request,
     res: Response,
   ): Promise<void> {
-    const { targetUID, connectorURI } = req.body;
-    if (!targetUID || !connectorURI) {
-      res
-        .status(400)
-        .json({ error: 'targetUID and connectorURI are required' });
+    const configurations = req.body;
+    if (!Array.isArray(configurations) || configurations.length === 0) {
+      res.status(400).json({
+        error: 'Invalid configuration format. Expected non-empty array.',
+      });
       return;
     }
-    try {
-      new URL(connectorURI);
+
+    const updatedMappings: string[] = [];
+
+    for (const config of configurations) {
+      const { targetUID, connectorURI } = config;
+      if (!targetUID || !connectorURI) {
+        const errorMessage = `Invalid configuration: ${JSON.stringify(config)}. Both targetUID and connectorURI are required.`;
+        Logger.error({ message: errorMessage });
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+
+      try {
+        new URL(connectorURI);
+      } catch (error) {
+        const errorMessage = `Invalid connectorURI for targetUID ${targetUID}: ${connectorURI}, error: ${(error as Error).message}`;
+        Logger.error({ message: errorMessage });
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+
       this.serviceConnectorMap.set(targetUID, connectorURI);
-      Logger.info({
-        message: `Updated service-connector mapping: ${targetUID} -> ${connectorURI}`,
-      });
-      res
-        .status(200)
-        .json({ message: 'Service-connector mapping updated successfully' });
-    } catch (error) {
-      Logger.error({
-        message: `Error updating service-connector mapping: ${(error as Error).message}`,
-      });
-      res.status(400).json({ error: 'Invalid connectorURI' });
+      updatedMappings.push(`${targetUID} -> ${connectorURI}`);
     }
+
+    if (updatedMappings.length > 0) {
+      Logger.info({
+        message: `Updated service-connector mappings:\n${updatedMappings.join('\n')}`,
+      });
+    }
+
+    res.status(200).json({
+      message: 'All service-connector mappings updated successfully',
+      updatedMappings: updatedMappings,
+    });
   }
 
   // Step 1: Chain creation should be initiated from a customer connector

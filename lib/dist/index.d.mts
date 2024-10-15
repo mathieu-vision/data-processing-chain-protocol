@@ -170,6 +170,7 @@ declare class NodeMonitoring {
 
 declare class NodeSupervisor {
     private uid;
+    private ctn;
     private static instance;
     private nodes;
     private chains;

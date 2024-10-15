@@ -26,6 +26,7 @@ import { randomUUID } from 'node:crypto';
 
 export class NodeSupervisor {
   private uid: string;
+  private ctn: string;
   private static instance: NodeSupervisor;
   private nodes: Map<string, Node>;
   private chains: Map<string, ChainRelation>;
@@ -37,6 +38,7 @@ export class NodeSupervisor {
 
   constructor() {
     this.uid = '@supervisor:default';
+    this.ctn = '@container:default';
     this.nodes = new Map();
     this.chains = new Map();
     this.remoteServiceCallback = (_payload: CallbackPayload) => {};
@@ -57,6 +59,7 @@ export class NodeSupervisor {
   }
 
   setUid(uid: string) {
+    this.ctn = `@container:${uid}`;
     this.uid = `@supervisor:${uid}`;
   }
 
@@ -100,7 +103,7 @@ export class NodeSupervisor {
       // Todo: add startChain
       default:
         Logger.warn({
-          message: `Unknown signal received: ${payload.signal}`,
+          message: `${this.ctn}: Unknown signal received: ${payload.signal}`,
         });
     }
   }
@@ -114,7 +117,7 @@ export class NodeSupervisor {
       this.nodeMonitoring.addNode(node);
     }
     Logger.info({
-      message: `Node ${nodeId} created with config: ${JSON.stringify(config)}`,
+      message: `${this.ctn}: Node ${nodeId} created with config: ${JSON.stringify(config)}`,
     });
     return nodeId;
   }
@@ -126,7 +129,7 @@ export class NodeSupervisor {
     );
     await this.addProcessors(nodeId, processors);
     Logger.info({
-      message: `Node ${nodeId} setup completed with ${processors.length} processors`,
+      message: `${this.ctn}: Node ${nodeId} setup completed with ${processors.length} processors`,
     });
     return nodeId;
   }
@@ -139,9 +142,11 @@ export class NodeSupervisor {
     const node = this.nodes.get(nodeId);
     if (node) {
       node.addPipeline(processors);
-      Logger.info({ message: `Processors added to Node ${nodeId}.` });
+      Logger.info({
+        message: `${this.ctn}: Processors added to Node ${nodeId}.`,
+      });
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found.` });
+      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
     }
   }
 
@@ -151,9 +156,11 @@ export class NodeSupervisor {
       if (this.nodeMonitoring) {
         this.nodeMonitoring.deleteNode(nodeId);
       }
-      Logger.info({ message: `Node ${nodeId} deleted.` });
+      Logger.info({ message: `${this.ctn}: Node ${nodeId} deleted.` });
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found.` });
+      Logger.warn({
+        message: `${this.ctn}: Node ${nodeId} not found.`,
+      });
     }
   }
 
@@ -161,9 +168,9 @@ export class NodeSupervisor {
     const node = this.nodes.get(nodeId);
     if (node) {
       node.updateStatus(NodeStatus.PAUSED);
-      Logger.info({ message: `Node ${nodeId} paused.` });
+      Logger.info({ message: `${this.ctn}: Node ${nodeId} paused.` });
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found.` });
+      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
     }
   }
 
@@ -171,9 +178,11 @@ export class NodeSupervisor {
     const node = this.nodes.get(nodeId);
     if (node) {
       node.setDelay(delay);
-      Logger.info({ message: `Node ${nodeId} delayed by ${delay} ms.` });
+      Logger.info({
+        message: `${this.ctn}: Node ${nodeId} delayed by ${delay} ms.`,
+      });
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found.` });
+      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
     }
   }
 
@@ -185,7 +194,7 @@ export class NodeSupervisor {
     };
     this.chains.set(chainId, relation);
     Logger.info({
-      message: `Chain ${chainId} created`,
+      message: `${this.ctn}: Chain ${chainId} created`,
     });
     return chainId;
   }
@@ -193,7 +202,7 @@ export class NodeSupervisor {
   async prepareChainDistribution(chainId: string): Promise<void> {
     const chain = this.chains.get(chainId);
     if (!chain) {
-      throw new Error(`Chain ${chainId} not found`);
+      throw new Error(`${this.ctn}: Chain ${chainId} not found`);
     }
     const chainConfig: ChainConfig = chain.config;
     const localConfigs: NodeConfig[] = chainConfig.filter(
@@ -250,11 +259,11 @@ export class NodeSupervisor {
     try {
       await this.broadcastSetup(message);
       Logger.info({
-        message: `Node creation signal broadcasted with chainId: ${chainId} for remote configs`,
+        message: `${this.ctn}: Node creation signal broadcasted with chainId: ${chainId} for remote configs`,
       });
     } catch (error) {
       Logger.error({
-        message: `Failed to broadcast node creation signal: ${error}`,
+        message: `${this.ctn}: Failed to broadcast node creation signal: ${error}`,
       });
     }
   }
@@ -268,7 +277,7 @@ export class NodeSupervisor {
     const rootNodeId = chain.rootNodeId;
     if (!rootNodeId) {
       Logger.error({
-        message: `Root node ID for chain ${chainId} not found.`,
+        message: `${this.ctn}: Root node ID for chain ${chainId} not found.`,
       });
       return;
     }
@@ -277,7 +286,7 @@ export class NodeSupervisor {
 
     if (!rootNode) {
       Logger.error({
-        message: `Root node ${rootNodeId} for chain ${chainId} not found.`,
+        message: `${this.ctn}: Root node ${rootNodeId} for chain ${chainId} not found.`,
       });
       return;
     }
@@ -285,10 +294,12 @@ export class NodeSupervisor {
     try {
       await this.runNode(rootNodeId, data);
       Logger.info({
-        message: `Chain ${chainId} started with root node ${rootNodeId}.`,
+        message: `${this.ctn}: Chain ${chainId} started with root node ${rootNodeId}.`,
       });
     } catch (error) {
-      Logger.error({ message: `Failed to start chain ${chainId}: ${error}` });
+      Logger.error({
+        message: `${this.ctn}: Failed to start chain ${chainId}: ${error}`,
+      });
     }
   }
 
@@ -297,7 +308,7 @@ export class NodeSupervisor {
     if (node) {
       await node.execute(data);
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found.` });
+      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
     }
   }
 
@@ -309,11 +320,11 @@ export class NodeSupervisor {
       } catch (err) {
         const error = err as Error;
         Logger.error({
-          message: `Node ${nodeId} send data failed: ${error.message}`,
+          message: `${this.ctn}: Node ${nodeId} send data failed: ${error.message}`,
         });
       }
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found.` });
+      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
     }
   }
 
