@@ -6,6 +6,7 @@ import {
   NodeType,
   NodeSignal,
   NodeConfig,
+  ChainType,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -155,7 +156,6 @@ export class Node {
     const supervisor = NodeSupervisor.retrieveService();
     const nodes = supervisor.getNodes();
     const currentNode = nodes.get(nodeId);
-
     if (!currentNode) {
       Logger.warn({
         message: `Node ${nodeId} not found for moving to next node.`,
@@ -181,10 +181,18 @@ export class Node {
     } else {
       Logger.info({ message: `End of pipeline reached by node ${nodeId}.` });
     }
-    await supervisor.handleRequest({
-      id: nodeId,
-      signal: NodeSignal.NODE_DELETE,
-    });
+    const isPersistant =
+      (currentNode.config?.chainType ?? 0) & ChainType.PERSISTANT;
+    if (!isPersistant) {
+      await supervisor.handleRequest({
+        id: nodeId,
+        signal: NodeSignal.NODE_DELETE,
+      });
+    } else {
+      Logger.warn({
+        message: `Node ${nodeId} kept for future calls.`,
+      });
+    }
   }
 
   getProgress(): number {

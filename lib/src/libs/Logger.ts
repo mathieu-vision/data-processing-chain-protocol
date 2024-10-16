@@ -9,7 +9,7 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 
 const LEVEL = 'level';
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+const PROJECT_ROOT = process.cwd();
 const winstonLogsMaxFiles = '14d';
 const winstonLogsMaxSize = '20m';
 
@@ -19,9 +19,10 @@ const levels = {
   info: 2,
   http: 3,
   debug: 4,
+  header: 5,
 };
 
-const level = () => process.env.LOG_LEVEL || 'debug';
+const level = () => process.env.LOG_LEVEL || 'header';
 
 const colors = {
   error: 'red',
@@ -29,6 +30,7 @@ const colors = {
   info: 'green',
   http: 'magenta',
   debug: 'blue',
+  header: 'cyan',
 };
 
 addColors(colors);
@@ -71,9 +73,12 @@ const loggerTransports = [
     format: format.combine(
       format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       format.colorize({ all: true }),
-      format.printf(
-        (info) => `${info.timestamp} ${info.level}: ${info.message}`,
-      ),
+      format.printf((info) => {
+        if (info.level.includes('header')) {
+          return `${info.timestamp} ${info.level}: ${info.message}`;
+        }
+        return `${info.timestamp} ${info.level}: ${info.message}`;
+      }),
     ),
   }),
   new DailyRotateFile({
@@ -100,6 +105,9 @@ const loggerTransports = [
     ),
     level: 'info',
   }),
+  new DailyRotateFile({
+    ...dailyTransportOptions('header'),
+  }),
 ];
 
 const NewWinstonLogger = createLogger({
@@ -110,7 +118,7 @@ const NewWinstonLogger = createLogger({
 });
 
 type LoggerOptions = {
-  level?: 'error' | 'warn' | 'info' | 'debug' | 'http';
+  level?: 'error' | 'warn' | 'info' | 'debug' | 'http' | 'header';
   message?: string;
   location?: string;
   callback?: () => void;
@@ -165,6 +173,10 @@ export class Logger {
 
   static morganLog(message: string) {
     this.logger.log('http', message);
+  }
+
+  static header(opts: LoggerOptions | string) {
+    this.logSpecific('header', opts);
   }
 
   private static logSpecific(

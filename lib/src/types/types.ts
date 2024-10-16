@@ -42,6 +42,13 @@ export interface ChainState {
   pending: string[];
   failed: string[];
 }
+
+export namespace ChainType {
+  export type Type = 0b0000010 | 0b00000001;
+  export const PERSISTANT: Type = 0b00000010;
+  export const DEFAULT: Type = 0b00000001;
+}
+
 export namespace NodeStatus {
   export type Type =
     | 'pending'
@@ -64,7 +71,9 @@ export namespace NodeSignal {
     | 'node_pause'
     | 'node_delay'
     | 'node_run'
-    | 'node_send_data';
+    | 'node_send_data'
+    | 'chain_prepare'
+    | 'chain_start';
   export const NODE_SETUP: Type = 'node_setup';
   export const NODE_CREATE: Type = 'node_create';
   export const NODE_DELETE: Type = 'node_delete';
@@ -72,6 +81,8 @@ export namespace NodeSignal {
   export const NODE_DELAY: Type = 'node_delay';
   export const NODE_RUN: Type = 'node_run';
   export const NODE_SEND_DATA: Type = 'node_send_data';
+  export const CHAIN_PREPARE: Type = 'chain_prepare';
+  export const CHAIN_START: Type = 'chain_start';
 }
 
 export type SupervisorPayloadSetup = {
@@ -119,6 +130,7 @@ export type SupervisorPayloadPrepareChain = {
 export type SupervisorPayloadStartChain = {
   signal: typeof NodeSignal.CHAIN_START;
   id: string;
+  data: PipelineData;
 };
 
 export type SupervisorPayload =
@@ -128,24 +140,16 @@ export type SupervisorPayload =
   | SupervisorPayloadPause
   | SupervisorPayloadDelay
   | SupervisorPayloadRun
-  | SupervisorPayloadSendData;
-
-/*
-export interface SupervisorPayload {
-  signal: NodeSignal.Type;
-  [key: string]: any;
-  // config?: ChainConfig;
-  // params?: string[];
-  // id?: string;
-  // data?: PipelineData;
-}
-*/
+  | SupervisorPayloadSendData
+  | SupervisorPayloadPrepareChain
+  | SupervisorPayloadStartChain;
 
 export type NodeConfig = {
   services: string[];
   chainId?: string;
   location?: NodeType.Type;
   nextTargetId?: string;
+  chainType?: ChainType.Type;
 };
 
 export type ChainConfig = NodeConfig[];

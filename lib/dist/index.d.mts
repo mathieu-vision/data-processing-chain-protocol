@@ -37,6 +37,11 @@ interface ChainState {
     pending: string[];
     failed: string[];
 }
+declare namespace ChainType {
+    type Type = 0b0000010 | 0b00000001;
+    const PERSISTANT: Type;
+    const DEFAULT: Type;
+}
 declare namespace NodeStatus {
     type Type = 'pending' | 'in-progress' | 'completed' | 'failed' | 'paused';
     const PAUSED: Type;
@@ -46,7 +51,7 @@ declare namespace NodeStatus {
     const FAILED: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data';
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start';
     const NODE_SETUP: Type;
     const NODE_CREATE: Type;
     const NODE_DELETE: Type;
@@ -54,6 +59,8 @@ declare namespace NodeSignal {
     const NODE_DELAY: Type;
     const NODE_RUN: Type;
     const NODE_SEND_DATA: Type;
+    const CHAIN_PREPARE: Type;
+    const CHAIN_START: Type;
 }
 type SupervisorPayloadSetup = {
     signal: typeof NodeSignal.NODE_SETUP;
@@ -85,12 +92,22 @@ type SupervisorPayloadSendData = {
     signal: typeof NodeSignal.NODE_SEND_DATA;
     id: string;
 };
-type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | SupervisorPayloadDelete | SupervisorPayloadPause | SupervisorPayloadDelay | SupervisorPayloadRun | SupervisorPayloadSendData;
+type SupervisorPayloadPrepareChain = {
+    signal: typeof NodeSignal.CHAIN_PREPARE;
+    id: string;
+};
+type SupervisorPayloadStartChain = {
+    signal: typeof NodeSignal.CHAIN_START;
+    id: string;
+    data: PipelineData;
+};
+type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | SupervisorPayloadDelete | SupervisorPayloadPause | SupervisorPayloadDelay | SupervisorPayloadRun | SupervisorPayloadSendData | SupervisorPayloadPrepareChain | SupervisorPayloadStartChain;
 type NodeConfig = {
     services: string[];
     chainId?: string;
     location?: NodeType.Type;
     nextTargetId?: string;
+    chainType?: ChainType.Type;
 };
 type ChainConfig = NodeConfig[];
 interface BrodcastMessage {

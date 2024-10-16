@@ -19,6 +19,8 @@ import {
   SupervisorPayloadRun,
   SupervisorPayloadSendData,
   SetupCallback,
+  SupervisorPayloadPrepareChain,
+  SupervisorPayloadStartChain,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
@@ -98,14 +100,13 @@ export class NodeSupervisor {
         return await this.sendNodeData(
           (payload as SupervisorPayloadSendData).id,
         );
-      case NodeSignal.PREPARE_CHAIN_DISTRIBUTION:
+      case NodeSignal.CHAIN_PREPARE:
         return await this.prepareChainDistribution(
-          (payload as SupervisorPayloadPrepareChain).chainId,
-          (payload as SupervisorPayloadPrepareChain).config,
+          (payload as SupervisorPayloadPrepareChain).id,
         );
-      case NodeSignal.START_CHAIN:
+      case NodeSignal.CHAIN_START:
         return await this.startChain(
-          (payload as SupervisorPayloadStartChain).chainId,
+          (payload as SupervisorPayloadStartChain).id,
           (payload as SupervisorPayloadStartChain).data,
         );
       default:
@@ -218,8 +219,8 @@ export class NodeSupervisor {
       config,
     };
     this.chains.set(chainId, relation);
-    Logger.info({
-      message: `${this.ctn}: Chain ${chainId} created`,
+    Logger.header({
+      message: `${this.ctn}: Chain ${chainId} creation has started...`,
     });
     return chainId;
   }
@@ -250,6 +251,9 @@ export class NodeSupervisor {
   }
 
   async prepareChainDistribution(chainId: string): Promise<void> {
+    Logger.header({
+      message: `${this.ctn}: Chain distribution for ${chainId} in progress...`,
+    });
     const chain = this.chains.get(chainId);
     if (!chain) {
       throw new Error(`${this.ctn}: Chain ${chainId} not found`);
@@ -328,6 +332,7 @@ export class NodeSupervisor {
   }
 
   async startChain(chainId: string, data: PipelineData): Promise<void> {
+    Logger.header({ message: `Chain ${chainId} requested...` });
     const chain = this.chains.get(chainId);
     if (!chain) {
       Logger.warn({ message: `Chain ${chainId} not found.` });
