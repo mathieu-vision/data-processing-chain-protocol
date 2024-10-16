@@ -94,14 +94,20 @@ export class NodeSupervisor {
           (payload as SupervisorPayloadRun).id,
           (payload as SupervisorPayloadRun).data,
         );
-      //
       case NodeSignal.NODE_SEND_DATA:
         return await this.sendNodeData(
           (payload as SupervisorPayloadSendData).id,
         );
-      //
-      // Todo: add prepareChain
-      // Todo: add startChain
+      case NodeSignal.PREPARE_CHAIN_DISTRIBUTION:
+        return await this.prepareChainDistribution(
+          (payload as SupervisorPayloadPrepareChain).chainId,
+          (payload as SupervisorPayloadPrepareChain).config,
+        );
+      case NodeSignal.START_CHAIN:
+        return await this.startChain(
+          (payload as SupervisorPayloadStartChain).chainId,
+          (payload as SupervisorPayloadStartChain).data,
+        );
       default:
         Logger.warn({
           message: `${this.ctn}: Unknown signal received: ${payload.signal}`,
@@ -124,8 +130,6 @@ export class NodeSupervisor {
   }
 
   private async setupNode(config: NodeConfig): Promise<string> {
-    // todo: map nodeId to services
-    console.log(`${this.ctn}: ${JSON.stringify(config, null, 2)}`);
     this.updateChain([config]);
 
     const nodeId = await this.createNode(config);

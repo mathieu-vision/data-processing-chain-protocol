@@ -14,7 +14,7 @@ interface CallbackPayload {
     data: unknown;
 }
 type Callback = (_payload: CallbackPayload) => void;
-type ProcessorCallback = (_payload: CallbackPayload) => PipelineData;
+type ProcessorCallback = (_payload: CallbackPayload) => Promise<PipelineData>;
 declare namespace NodeType {
     type Type = 'local' | 'remote';
     const LOCAL: Type;
@@ -90,6 +90,7 @@ type NodeConfig = {
     services: string[];
     chainId?: string;
     location?: NodeType.Type;
+    nextTargetId?: string;
 };
 type ChainConfig = NodeConfig[];
 interface BrodcastMessage {

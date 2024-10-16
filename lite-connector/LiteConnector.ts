@@ -209,11 +209,14 @@ export class LiteConnector {
   // Initialization of the node supervisor
   public async initializeNodeSupervisor(): Promise<void> {
     // Required callback to handle infrastructure services
-    PipelineProcessor.setCallbackService(({ targetId, data }) => {
-      Logger.info({
-        message: `PipelineProcessor callback invoked - Connector: ${this.connectorUid}, Target: ${targetId}, Data size: ${JSON.stringify(data).length} bytes`,
-      });
-    });
+    PipelineProcessor.setCallbackService(
+      async ({ targetId, data }): Promise<PipelineData> => {
+        Logger.info({
+          message: `PipelineProcessor callback invoked - Connector: ${this.connectorUid}, Target: ${targetId}, Data size: ${JSON.stringify(data).length} bytes`,
+        });
+        return data;
+      },
+    );
 
     // Required broadcast setup callback
     this.nodeSupervisor.setBroadcastSetupCallback(

@@ -12,7 +12,9 @@ export interface CallbackPayload {
 }
 export type Callback = (_payload: CallbackPayload) => void;
 export type SetupCallback = (_message: BrodcastMessage) => Promise<void>;
-export type ProcessorCallback = (_payload: CallbackPayload) => PipelineData;
+export type ProcessorCallback = (
+  _payload: CallbackPayload,
+) => Promise<PipelineData>;
 
 export namespace NodeType {
   export type Type = 'local' | 'remote';
@@ -106,6 +108,16 @@ export type SupervisorPayloadRun = {
 
 export type SupervisorPayloadSendData = {
   signal: typeof NodeSignal.NODE_SEND_DATA;
+  id: string;
+};
+
+export type SupervisorPayloadPrepareChain = {
+  signal: typeof NodeSignal.CHAIN_PREPARE;
+  id: string;
+};
+
+export type SupervisorPayloadStartChain = {
+  signal: typeof NodeSignal.CHAIN_START;
   id: string;
 };
 

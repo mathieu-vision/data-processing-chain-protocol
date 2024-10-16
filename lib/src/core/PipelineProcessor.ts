@@ -11,7 +11,7 @@ export class PipelineProcessor {
   }
   async digest(data: PipelineData): Promise<PipelineData> {
     if (PipelineProcessor.callbackService) {
-      return PipelineProcessor.callbackService({
+      return await PipelineProcessor.callbackService({
         targetId: this.targetId,
         data,
       });

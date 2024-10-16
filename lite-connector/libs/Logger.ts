@@ -9,7 +9,7 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 
 const LEVEL = 'level';
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+const PROJECT_ROOT = process.cwd();
 const winstonLogsMaxFiles = '14d';
 const winstonLogsMaxSize = '20m';
 
