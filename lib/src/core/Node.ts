@@ -24,7 +24,7 @@ export class Node {
   private dataType: DataType.Type;
   private executionQueue: Promise<void>;
   private output: PipelineData[];
-  private nextNodeInfo: { id: string; type: NodeType.Location } | null;
+  private nextNodeInfo: { id: string; type: NodeType.Type } | null;
   private config: NodeConfig | null;
 
   constructor(dependencies: string[] = []) {
@@ -170,7 +170,7 @@ export class Node {
           data: pipelineData,
           signal: NodeSignal.NODE_RUN,
         });
-      } else if (nextNodeInfo.type === NodeType.EXTERNAL) {
+      } else if (nextNodeInfo.type === NodeType.REMOTE) {
         supervisor.remoteServiceCallback({
           // nextNodeInfo.id needs to be the next remote target service uid
           chainId: currentNode.getConfig()?.chainId,
@@ -229,11 +229,11 @@ export class Node {
     return this.pipelines;
   }
 
-  setNextNodeInfo(id: string, type: NodeType.Location): void {
+  setNextNodeInfo(id: string, type: NodeType.Type): void {
     this.nextNodeInfo = { id, type };
   }
 
-  getNextNodeInfo(): { id: string; type: NodeType.Location } | null {
+  getNextNodeInfo(): { id: string; type: NodeType.Type } | null {
     return this.nextNodeInfo;
   }
 }

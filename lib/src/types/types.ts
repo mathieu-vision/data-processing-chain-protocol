@@ -11,12 +11,13 @@ export interface CallbackPayload {
   data: unknown;
 }
 export type Callback = (_payload: CallbackPayload) => void;
+export type SetupCallback = (_message: BrodcastMessage) => Promise<void>;
 export type ProcessorCallback = (_payload: CallbackPayload) => PipelineData;
 
 export namespace NodeType {
-  export type Location = 'local' | 'external';
-  export const LOCAL: Location = 'local';
-  export const EXTERNAL: Location = 'external';
+  export type Type = 'local' | 'remote';
+  export const LOCAL: Type = 'local';
+  export const REMOTE: Type = 'remote';
 }
 
 export namespace DataType {
@@ -131,7 +132,8 @@ export interface SupervisorPayload {
 export type NodeConfig = {
   services: string[];
   chainId?: string;
-  location?: 'local' | 'remote';
+  location?: NodeType.Type;
+  nextTargetId?: string;
 };
 
 export type ChainConfig = NodeConfig[];

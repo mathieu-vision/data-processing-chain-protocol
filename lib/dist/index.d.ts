@@ -16,9 +16,9 @@ interface CallbackPayload {
 type Callback = (_payload: CallbackPayload) => void;
 type ProcessorCallback = (_payload: CallbackPayload) => PipelineData;
 declare namespace NodeType {
-    type Location = 'local' | 'external';
-    const LOCAL: Location;
-    const EXTERNAL: Location;
+    type Type = 'local' | 'remote';
+    const LOCAL: Type;
+    const REMOTE: Type;
 }
 declare namespace DataType {
     type Type = 'raw' | 'compressed';
@@ -89,7 +89,7 @@ type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | Supe
 type NodeConfig = {
     services: string[];
     chainId?: string;
-    location?: 'local' | 'remote';
+    location?: NodeType.Type;
 };
 type ChainConfig = NodeConfig[];
 interface BrodcastMessage {
@@ -140,10 +140,10 @@ declare class Node {
     updateStatus(status: NodeStatus.Type, error?: Error): void;
     getError(): Error | undefined;
     getProcessors(): ProcessorPipeline[];
-    setNextNodeInfo(id: string, type: NodeType.Location): void;
+    setNextNodeInfo(id: string, type: NodeType.Type): void;
     getNextNodeInfo(): {
         id: string;
-        type: NodeType.Location;
+        type: NodeType.Type;
     } | null;
 }
 
@@ -175,12 +175,12 @@ declare class NodeSupervisor {
     private nodes;
     private chains;
     private nodeMonitoring?;
-    private broadcastSetup;
+    private broadcastSetupCallback;
     remoteServiceCallback: Callback;
     constructor();
     setRemoteServiceCallback(callback: Callback): void;
     setMonitoring(nodeMonitoring: NodeMonitoring): void;
-    setBroadcastSetupCallback(broadcastSetup: (_message: BrodcastMessage) => Promise<void>): void;
+    setBroadcastSetupCallback(broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>): void;
     setUid(uid: string): void;
     static retrieveService(): NodeSupervisor;
     handleRequest(payload: SupervisorPayload): Promise<void | string>;
@@ -199,7 +199,6 @@ declare class NodeSupervisor {
     private sendNodeData;
     getNodes(): Map<string, Node>;
     getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[];
-    getNodesByService(serviceUid: string): Node[];
 }
 
 declare class PipelineDataCombiner {

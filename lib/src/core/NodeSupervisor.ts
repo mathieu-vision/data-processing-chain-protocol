@@ -18,6 +18,7 @@ import {
   SupervisorPayloadPause,
   SupervisorPayloadRun,
   SupervisorPayloadSendData,
+  SetupCallback,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
@@ -32,8 +33,7 @@ export class NodeSupervisor {
   private chains: Map<string, ChainRelation>;
 
   private nodeMonitoring?: NodeMonitoring;
-  private broadcastSetup: (_message: BrodcastMessage) => Promise<void> =
-    async () => {};
+  private broadcastSetupCallback: SetupCallback;
   remoteServiceCallback: Callback;
 
   constructor() {
@@ -42,6 +42,7 @@ export class NodeSupervisor {
     this.nodes = new Map();
     this.chains = new Map();
     this.remoteServiceCallback = (_payload: CallbackPayload) => {};
+    this.broadcastSetupCallback = async (_message: BrodcastMessage) => {};
   }
 
   setRemoteServiceCallback(callback: Callback): void {
@@ -53,9 +54,9 @@ export class NodeSupervisor {
   }
 
   setBroadcastSetupCallback(
-    broadcastSetup: (_message: BrodcastMessage) => Promise<void>,
+    broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>,
   ): void {
-    this.broadcastSetup = broadcastSetup;
+    this.broadcastSetupCallback = broadcastSetupCallback;
   }
 
   setUid(uid: string) {
@@ -126,7 +127,24 @@ export class NodeSupervisor {
     // todo: map nodeId to services
     console.log(`${this.ctn}: ${JSON.stringify(config, null, 2)}`);
     this.updateChain([config]);
+
     const nodeId = await this.createNode(config);
+    const node = this.nodes.get(nodeId);
+    if (node && config.nextTargetId !== undefined) {
+      node.setNextNodeInfo(config.nextTargetId, NodeType.REMOTE);
+    } else {
+      if (!node) {
+        Logger.warn({
+          message: `${this.ctn}: Attempted to set next node info on undefined node`,
+        });
+      }
+      if (config.nextTargetId === undefined) {
+        Logger.warn({
+          message: `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
+        });
+      }
+    }
+
     const processors = config.services.map(
       (service) => new PipelineProcessor(service),
     );
@@ -202,6 +220,7 @@ export class NodeSupervisor {
     return chainId;
   }
 
+  // todo: review
   private updateChain(config: ChainConfig): string {
     if (config.length === 0 || !config[0].chainId) {
       throw new Error('Invalid chain configuration');
@@ -256,21 +275,27 @@ export class NodeSupervisor {
         prevNodeId = currentNodeId;
       }
 
-      // Todo: Review:
-      // Tmp, set the last local node to point to the first remote service
+      // Set the last local node to point to the first remote service
       if (remoteConfigs.length > 0 && remoteConfigs[0].services.length > 0) {
         const lastLocalNode = this.nodes.get(prevNodeId);
         if (lastLocalNode) {
           lastLocalNode.setNextNodeInfo(
             remoteConfigs[0].services[0],
-            NodeType.EXTERNAL,
+            NodeType.REMOTE,
           );
         }
       }
     }
 
     if (remoteConfigs.length > 0) {
-      await this.broadcastNodeSetupSignal(chainId, remoteConfigs);
+      const updatedRemoteConfigs = remoteConfigs.map((config, index) => {
+        const nextConfig = remoteConfigs[index + 1];
+        return {
+          ...config,
+          nextTargetId: nextConfig ? nextConfig.services[0] : undefined,
+        };
+      });
+      await this.broadcastNodeSetupSignal(chainId, updatedRemoteConfigs);
     }
   }
 
@@ -287,7 +312,7 @@ export class NodeSupervisor {
     };
 
     try {
-      await this.broadcastSetup(message);
+      await this.broadcastSetupCallback(message);
       Logger.info({
         message: `${this.ctn}: Node creation signal broadcasted with chainId: ${chainId} for remote configs`,
       });
@@ -364,25 +389,19 @@ export class NodeSupervisor {
 
   //
   getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[] {
-    const chain = this.chains.get(chainId);
-    console.log(
-      JSON.stringify(chain, null, 2),
-      'chain <<<<',
-      chainId,
-      '<<< chainID',
-    );
-    if (!chain) {
-      return [];
-    }
-    // todo: review / fix, needs a map between services and nodeId
     return Array.from(this.nodes.values()).filter((node) => {
-      const nodeConfig = chain.config.find((config) =>
-        config.services.includes(node.getId()),
+      const nodeConfig = node.getConfig();
+      if (!nodeConfig) {
+        return false;
+      }
+      return (
+        nodeConfig.chainId === chainId &&
+        nodeConfig.services.includes(serviceUid)
       );
-      return nodeConfig && nodeConfig.services.includes(serviceUid);
     });
   }
 
+  /*
   getNodesByService(serviceUid: string): Node[] {
     return Array.from(this.nodes.values()).filter((node) => {
       const chainConfigs = Array.from(this.chains.values()).map(
@@ -397,6 +416,7 @@ export class NodeSupervisor {
       );
     });
   }
+  */
 }
 
 export default NodeSupervisor.retrieveService();
