@@ -230,4 +230,17 @@ declare class PipelineDataCombiner {
     setCustomCombineFunction(combineFunction: CombineFonction): void;
 }
 
-export { type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeMonitoring, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, PipelineProcessor, type ProcessorCallback, ProgressTracker, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadPause, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup };
+interface BSCPayload {
+    message: BrodcastMessage;
+    hostResolver: (_targetId: string) => string | undefined;
+    path: string;
+}
+declare const broadcastSetupCallback: (payload: BSCPayload) => Promise<void>;
+interface RSCPayload {
+    cbPayload: CallbackPayload;
+    hostResolver: (_targetId: string) => string | undefined;
+    path: string;
+}
+declare const remoteServiceCallback: (payload: RSCPayload) => Promise<unknown>;
+
+export { type BSCPayload, type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeMonitoring, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, PipelineProcessor, type ProcessorCallback, ProgressTracker, type RSCPayload, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadPause, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, broadcastSetupCallback, remoteServiceCallback };

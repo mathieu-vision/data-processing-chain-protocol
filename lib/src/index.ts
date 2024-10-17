@@ -35,3 +35,10 @@ export {
 export { NodeMonitoring } from './core/NodeMonitoring';
 export { ProgressTracker } from './core/ProgressTracker';
 export { PipelineDataCombiner } from './core/PipelineDataCombiner';
+
+export {
+  broadcastSetupCallback,
+  BSCPayload,
+  remoteServiceCallback,
+  RSCPayload,
+} from './extra/DefaultCallbacks';

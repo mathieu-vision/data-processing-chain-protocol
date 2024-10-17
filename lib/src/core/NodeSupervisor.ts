@@ -130,7 +130,10 @@ export class NodeSupervisor {
     return nodeId;
   }
 
-  private async setupNode(config: NodeConfig): Promise<string> {
+  private async setupNode(
+    config: NodeConfig,
+    initiator: boolean = false,
+  ): Promise<string> {
     this.updateChain([config]);
 
     const nodeId = await this.createNode(config);
@@ -143,7 +146,7 @@ export class NodeSupervisor {
           message: `${this.ctn}: Attempted to set next node info on undefined node`,
         });
       }
-      if (config.nextTargetId === undefined) {
+      if (!initiator && config.nextTargetId === undefined) {
         Logger.warn({
           message: `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
         });
@@ -267,15 +270,21 @@ export class NodeSupervisor {
     );
 
     if (localConfigs.length > 0) {
-      const rootNodeId = await this.setupNode({ ...localConfigs[0], chainId });
+      const rootNodeId = await this.setupNode(
+        { ...localConfigs[0], chainId },
+        true,
+      );
       chain.rootNodeId = rootNodeId;
 
       let prevNodeId = rootNodeId;
       for (let i = 1; i < localConfigs.length; i++) {
-        const currentNodeId = await this.setupNode({
-          ...localConfigs[i],
-          chainId,
-        });
+        const currentNodeId = await this.setupNode(
+          {
+            ...localConfigs[i],
+            chainId,
+          },
+          true,
+        );
         const prevNode = this.nodes.get(prevNodeId);
         if (prevNode) {
           prevNode.setNextNodeInfo(currentNodeId, NodeType.LOCAL);

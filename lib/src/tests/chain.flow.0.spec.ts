@@ -92,7 +92,7 @@ describe('Node System Tests', function () {
   it('should create and run a node through the supervisor', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [],
+      params: { services: [] },
     })) as string;
 
     const processor = new PipelineProcessor('');
@@ -112,12 +112,12 @@ describe('Node System Tests', function () {
   it('should send data to a node through the supervisor interface', async function () {
     const nodeId = await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [],
+      params: { services: [] },
     });
 
     await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_SEND_DATA,
-      id: nodeId,
+      id: nodeId as string,
       data: { newData: 'test' },
     });
 

@@ -21,7 +21,7 @@ describe('Node Supervisor Flow Test', function () {
   it('should create a node, process data, and send output', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [],
+      params: { services: [] },
     })) as string;
 
     const processor1 = new PipelineProcessor('');
@@ -50,7 +50,7 @@ describe('Node Supervisor Flow Test', function () {
   it('should handle multiple processors and output correctly', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [],
+      params: { services: [] },
     })) as string;
 
     const processor1 = new PipelineProcessor('');
@@ -84,7 +84,7 @@ describe('Node Supervisor Flow Test', function () {
   it('should handle delayed node execution', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [],
+      params: { services: [] },
     })) as string;
 
     const processor1 = new PipelineProcessor('');

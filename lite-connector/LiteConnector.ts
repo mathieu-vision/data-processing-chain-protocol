@@ -7,6 +7,10 @@ import {
   NodeSupervisor,
   PipelineProcessor,
   SupervisorPayloadSetup,
+  broadcastSetupCallback,
+  BSCPayload,
+  RSCPayload,
+  remoteServiceCallback,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -53,8 +57,11 @@ export class LiteConnector {
     this.app.put('/chain/start', this.startChain.bind(this));
     // private
     this.app.put('/node/run', this.runNode.bind(this));
+    // public
+    this.app.post('/dispatch-config', this.dispatchConfig.bind(this));
   }
 
+  // === Specific to this connector sample ===
   // Configuration: need a way to determine where a service is located and which remote connector is hosting it
   private async configureServiceConnector(
     req: Request,
@@ -104,6 +111,71 @@ export class LiteConnector {
     });
   }
 
+  // === Specific to this connector sample ===
+  // Dispatch configuration to other connectors
+  private async dispatchConfig(req: Request, res: Response) {
+    try {
+      const config = req.body;
+      if (!Array.isArray(config) || config.length === 0) {
+        res.status(400).json({
+          error: 'Invalid configuration format. Expected a non-empty array.',
+        });
+        return;
+      }
+
+      const connectorURIs = [
+        `http://localhost:${this.port}`,
+        ...new Set(config.map((item) => item.connectorURI)),
+      ];
+
+      const successfulConfigs: any[] = [];
+      const failedConfigs: any[] = [];
+
+      for (const connectorURI of connectorURIs) {
+        try {
+          Logger.info({
+            message: `Sending configuration to connector: ${connectorURI} ...`,
+          });
+          const response = await axios.post(
+            `${connectorURI}/configure-service-connector`,
+            config,
+          );
+          successfulConfigs.push({ connectorURI, data: response.data });
+        } catch (error) {
+          if (axios.isAxiosError(error) && error.response) {
+            Logger.error({
+              message: `Failed to send configuration to connector ${connectorURI}. Status: ${error.response.status}`,
+            });
+            failedConfigs.push({
+              connectorURI,
+              error: error.response.data,
+              status: error.response.status,
+            });
+          } else {
+            Logger.error({
+              message: `Failed to send configuration to connector ${connectorURI}, ${(error as Error).message}`,
+            });
+            failedConfigs.push({
+              connectorURI,
+              error: (error as Error).message,
+            });
+          }
+        }
+      }
+
+      res.status(200).json({
+        message: 'Connector configuration completed',
+        successfulConfigs,
+        failedConfigs,
+      });
+    } catch (error) {
+      Logger.error({
+        message: `Error during connector configuration: ${(error as Error).message}`,
+      });
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
   // Step 1: Chain creation should be initiated from a customer connector
   // Endpoint example containing a basic implementation very close to real-world usage:
   private async createChain(req: Request, res: Response): Promise<void> {
@@ -144,7 +216,7 @@ export class LiteConnector {
     }
   }
 
-  // Step 3: Start the chain from customer connector
+  // Step 3: Start the chain
   // Basic implementation very close to real-world usage:
   private async startChain(req: Request, res: Response): Promise<void> {
     try {
@@ -166,6 +238,7 @@ export class LiteConnector {
 
   // Step 4: Automatically invoked by the remoteService callback to run a node in the chain using a given service ID for a specific chain ID
   // Basic implementation very close to real-world usage:
+  // Todo: move to dpcp lib (run node by relations)
   private async runNode(req: Request, res: Response): Promise<void> {
     try {
       const { targetId, chainId, data } = req.body;
@@ -206,11 +279,14 @@ export class LiteConnector {
     }
   }
 
-  // Initialization of the node supervisor
-  public async initializeNodeSupervisor(): Promise<void> {
-    // Required callback to handle infrastructure services
+  // Initialize necessary supervisor callbacks
+  public async setupSupervisor(): Promise<void> {
+    // Required callback to handle infrastructure services and/or other data transformation services
     PipelineProcessor.setCallbackService(
       async ({ targetId, data }): Promise<PipelineData> => {
+        //
+        // Here we call the required service
+        //
         Logger.info({
           message: `PipelineProcessor callback invoked - Connector: ${this.connectorUid}, Target: ${targetId}, Data size: ${JSON.stringify(data).length} bytes`,
         });
@@ -218,91 +294,35 @@ export class LiteConnector {
       },
     );
 
-    // Required broadcast setup callback
+    // Example of the required broadcast setup callback, using the default broadcastSetupCallback from the dpcp library
     this.nodeSupervisor.setBroadcastSetupCallback(
       async (message: BrodcastMessage): Promise<void> => {
-        Logger.info({
-          message: `Broadcast message: ${JSON.stringify(message, null, 2)}`,
-        });
-        const chainConfigs: ChainConfig = message.chain.config;
-        const chainId: string = message.chain.id;
-        for (const config of chainConfigs) {
-          if (config.services.length === 0) {
-            Logger.warn({
-              message: 'Empty services array encountered in config',
-            });
-            continue;
-          }
-          const targetId: string = config.services[0];
-          const address: string | undefined =
-            this.serviceConnectorMap.get(targetId);
-          if (!address) {
-            Logger.warn({
-              message: `No connector address found for targetId: ${targetId}`,
-            });
-            continue;
-          }
-          try {
-            // Send a POST request to set up the node on a remote connector for the specified service connector host address
-            const response = await axios.post(`${address}/node/setup`, {
-              chainId,
-              remoteConfigs: config,
-            });
-            Logger.info({
-              message: `Setup request sent to ${address} for targetId ${targetId}. Response: ${JSON.stringify(response.data)}`,
-            });
-          } catch (error) {
-            if (axios.isAxiosError(error)) {
-              Logger.error({
-                message: `Error sending setup request to ${address} for targetId ${targetId}: ${error.message}`,
-              });
-            } else {
-              Logger.error({
-                message: `Unexpected error sending setup request to ${address} for targetId ${targetId}: ${(error as Error).message}`,
-              });
-            }
-          }
-        }
+        const payload: BSCPayload = {
+          message,
+          hostResolver: (targetId: string) => {
+            return this.serviceConnectorMap.get(targetId);
+          },
+          path: '/node/setup',
+        };
+        broadcastSetupCallback(payload);
       },
     );
 
-    // Required remote service callback example:
+    // Example of the required remote service callback, using the default remoteServiceCallback from the dpcp library
     this.nodeSupervisor.setRemoteServiceCallback(
-      async (payload: CallbackPayload) => {
-        Logger.info({
-          message: `Service callback payload: ${JSON.stringify(payload, null, 2)}`,
-        });
-        try {
-          if (!payload.chainId) {
-            throw new Error('payload.chainId is undefined');
-          }
-
-          const nextConnectorUrl = this.serviceConnectorMap.get(
-            payload.targetId,
-          );
-          if (!nextConnectorUrl) {
-            throw new Error(
-              `Next connector URI not found for the following target service: ${payload.targetId}`,
-            );
-          }
-
-          const url = new URL(path.posix.join(nextConnectorUrl, '/node/run'));
-          Logger.info({
-            message: `Sending data to next connector on: ${url.href}`,
-          });
-          await axios.put(url.href, {
-            chainId: payload.chainId,
-            targetId: payload.targetId,
-            data: payload.data,
-          });
-        } catch (error) {
-          Logger.error({
-            message: `Error sending data to next connector: ${(error as Error).message}`,
-          });
-        }
+      async (cbPayload: CallbackPayload): Promise<void> => {
+        const payload: RSCPayload = {
+          cbPayload,
+          hostResolver: (targetId: string) => {
+            return this.serviceConnectorMap.get(targetId);
+          },
+          path: '/node/run',
+        };
+        remoteServiceCallback(payload);
       },
     );
 
+    // Set current supervisor uid
     try {
       this.nodeSupervisor.setUid(this.connectorUid);
     } catch (error) {
@@ -314,7 +334,7 @@ export class LiteConnector {
   }
 
   public async startServer(): Promise<http.Server> {
-    await this.initializeNodeSupervisor();
+    await this.setupSupervisor();
     return new Promise((resolve) => {
       this.server = this.app.listen(this.port, () => {
         Logger.info({

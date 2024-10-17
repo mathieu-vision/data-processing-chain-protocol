@@ -20,15 +20,15 @@ describe('Virtual Connector Chain Execution', function () {
   it('should create and execute a chain of nodes', async function () {
     const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [],
+      params: { services: [] },
     })) as string;
     const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [node1Id],
+      params: { services: [node1Id] },
     })) as string;
     const node3Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [node2Id],
+      params: { services: [node2Id] },
     })) as string;
 
     const processor1 = new PipelineProcessor('');
@@ -70,13 +70,13 @@ describe('Virtual Connector Chain Execution', function () {
   });
 
   it('should handle node failure in the chain', async function () {
-    const node1Id = await nodeSupervisor.handleRequest({
+    const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [],
-    });
+      params: { services: [] },
+    })) as string;
     const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: [node1Id],
+      params: { services: [node1Id] },
     })) as string;
 
     const failingProcessor = new PipelineProcessor('');
