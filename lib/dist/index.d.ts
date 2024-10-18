@@ -214,6 +214,7 @@ declare class NodeSupervisor {
     broadcastNodeSetupSignal(chainId: string, remoteConfigs: ChainConfig): Promise<void>;
     startChain(chainId: string, data: PipelineData): Promise<void>;
     private runNode;
+    runNodeByRelation(payload: CallbackPayload): Promise<void>;
     private sendNodeData;
     getNodes(): Map<string, Node>;
     getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[];

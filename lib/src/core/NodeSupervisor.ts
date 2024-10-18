@@ -385,6 +385,42 @@ export class NodeSupervisor {
     }
   }
 
+  async runNodeByRelation(payload: CallbackPayload): Promise<void> {
+    try {
+      const { targetId, chainId, data } = payload;
+      Logger.info({
+        message: `Received data for node hosting target ${targetId}`,
+      });
+      if (chainId === undefined) {
+        throw new Error('chainId is undefined');
+      }
+      if (targetId === undefined) {
+        throw new Error('targetId is undefined');
+      }
+      const node = this.getNodesByServiceAndChain(targetId, chainId);
+      if (!node || node.length === 0) {
+        throw new Error(
+          `No node found for targetId ${targetId} and chainId ${chainId}`,
+        );
+      }
+      const nodeId = node[0].getId();
+      if (nodeId === undefined) {
+        throw new Error(
+          `No node ID exists for targetId ${targetId} and chainId ${chainId}`,
+        );
+      }
+      await this.handleRequest({
+        signal: NodeSignal.NODE_RUN,
+        id: nodeId,
+        data: data as PipelineData,
+      });
+    } catch (error) {
+      Logger.error({
+        message: `Error in runNodeByRelation: ${(error as Error).message}`,
+      });
+    }
+  }
+
   private async sendNodeData(nodeId: string): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {

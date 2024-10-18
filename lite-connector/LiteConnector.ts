@@ -238,35 +238,10 @@ export class LiteConnector {
 
   // Step 4: Automatically invoked by the remoteService callback to run a node in the chain using a given service ID for a specific chain ID
   // Basic implementation very close to real-world usage:
-  // Todo: move to dpcp lib (run node by relations)
   private async runNode(req: Request, res: Response): Promise<void> {
     try {
-      const { targetId, chainId, data } = req.body;
-      Logger.info({
-        message: `Received data for node hosting target ${targetId}`,
-      });
-
-      const node = this.nodeSupervisor.getNodesByServiceAndChain(
-        targetId,
-        chainId,
-      );
-      if (!node || node.length === 0) {
-        throw new Error(
-          `No node found for targetId ${targetId} and chainId ${chainId}`,
-        );
-      }
-      const nodeId = node[0].getId();
-      if (nodeId === undefined) {
-        throw new Error(
-          `Node ID is undefined for targetId ${targetId} and chainId ${chainId}`,
-        );
-      }
-      await this.nodeSupervisor.handleRequest({
-        signal: NodeSignal.NODE_RUN,
-        id: nodeId,
-        data: data as PipelineData,
-      });
-
+      // Run node based on chain ID and target ID
+      this.nodeSupervisor.runNodeByRelation(req.body as CallbackPayload);
       res
         .status(200)
         .json({ message: 'Data received and processed successfully' });
@@ -304,7 +279,7 @@ export class LiteConnector {
           },
           path: '/node/setup',
         };
-        broadcastSetupCallback(payload);
+        await broadcastSetupCallback(payload);
       },
     );
 
@@ -318,7 +293,7 @@ export class LiteConnector {
           },
           path: '/node/run',
         };
-        remoteServiceCallback(payload);
+        await remoteServiceCallback(payload);
       },
     );
 
