@@ -1,4 +1,5 @@
 import { LiteConnector } from './LiteConnector';
+import { LiteConnector as LiteConnector0 } from './LiteConnector.0';
 import dotenv from 'dotenv';
 import { Logger } from './libs/Logger';
 
@@ -10,6 +11,7 @@ function getArgValue(argName: string): string | undefined {
 }
 
 const argPort = getArgValue('--port');
+const argType = getArgValue('--type');
 const argConnectorUid = getArgValue('--connector_uid');
 
 const port = argPort
@@ -17,16 +19,19 @@ const port = argPort
   : parseInt(process.env.PORT || '3000', 10);
 const connectorUid = argConnectorUid || process.env.CONNECTOR_UID || 'default';
 
-const connector = new LiteConnector(port, connectorUid);
+const connector =
+  argType !== undefined && parseInt(argType) === 0
+    ? new LiteConnector0(port, connectorUid)
+    : new LiteConnector(port, connectorUid);
 
 connector
   .startServer()
   .then(() => {
     Logger.info({
-      message: `LiteConnector server started on port ${connector.getPort()}`,
+      message: `LiteConnector server started on port ${port}`,
     });
     Logger.info({
-      message: `Connector UID: ${connector.getConnectorUid()}`,
+      message: `Connector UID: ${connectorUid}`,
     });
   })
   .catch((error) => {

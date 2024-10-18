@@ -243,5 +243,14 @@ interface RSCPayload {
     path: string;
 }
 declare const remoteServiceCallback: (payload: RSCPayload) => Promise<unknown>;
+interface DefaultCallbackPayload {
+    supervisor: NodeSupervisor;
+    paths: {
+        setup: string;
+        run: string;
+    };
+    hostResolver: (_targetId: string) => string;
+}
+declare const setDefaultCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
 
-export { type BSCPayload, type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeMonitoring, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, PipelineProcessor, type ProcessorCallback, ProgressTracker, type RSCPayload, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadPause, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, broadcastSetupCallback, remoteServiceCallback };
+export { type BSCPayload, type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeMonitoring, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, PipelineProcessor, type ProcessorCallback, ProgressTracker, type RSCPayload, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadPause, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, broadcastSetupCallback, remoteServiceCallback, setDefaultCallbacks };

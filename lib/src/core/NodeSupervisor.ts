@@ -302,6 +302,10 @@ export class NodeSupervisor {
           );
         }
       }
+    } else {
+      Logger.warn({
+        message: `${this.ctn}: No local config found for chain ${chainId}. Root node unavailable.`,
+      });
     }
 
     if (remoteConfigs.length > 0) {
@@ -454,23 +458,6 @@ export class NodeSupervisor {
       );
     });
   }
-
-  /*
-  getNodesByService(serviceUid: string): Node[] {
-    return Array.from(this.nodes.values()).filter((node) => {
-      const chainConfigs = Array.from(this.chains.values()).map(
-        (chain) => chain.config,
-      );
-      return chainConfigs.some((configs) =>
-        configs.some(
-          (config) =>
-            config.services.includes(node.getId()) &&
-            config.services.includes(serviceUid),
-        ),
-      );
-    });
-  }
-  */
 }
 
 export default NodeSupervisor.retrieveService();

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import request from 'supertest';
-import { LiteConnector } from './LiteConnector';
+import { LiteConnector } from './LiteConnector.0';
 
 describe('LiteConnector', () => {
   let connector1: LiteConnector;

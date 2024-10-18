@@ -41,4 +41,5 @@ export {
   BSCPayload,
   remoteServiceCallback,
   RSCPayload,
+  setDefaultCallbacks,
 } from './extra/DefaultCallbacks';

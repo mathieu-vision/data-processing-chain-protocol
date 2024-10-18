@@ -1,6 +1,7 @@
 import { Logger } from '../libs/Logger';
 import { BrodcastMessage, CallbackPayload, ChainConfig } from '../types/types';
 import { Buffer } from 'buffer';
+import { NodeSupervisor } from '../core/NodeSupervisor';
 import * as http from 'http';
 import * as https from 'https';
 
@@ -78,7 +79,7 @@ export const broadcastSetupCallback = async (
                 });
                 reject(
                   new Error(
-                    `HTTP Error: ${res.statusCode} ${res.statusMessage}`,
+                    `HTTP Error: ${res.statusCode} ${res.statusMessage} - URL: ${options.hostname}${options.path}`,
                   ),
                 );
               }
@@ -159,8 +160,8 @@ export const remoteServiceCallback = async (payload: RSCPayload) => {
             ) {
               resolve(data);
             } else {
-              reject(
-                new Error(`HTTP Error: ${res.statusCode} ${res.statusMessage}`),
+              new Error(
+                `HTTP Error: ${res.statusCode} ${res.statusMessage} - URL: ${options.hostname}${options.path}`,
               );
             }
           });
@@ -183,4 +184,37 @@ export const remoteServiceCallback = async (payload: RSCPayload) => {
     });
     throw error;
   }
+};
+
+export interface DefaultCallbackPayload {
+  supervisor: NodeSupervisor;
+  paths: { setup: string; run: string };
+  hostResolver: (_targetId: string) => string;
+}
+export const setDefaultCallbacks = async (
+  dcPayload: DefaultCallbackPayload,
+): Promise<void> => {
+  const { supervisor, paths, hostResolver } = dcPayload;
+
+  supervisor.setBroadcastSetupCallback(
+    async (message: BrodcastMessage): Promise<void> => {
+      const payload: BSCPayload = {
+        message,
+        hostResolver,
+        path: paths.setup,
+      };
+      await broadcastSetupCallback(payload);
+    },
+  );
+
+  supervisor.setRemoteServiceCallback(
+    async (cbPayload: CallbackPayload): Promise<void> => {
+      const payload: RSCPayload = {
+        cbPayload,
+        hostResolver,
+        path: paths.run,
+      };
+      await remoteServiceCallback(payload);
+    },
+  );
 };
