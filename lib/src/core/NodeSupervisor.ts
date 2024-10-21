@@ -21,6 +21,7 @@ import {
   SetupCallback,
   SupervisorPayloadPrepareChain,
   SupervisorPayloadStartChain,
+  SupervisorPayloadDeployChain,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from '../libs/Logger';
@@ -109,11 +110,36 @@ export class NodeSupervisor {
           (payload as SupervisorPayloadStartChain).id,
           (payload as SupervisorPayloadStartChain).data,
         );
+      case NodeSignal.CHAIN_DEPLOY: {
+        return await this.deployChain(
+          (payload as SupervisorPayloadDeployChain).config,
+          (payload as SupervisorPayloadDeployChain).data,
+        );
+      }
       default:
         Logger.warn({
           message: `${this.ctn}: Unknown signal received: ${payload.signal}`,
         });
     }
+  }
+
+  private async deployChain(
+    config: ChainConfig,
+    data: PipelineData,
+  ): Promise<string> {
+    if (!config) {
+      throw new Error(`${this.ctn}: Chain configuration is required`);
+    }
+    Logger.info({
+      message: `${this.ctn}: Starting a new chain deployment...`,
+    });
+    const chainId = this.createChain(config);
+    await this.prepareChainDistribution(chainId);
+    await this.startChain(chainId, data);
+    Logger.info({
+      message: `${this.ctn}: Chain ${chainId} successfully deployed and started.`,
+    });
+    return chainId;
   }
 
   private async createNode(config: NodeConfig): Promise<string> {

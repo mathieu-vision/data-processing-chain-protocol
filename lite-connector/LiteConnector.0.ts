@@ -48,15 +48,16 @@ export class LiteConnector {
       this.configureServiceConnector.bind(this),
     );
     // public
+    this.app.post('/dispatch-config', this.dispatchConfig.bind(this));
+    //
+    // public
     this.app.post('/chain/create', this.createChain.bind(this));
-    // private
-    this.app.post('/node/setup', this.setupNode.bind(this));
     // public
     this.app.put('/chain/start', this.startChain.bind(this));
     // private
-    this.app.put('/node/run', this.runNode.bind(this));
-    // public
-    this.app.post('/dispatch-config', this.dispatchConfig.bind(this));
+    this.app.post('/node/setup', this.setupNode.bind(this));
+    // private
+    this.app.post('/node/run', this.runNode.bind(this));
   }
 
   // === Specific to this connector sample ===

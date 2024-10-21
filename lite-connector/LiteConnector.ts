@@ -1,8 +1,11 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import {
+  ChainConfig,
+  NodeConfig,
   NodeSupervisor,
   PipelineProcessor,
+  SupervisorPayloadDeployChain,
   SupervisorPayloadSetup,
   setDefaultCallbacks,
 } from 'dpcp-library';
@@ -32,14 +35,12 @@ class SupervisorContainer {
 
   public async createAndStartChain(req: Request, res: Response): Promise<void> {
     try {
-      const { chainConfig, data } = req.body;
-      if (!chainConfig) {
-        res.status(400).json({ error: 'Chain configuration is required' });
-        return;
-      }
-      const chainId = this.nodeSupervisor.createChain(chainConfig);
-      await this.nodeSupervisor.prepareChainDistribution(chainId);
-      await this.nodeSupervisor.startChain(chainId, data);
+      const { chainConfig: config, data } = req.body;
+      const chainId = await this.nodeSupervisor.handleRequest({
+        signal: NodeSignal.CHAIN_DEPLOY,
+        config,
+        data,
+      } as SupervisorPayloadDeployChain);
       res.status(201).json({
         chainId,
         message: 'Chain created and started successfully',

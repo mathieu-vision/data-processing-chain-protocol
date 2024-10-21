@@ -28,6 +28,9 @@ export {
   SupervisorPayloadDelay,
   SupervisorPayloadRun,
   SupervisorPayloadSendData,
+  SupervisorPayloadPrepareChain,
+  SupervisorPayloadStartChain,
+  SupervisorPayloadDeployChain,
   ChainState,
   DataType,
 } from './types/types';

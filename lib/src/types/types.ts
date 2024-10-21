@@ -73,7 +73,8 @@ export namespace NodeSignal {
     | 'node_run'
     | 'node_send_data'
     | 'chain_prepare'
-    | 'chain_start';
+    | 'chain_start'
+    | 'chain_deploy';
   export const NODE_SETUP: Type = 'node_setup';
   export const NODE_CREATE: Type = 'node_create';
   export const NODE_DELETE: Type = 'node_delete';
@@ -83,6 +84,7 @@ export namespace NodeSignal {
   export const NODE_SEND_DATA: Type = 'node_send_data';
   export const CHAIN_PREPARE: Type = 'chain_prepare';
   export const CHAIN_START: Type = 'chain_start';
+  export const CHAIN_DEPLOY: Type = 'chain_deploy';
 }
 
 export type SupervisorPayloadSetup = {
@@ -133,6 +135,12 @@ export type SupervisorPayloadStartChain = {
   data: PipelineData;
 };
 
+export type SupervisorPayloadDeployChain = {
+  signal: typeof NodeSignal.CHAIN_DEPLOY;
+  config: ChainConfig;
+  data: PipelineData;
+};
+
 export type SupervisorPayload =
   | SupervisorPayloadSetup
   | SupervisorPayloadCreate
@@ -142,7 +150,8 @@ export type SupervisorPayload =
   | SupervisorPayloadRun
   | SupervisorPayloadSendData
   | SupervisorPayloadPrepareChain
-  | SupervisorPayloadStartChain;
+  | SupervisorPayloadStartChain
+  | SupervisorPayloadDeployChain;
 
 export type NodeConfig = {
   services: string[];

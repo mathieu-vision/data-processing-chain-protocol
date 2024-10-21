@@ -137,7 +137,7 @@ export const remoteServiceCallback = async (payload: RSCPayload) => {
       hostname: url.hostname,
       port: url.port,
       path: url.pathname,
-      method: 'PUT',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(postData),
@@ -160,7 +160,7 @@ export const remoteServiceCallback = async (payload: RSCPayload) => {
             ) {
               resolve(data);
             } else {
-              new Error(
+              throw new Error(
                 `HTTP Error: ${res.statusCode} ${res.statusMessage} - URL: ${options.hostname}${options.path}`,
               );
             }

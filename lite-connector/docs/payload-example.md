@@ -1,5 +1,11 @@
 # LiteConnector Example Usage via a Single Endpoint in One Step
 
+### Start the connectors
+
+```
+./launch-connectors.sh
+```
+ 
 ### **Endpoint to create the chain across all connectors**
 
 **POST**: `http://localhost:8887/chain/create-and-start`
@@ -36,6 +42,12 @@
 ---
 
 # LiteConnector.0 Example Usage in 3 Steps
+
+### Start the connectors
+
+```
+./launch-connectors.sh --type 0
+```
 
 ### Step A: **Specific Endpoint for This Connector**
 

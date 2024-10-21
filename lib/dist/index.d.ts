@@ -51,7 +51,7 @@ declare namespace NodeStatus {
     const FAILED: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start';
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_deploy';
     const NODE_SETUP: Type;
     const NODE_CREATE: Type;
     const NODE_DELETE: Type;
@@ -61,6 +61,7 @@ declare namespace NodeSignal {
     const NODE_SEND_DATA: Type;
     const CHAIN_PREPARE: Type;
     const CHAIN_START: Type;
+    const CHAIN_DEPLOY: Type;
 }
 type SupervisorPayloadSetup = {
     signal: typeof NodeSignal.NODE_SETUP;
@@ -101,7 +102,12 @@ type SupervisorPayloadStartChain = {
     id: string;
     data: PipelineData;
 };
-type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | SupervisorPayloadDelete | SupervisorPayloadPause | SupervisorPayloadDelay | SupervisorPayloadRun | SupervisorPayloadSendData | SupervisorPayloadPrepareChain | SupervisorPayloadStartChain;
+type SupervisorPayloadDeployChain = {
+    signal: typeof NodeSignal.CHAIN_DEPLOY;
+    config: ChainConfig;
+    data: PipelineData;
+};
+type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | SupervisorPayloadDelete | SupervisorPayloadPause | SupervisorPayloadDelay | SupervisorPayloadRun | SupervisorPayloadSendData | SupervisorPayloadPrepareChain | SupervisorPayloadStartChain | SupervisorPayloadDeployChain;
 type NodeConfig = {
     services: string[];
     chainId?: string;
@@ -202,6 +208,7 @@ declare class NodeSupervisor {
     setUid(uid: string): void;
     static retrieveService(): NodeSupervisor;
     handleRequest(payload: SupervisorPayload): Promise<void | string>;
+    private deployChain;
     private createNode;
     private setupNode;
     addProcessors(nodeId: string, processors: PipelineProcessor[]): Promise<void>;
@@ -253,4 +260,4 @@ interface DefaultCallbackPayload {
 }
 declare const setDefaultCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
 
-export { type BSCPayload, type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeMonitoring, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, PipelineProcessor, type ProcessorCallback, ProgressTracker, type RSCPayload, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadPause, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, broadcastSetupCallback, remoteServiceCallback, setDefaultCallbacks };
+export { type BSCPayload, type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeMonitoring, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, PipelineProcessor, type ProcessorCallback, ProgressTracker, type RSCPayload, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, broadcastSetupCallback, remoteServiceCallback, setDefaultCallbacks };
