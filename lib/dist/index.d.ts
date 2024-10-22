@@ -201,12 +201,12 @@ declare class NodeSupervisor {
     private nodeMonitoring?;
     private broadcastSetupCallback;
     remoteServiceCallback: Callback;
-    constructor();
+    private constructor();
     setRemoteServiceCallback(callback: Callback): void;
     setMonitoring(nodeMonitoring: NodeMonitoring): void;
     setBroadcastSetupCallback(broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>): void;
     setUid(uid: string): void;
-    static retrieveService(): NodeSupervisor;
+    static retrieveService(refresh?: boolean): NodeSupervisor;
     handleRequest(payload: SupervisorPayload): Promise<void | string>;
     private deployChain;
     private createNode;

@@ -10,7 +10,7 @@ import {
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
-import { Logger } from '../libs/Logger';
+import { Logger } from './Logger';
 import { NodeSupervisor } from './NodeSupervisor';
 
 export class Node {
@@ -122,9 +122,7 @@ export class Node {
         this.updateStatus(NodeStatus.COMPLETED);
       } catch (error) {
         this.updateStatus(NodeStatus.FAILED, error as Error);
-        Logger.error({
-          message: `Node ${this.id} execution failed: ${error}`,
-        });
+        Logger.error(`Node ${this.id} execution failed: ${error}`);
       }
     });
 
@@ -139,7 +137,7 @@ export class Node {
   async sendData(): Promise<void> {
     // make sure the queue has finished
     await this.executionQueue;
-    Logger.info({ message: `Sending data from node ${this.id}.` });
+    Logger.info(`Sending data from node ${this.id}.`);
     await Node.terminate(this.id, this.output);
   }
 
@@ -157,9 +155,7 @@ export class Node {
     const nodes = supervisor.getNodes();
     const currentNode = nodes.get(nodeId);
     if (!currentNode) {
-      Logger.warn({
-        message: `Node ${nodeId} not found for moving to next node.`,
-      });
+      Logger.warn(`Node ${nodeId} not found for moving to next node.`);
       return;
     }
     const nextNodeInfo = currentNode.getNextNodeInfo();
@@ -179,7 +175,7 @@ export class Node {
         });
       }
     } else {
-      Logger.info({ message: `End of pipeline reached by node ${nodeId}.` });
+      Logger.info(`End of pipeline reached by node ${nodeId}.`);
     }
     const isPersistant =
       (currentNode.config?.chainType ?? 0) & ChainType.PERSISTANT;
@@ -189,9 +185,7 @@ export class Node {
         signal: NodeSignal.NODE_DELETE,
       });
     } else {
-      Logger.warn({
-        message: `Node ${nodeId} kept for future calls.`,
-      });
+      Logger.warn(`Node ${nodeId} kept for future calls.`);
     }
   }
 

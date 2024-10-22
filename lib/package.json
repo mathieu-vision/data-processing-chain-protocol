@@ -1,6 +1,6 @@
 {
   "name": "dpcp-library",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -61,8 +61,6 @@
     "node-cron": "^3.0.3",
     "stripe": "^16.12.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "winston": "^3.14.2",
-    "winston-daily-rotate-file": "^5.0.0"
+    "swagger-ui-express": "^5.0.1"
   }
 }

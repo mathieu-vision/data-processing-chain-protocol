@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import { Node } from '../core/Node';
 import { NodeMonitoring } from '../core/NodeMonitoring';
 import { ProgressTracker } from '../core/ProgressTracker';
-import { NodeStatus } from '../types/types';
+import { ChainType, NodeStatus } from '../types/types';
 import { PipelineProcessor } from '../core/PipelineProcessor';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { NodeSignal } from '../types/types';
@@ -18,7 +18,7 @@ describe('Node System Tests', function () {
     nodes = [new Node(), new Node(['node1']), new Node(['node2'])];
     progressTracker = new ProgressTracker(nodes.length);
     nodeMonitoring = new NodeMonitoring(nodes, progressTracker);
-    nodeSupervisor = new NodeSupervisor();
+    nodeSupervisor = NodeSupervisor.retrieveService(true);
     nodeSupervisor.setMonitoring(nodeMonitoring);
   });
 
@@ -92,21 +92,21 @@ describe('Node System Tests', function () {
   it('should create and run a node through the supervisor', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [] },
+      params: { chainType: ChainType.PERSISTANT, services: [] },
     })) as string;
 
     const processor = new PipelineProcessor('');
     sinon.stub(processor, 'digest').resolves({ result: 'processed data' });
-
     await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: nodeId,
       data: { initial: 'data' },
     });
 
-    const node = nodeSupervisor['nodes'].get(nodeId);
-    expect(node).to.exist;
-    expect(node!.getStatus()).to.equal(NodeStatus.COMPLETED);
+    const nodes = nodeSupervisor.getNodes();
+    const node = nodes.get(nodeId);
+    expect(node, 'expect 1').to.exist;
+    expect(node!.getStatus(), 'expect 2').to.equal(NodeStatus.COMPLETED);
   });
 
   it('should send data to a node through the supervisor interface', async function () {

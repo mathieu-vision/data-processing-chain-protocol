@@ -1,4 +1,4 @@
-import { Logger } from '../libs/Logger';
+import { Logger } from './Logger';
 import { NodeStatus } from '../types/types';
 
 export class ProgressTracker {
@@ -17,8 +17,6 @@ export class ProgressTracker {
     const progressPercentage = Math.round(
       (this.completedNodes / this.totalNodes) * 100,
     );
-    Logger.info({
-      message: `Node ${nodeId}: ${status}. Progress: ${progressPercentage}%`,
-    });
+    Logger.info(`Node ${nodeId}: ${status}. Progress: ${progressPercentage}%`);
   }
 }

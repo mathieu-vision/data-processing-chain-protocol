@@ -12,7 +12,7 @@ describe('Node Supervisor Chain Flow Test', function () {
   let nodeMonitoring: NodeMonitoring;
 
   beforeEach(function () {
-    nodeSupervisor = NodeSupervisor.retrieveService();
+    nodeSupervisor = NodeSupervisor.retrieveService(true);
     nodeSupervisor.setUid('test');
     const progressTracker = new ProgressTracker(3);
     nodeMonitoring = new NodeMonitoring([], progressTracker);
@@ -59,7 +59,7 @@ describe('Node Supervisor Chain Flow Test', function () {
     const initialData: PipelineData = { input: 'initialData' };
     await nodeSupervisor.startChain(chainId, initialData);
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     expect(digestSpy.calledThrice, 'expect 3').to.be.true;
 

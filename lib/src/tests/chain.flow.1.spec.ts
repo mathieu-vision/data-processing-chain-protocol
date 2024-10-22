@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import sinon from 'sinon';
 import { NodeMonitoring } from '../core/NodeMonitoring';
 import { ProgressTracker } from '../core/ProgressTracker';
-import { NodeSignal } from '../types/types';
+import { ChainType, NodeSignal } from '../types/types';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { PipelineProcessor } from '../core/PipelineProcessor';
 
@@ -13,22 +13,22 @@ describe('Virtual Connector Chain Execution', function () {
   beforeEach(function () {
     const progressTracker = new ProgressTracker(3);
     nodeMonitoring = new NodeMonitoring([], progressTracker);
-    nodeSupervisor = new NodeSupervisor();
+    nodeSupervisor = NodeSupervisor.retrieveService(true);
     nodeSupervisor.setMonitoring(nodeMonitoring);
   });
 
   it('should create and execute a chain of nodes', async function () {
     const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [] },
+      params: { chainType: ChainType.PERSISTANT, services: [] },
     })) as string;
     const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [node1Id] },
+      params: { chainType: ChainType.PERSISTANT, services: [node1Id] },
     })) as string;
     const node3Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [node2Id] },
+      params: { chainType: ChainType.PERSISTANT, services: [node2Id] },
     })) as string;
 
     const processor1 = new PipelineProcessor('');
@@ -72,11 +72,11 @@ describe('Virtual Connector Chain Execution', function () {
   it('should handle node failure in the chain', async function () {
     const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [] },
+      params: { chainType: ChainType.PERSISTANT, services: [] },
     })) as string;
     const node2Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [node1Id] },
+      params: { chainType: ChainType.PERSISTANT, services: [node1Id] },
     })) as string;
 
     const failingProcessor = new PipelineProcessor('');
@@ -106,30 +106,29 @@ describe('Virtual Connector Chain Execution', function () {
   });
 
   // todo: fix dependencies
-  /*
-  it('should respect node dependencies', async function () {
-    const node1Id = (await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_CREATE,
-      params: [],
-    })) as string;
-    const node2Id = (await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_CREATE,
-      // dependencies
-      params: [node1Id],
-    })) as string;
 
-    expect(nodeMonitoring.canExecuteNode(node1Id), 'a').to.be.true;
-    expect(nodeMonitoring.canExecuteNode(node2Id), 'b').to.be.false;
+  // it('should respect node dependencies', async function () {
+  //   const node1Id = (await nodeSupervisor.handleRequest({
+  //     signal: NodeSignal.NODE_CREATE,
+  //     params: [],
+  //   })) as string;
+  //   const node2Id = (await nodeSupervisor.handleRequest({
+  //     signal: NodeSignal.NODE_CREATE,
+  //     // dependencies
+  //     params: [node1Id],
+  //   })) as string;
 
-    await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_RUN,
-      id: node1Id,
-      data: { initial: 'data' },
-    });
+  //   expect(nodeMonitoring.canExecuteNode(node1Id), 'a').to.be.true;
+  //   expect(nodeMonitoring.canExecuteNode(node2Id), 'b').to.be.false;
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+  //   await nodeSupervisor.handleRequest({
+  //     signal: NodeSignal.NODE_RUN,
+  //     id: node1Id,
+  //     data: { initial: 'data' },
+  //   });
 
-    expect(nodeMonitoring.canExecuteNode(node2Id), 'c').to.be.true;
-  });
-  */
+  //   await new Promise((resolve) => setTimeout(resolve, 0));
+
+  //   expect(nodeMonitoring.canExecuteNode(node2Id), 'c').to.be.true;
+  // });
 });

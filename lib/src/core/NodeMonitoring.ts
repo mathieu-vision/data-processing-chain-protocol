@@ -1,7 +1,7 @@
 import { ChainState, NodeStatus } from '../types/types';
 import { ProgressTracker } from './ProgressTracker';
 import { Node } from './Node';
-import { Logger } from '../libs/Logger';
+import { Logger } from './Logger';
 
 // Todo: need a full review
 export class NodeMonitoring {
@@ -23,13 +23,11 @@ export class NodeMonitoring {
       const newIndex = this.nodes.length;
       this.nodes.push(node);
       this.nodeStatusMap.set(node.getId(), node.getStatus());
-      Logger.info({
-        message: `Node ${node.getId()} added to monitoring at index ${newIndex}.`,
-      });
+      Logger.info(
+        `Node ${node.getId()} added to monitoring at index ${newIndex}.`,
+      );
     } else {
-      Logger.warn({
-        message: `Node ${node.getId()} is already being monitored.`,
-      });
+      Logger.warn(`Node ${node.getId()} is already being monitored.`);
     }
   }
 
@@ -38,9 +36,9 @@ export class NodeMonitoring {
     if (index !== -1) {
       this.nodes.splice(index, 1);
       this.nodeStatusMap.delete(nodeId);
-      Logger.info({ message: `Node ${nodeId} removed from monitoring.` });
+      Logger.info(`Node ${nodeId} removed from monitoring.`);
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found in monitoring.` });
+      Logger.warn(`Node ${nodeId} not found in monitoring.`);
     }
   }
 
@@ -56,9 +54,9 @@ export class NodeMonitoring {
       if (this.progressTracker) {
         this.progressTracker.notifyProgress(nodeId, status);
       }
-      Logger.info({ message: `Node ${nodeId} status updated to ${status}.` });
+      Logger.info(`Node ${nodeId} status updated to ${status}.`);
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found in monitoring.` });
+      Logger.warn(`Node ${nodeId} not found in monitoring.`);
     }
   }
 
@@ -88,7 +86,7 @@ export class NodeMonitoring {
       const completedNodes = new Set(this.getCompletedNodes());
       return node.canExecute(completedNodes);
     } else {
-      Logger.warn({ message: `Node ${nodeId} not found in monitoring.` });
+      Logger.warn(`Node ${nodeId} not found in monitoring.`);
       return false;
     }
   }
@@ -101,6 +99,6 @@ export class NodeMonitoring {
 
   setProgressTracker(progressTracker: ProgressTracker): void {
     this.progressTracker = progressTracker;
-    Logger.info({ message: `ProgressTracker updated.` });
+    Logger.info(`ProgressTracker updated.`);
   }
 }

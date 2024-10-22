@@ -24,7 +24,7 @@ import {
   SupervisorPayloadDeployChain,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
-import { Logger } from '../libs/Logger';
+import { Logger } from './Logger';
 import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
 
@@ -39,7 +39,7 @@ export class NodeSupervisor {
   private broadcastSetupCallback: SetupCallback;
   remoteServiceCallback: Callback;
 
-  constructor() {
+  private constructor() {
     this.uid = '@supervisor:default';
     this.ctn = '@container:default';
     this.nodes = new Map();
@@ -67,8 +67,8 @@ export class NodeSupervisor {
     this.uid = `@supervisor:${uid}`;
   }
 
-  static retrieveService(): NodeSupervisor {
-    if (!NodeSupervisor.instance) {
+  static retrieveService(refresh: boolean = false): NodeSupervisor {
+    if (!NodeSupervisor.instance || refresh) {
       const instance = new NodeSupervisor();
       NodeSupervisor.instance = instance;
     }
@@ -80,15 +80,17 @@ export class NodeSupervisor {
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
     switch (payload.signal) {
       case NodeSignal.NODE_SETUP:
-        return this.setupNode((payload as SupervisorPayloadSetup).config);
+        return await this.setupNode((payload as SupervisorPayloadSetup).config);
       case NodeSignal.NODE_CREATE:
-        return this.createNode((payload as SupervisorPayloadCreate).params);
+        return await this.createNode(
+          (payload as SupervisorPayloadCreate).params,
+        );
       case NodeSignal.NODE_DELETE:
-        return this.deleteNode((payload as SupervisorPayloadDelete).id);
+        return await this.deleteNode((payload as SupervisorPayloadDelete).id);
       case NodeSignal.NODE_PAUSE:
-        return this.pauseNode((payload as SupervisorPayloadPause).id);
+        return await this.pauseNode((payload as SupervisorPayloadPause).id);
       case NodeSignal.NODE_DELAY:
-        return this.delayNode(
+        return await this.delayNode(
           (payload as SupervisorPayloadDelay).id,
           (payload as SupervisorPayloadDelay).delay,
         );
@@ -117,9 +119,7 @@ export class NodeSupervisor {
         );
       }
       default:
-        Logger.warn({
-          message: `${this.ctn}: Unknown signal received: ${payload.signal}`,
-        });
+        Logger.warn(`${this.ctn}: Unknown signal received: ${payload.signal}`);
     }
   }
 
@@ -130,15 +130,13 @@ export class NodeSupervisor {
     if (!config) {
       throw new Error(`${this.ctn}: Chain configuration is required`);
     }
-    Logger.info({
-      message: `${this.ctn}: Starting a new chain deployment...`,
-    });
+    Logger.info(`${this.ctn}: Starting a new chain deployment...`);
     const chainId = this.createChain(config);
     await this.prepareChainDistribution(chainId);
     await this.startChain(chainId, data);
-    Logger.info({
-      message: `${this.ctn}: Chain ${chainId} successfully deployed and started.`,
-    });
+    Logger.info(
+      `${this.ctn}: Chain ${chainId} successfully deployed and started.`,
+    );
     return chainId;
   }
 
@@ -150,9 +148,9 @@ export class NodeSupervisor {
     if (this.nodeMonitoring) {
       this.nodeMonitoring.addNode(node);
     }
-    Logger.info({
-      message: `${this.ctn}: Node ${nodeId} created with config: ${JSON.stringify(config)}`,
-    });
+    Logger.info(
+      `${this.ctn}: Node ${nodeId} created with config: ${JSON.stringify(config, null, 2)}`,
+    );
     return nodeId;
   }
 
@@ -168,14 +166,14 @@ export class NodeSupervisor {
       node.setNextNodeInfo(config.nextTargetId, NodeType.REMOTE);
     } else {
       if (!node) {
-        Logger.warn({
-          message: `${this.ctn}: Attempted to set next node info on undefined node`,
-        });
+        Logger.warn(
+          `${this.ctn}: Attempted to set next node info on undefined node`,
+        );
       }
       if (!initiator && config.nextTargetId === undefined) {
-        Logger.warn({
-          message: `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
-        });
+        Logger.warn(
+          `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
+        );
       }
     }
 
@@ -183,9 +181,9 @@ export class NodeSupervisor {
       (service) => new PipelineProcessor(service),
     );
     await this.addProcessors(nodeId, processors);
-    Logger.info({
-      message: `${this.ctn}: Node ${nodeId} setup completed with ${processors.length} processors`,
-    });
+    Logger.info(
+      `${this.ctn}: Node ${nodeId} setup completed with ${processors.length} processors`,
+    );
     return nodeId;
   }
 
@@ -197,11 +195,9 @@ export class NodeSupervisor {
     const node = this.nodes.get(nodeId);
     if (node) {
       node.addPipeline(processors);
-      Logger.info({
-        message: `${this.ctn}: Processors added to Node ${nodeId}.`,
-      });
+      Logger.info(`${this.ctn}: Processors added to Node ${nodeId}.`);
     } else {
-      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
+      Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
     }
   }
 
@@ -211,11 +207,9 @@ export class NodeSupervisor {
       if (this.nodeMonitoring) {
         this.nodeMonitoring.deleteNode(nodeId);
       }
-      Logger.info({ message: `${this.ctn}: Node ${nodeId} deleted.` });
+      Logger.info(`${this.ctn}: Node ${nodeId} deleted.`);
     } else {
-      Logger.warn({
-        message: `${this.ctn}: Node ${nodeId} not found.`,
-      });
+      Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
     }
   }
 
@@ -223,9 +217,9 @@ export class NodeSupervisor {
     const node = this.nodes.get(nodeId);
     if (node) {
       node.updateStatus(NodeStatus.PAUSED);
-      Logger.info({ message: `${this.ctn}: Node ${nodeId} paused.` });
+      Logger.info(`${this.ctn}: Node ${nodeId} paused.`);
     } else {
-      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
+      Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
     }
   }
 
@@ -233,11 +227,9 @@ export class NodeSupervisor {
     const node = this.nodes.get(nodeId);
     if (node) {
       node.setDelay(delay);
-      Logger.info({
-        message: `${this.ctn}: Node ${nodeId} delayed by ${delay} ms.`,
-      });
+      Logger.info(`${this.ctn}: Node ${nodeId} delayed by ${delay} ms.`);
     } else {
-      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
+      Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
     }
   }
 
@@ -248,9 +240,7 @@ export class NodeSupervisor {
       config,
     };
     this.chains.set(chainId, relation);
-    Logger.header({
-      message: `${this.ctn}: Chain ${chainId} creation has started...`,
-    });
+    Logger.header(`${this.ctn}: Chain ${chainId} creation has started...`);
     return chainId;
   }
 
@@ -264,25 +254,25 @@ export class NodeSupervisor {
 
     if (relation) {
       relation.config = relation.config.concat(config);
-      Logger.info({
-        message: `${this.ctn}: Chain ${chainId} updated with ${config.length} new configurations`,
-      });
+      Logger.info(
+        `${this.ctn}: Chain ${chainId} updated with ${config.length} new configurations`,
+      );
     } else {
       relation = {
         config: config,
       };
       this.chains.set(chainId, relation);
-      Logger.info({
-        message: `${this.ctn}: Chain ${chainId} created with ${config.length} configurations`,
-      });
+      Logger.info(
+        `${this.ctn}: Chain ${chainId} created with ${config.length} configurations`,
+      );
     }
     return chainId;
   }
 
   async prepareChainDistribution(chainId: string): Promise<void> {
-    Logger.header({
-      message: `${this.ctn}: Chain distribution for ${chainId} in progress...`,
-    });
+    Logger.header(
+      `${this.ctn}: Chain distribution for ${chainId} in progress...`,
+    );
     const chain = this.chains.get(chainId);
     if (!chain) {
       throw new Error(`${this.ctn}: Chain ${chainId} not found`);
@@ -329,9 +319,9 @@ export class NodeSupervisor {
         }
       }
     } else {
-      Logger.warn({
-        message: `${this.ctn}: No local config found for chain ${chainId}. Root node unavailable.`,
-      });
+      Logger.warn(
+        `${this.ctn}: No local config found for chain ${chainId}. Root node unavailable.`,
+      );
     }
 
     if (remoteConfigs.length > 0) {
@@ -360,49 +350,45 @@ export class NodeSupervisor {
 
     try {
       await this.broadcastSetupCallback(message);
-      Logger.info({
-        message: `${this.ctn}: Node creation signal broadcasted with chainId: ${chainId} for remote configs`,
-      });
+      Logger.info(
+        `${this.ctn}: Node creation signal broadcasted with chainId: ${chainId} for remote configs`,
+      );
     } catch (error) {
-      Logger.error({
-        message: `${this.ctn}: Failed to broadcast node creation signal: ${error}`,
-      });
+      Logger.error(
+        `${this.ctn}: Failed to broadcast node creation signal: ${error}`,
+      );
     }
   }
 
   async startChain(chainId: string, data: PipelineData): Promise<void> {
-    Logger.header({ message: `Chain ${chainId} requested...` });
+    Logger.header(`Chain ${chainId} requested...`);
     const chain = this.chains.get(chainId);
     if (!chain) {
-      Logger.warn({ message: `Chain ${chainId} not found.` });
+      Logger.warn(`Chain ${chainId} not found.`);
       return;
     }
     const rootNodeId = chain.rootNodeId;
     if (!rootNodeId) {
-      Logger.error({
-        message: `${this.ctn}: Root node ID for chain ${chainId} not found.`,
-      });
+      Logger.error(`${this.ctn}: Root node ID for chain ${chainId} not found.`);
       return;
     }
 
     const rootNode = this.nodes.get(rootNodeId);
 
     if (!rootNode) {
-      Logger.error({
-        message: `${this.ctn}: Root node ${rootNodeId} for chain ${chainId} not found.`,
-      });
+      Logger.error(
+        `${this.ctn}: Root node ${rootNodeId} for chain ${chainId} not found.`,
+      );
       return;
     }
 
     try {
       await this.runNode(rootNodeId, data);
-      Logger.info({
-        message: `${this.ctn}: Chain ${chainId} started with root node ${rootNodeId}.`,
-      });
+      Logger.info(
+        `${this.ctn}: Chain ${chainId} started with root node ${rootNodeId}.`,
+      );
     } catch (error) {
-      Logger.error({
-        message: `${this.ctn}: Failed to start chain ${chainId}: ${error}`,
-      });
+      Logger.error(`${this.ctn}: Failed to start chain ${chainId}: ${error}`);
     }
   }
 
@@ -411,16 +397,14 @@ export class NodeSupervisor {
     if (node) {
       await node.execute(data);
     } else {
-      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
+      Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
     }
   }
 
   async runNodeByRelation(payload: CallbackPayload): Promise<void> {
     try {
       const { targetId, chainId, data } = payload;
-      Logger.info({
-        message: `Received data for node hosting target ${targetId}`,
-      });
+      Logger.info(`Received data for node hosting target ${targetId}`);
       if (chainId === undefined) {
         throw new Error('chainId is undefined');
       }
@@ -445,9 +429,7 @@ export class NodeSupervisor {
         data: data as PipelineData,
       });
     } catch (error) {
-      Logger.error({
-        message: `Error in runNodeByRelation: ${(error as Error).message}`,
-      });
+      Logger.error(`Error in runNodeByRelation: ${(error as Error).message}`);
     }
   }
 
@@ -458,12 +440,12 @@ export class NodeSupervisor {
         await node.sendData();
       } catch (err) {
         const error = err as Error;
-        Logger.error({
-          message: `${this.ctn}: Node ${nodeId} send data failed: ${error.message}`,
-        });
+        Logger.error(
+          `${this.ctn}: Node ${nodeId} send data failed: ${error.message}`,
+        );
       }
     } else {
-      Logger.warn({ message: `${this.ctn}: Node ${nodeId} not found.` });
+      Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
     }
   }
 

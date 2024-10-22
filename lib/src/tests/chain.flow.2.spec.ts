@@ -3,14 +3,14 @@ import sinon from 'sinon';
 import { Node } from '../core/Node';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { PipelineProcessor } from '../core/PipelineProcessor';
-import { NodeSignal, PipelineData } from '../types/types';
+import { ChainType, NodeSignal, PipelineData } from '../types/types';
 
 describe('Node Supervisor Flow Test', function () {
   let nodeSupervisor: NodeSupervisor;
   let terminateStub: sinon.SinonStub;
 
   beforeEach(function () {
-    nodeSupervisor = NodeSupervisor.retrieveService();
+    nodeSupervisor = NodeSupervisor.retrieveService(true);
     terminateStub = sinon.stub(Node as any, 'terminate');
   });
 
@@ -50,7 +50,7 @@ describe('Node Supervisor Flow Test', function () {
   it('should handle multiple processors and output correctly', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [] },
+      params: { chainType: ChainType.PERSISTANT, services: [] },
     })) as string;
 
     const processor1 = new PipelineProcessor('');
@@ -84,7 +84,7 @@ describe('Node Supervisor Flow Test', function () {
   it('should handle delayed node execution', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [] },
+      params: { chainType: ChainType.PERSISTANT, services: [] },
     })) as string;
 
     const processor1 = new PipelineProcessor('');
