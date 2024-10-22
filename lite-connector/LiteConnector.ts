@@ -91,12 +91,17 @@ class SupervisorContainer {
 
   public async setup(): Promise<void> {
     PipelineProcessor.setCallbackService(
-      async ({ targetId, data }): Promise<PipelineData> => {
+      async ({ targetId, data, meta }): Promise<PipelineData> => {
         //
         // Here we call the required service
         //
         Logger.info({
-          message: `PipelineProcessor callback invoked - Connector: ${this.uid}, Target: ${targetId}, Data size: ${JSON.stringify(data).length} bytes`,
+          message: `PipelineProcessor callback invoked:
+                      - Connector: ${this.uid}
+                      - Target: ${targetId}
+                      - MetaData: ${JSON.stringify(meta?.configuration)}
+                      - Data size: ${JSON.stringify(data).length} bytes
+          `,
         });
         return data;
       },

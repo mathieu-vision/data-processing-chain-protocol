@@ -31,9 +31,10 @@ describe('Virtual Connector Chain Execution', function () {
       params: { chainType: ChainType.PERSISTANT, services: [node2Id] },
     })) as string;
 
-    const processor1 = new PipelineProcessor('');
-    const processor2 = new PipelineProcessor('');
-    const processor3 = new PipelineProcessor('');
+    const config = { targetId: '' };
+    const processor1 = new PipelineProcessor(config);
+    const processor2 = new PipelineProcessor(config);
+    const processor3 = new PipelineProcessor(config);
 
     sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
     sinon.stub(processor2, 'digest').resolves({ result2: 'data2' });
@@ -79,7 +80,8 @@ describe('Virtual Connector Chain Execution', function () {
       params: { chainType: ChainType.PERSISTANT, services: [node1Id] },
     })) as string;
 
-    const failingProcessor = new PipelineProcessor('');
+    const config = { targetId: '' };
+    const failingProcessor = new PipelineProcessor(config);
     sinon
       .stub(failingProcessor, 'digest')
       .rejects(new Error('Processor failed'));

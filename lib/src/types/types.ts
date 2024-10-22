@@ -2,13 +2,16 @@ import { PipelineProcessor } from '../core/PipelineProcessor';
 
 export type ProcessorPipeline = PipelineProcessor[];
 
-// Todo: review
 export type PipelineData = unknown;
-
+export interface PipelineMeta {
+  header: unknown;
+  configuration: unknown;
+}
 export interface CallbackPayload {
   chainId?: string;
   targetId: string;
-  data: unknown;
+  data: PipelineData;
+  meta?: PipelineMeta;
 }
 export type Callback = (_payload: CallbackPayload) => void;
 export type SetupCallback = (_message: BrodcastMessage) => Promise<void>;
@@ -153,8 +156,13 @@ export type SupervisorPayload =
   | SupervisorPayloadStartChain
   | SupervisorPayloadDeployChain;
 
+export interface ServiceConfig {
+  targetId: string;
+  meta?: PipelineMeta;
+}
+
 export type NodeConfig = {
-  services: string[];
+  services: string[] | ServiceConfig[];
   chainId?: string;
   location?: NodeType.Type;
   nextTargetId?: string;

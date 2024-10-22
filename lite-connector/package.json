@@ -1,11 +1,10 @@
 {
-  "name": "lite-connector",
+  "name": "lite-connector-sample",
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "dev": "nodemon --",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon --"
   },
   "keywords": [],
   "author": "",

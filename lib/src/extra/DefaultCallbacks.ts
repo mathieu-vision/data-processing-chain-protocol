@@ -24,7 +24,9 @@ export const broadcastSetupCallback = async (
       Logger.warn('Empty services array encountered in config');
       continue;
     }
-    const targetId: string = config.services[0];
+    const service = config.services[0];
+    const targetId: string =
+      typeof service === 'string' ? service : service.targetId;
     const host = hostResolver(targetId);
     if (!host) {
       Logger.warn(`No container address found for targetId: ${targetId}`);

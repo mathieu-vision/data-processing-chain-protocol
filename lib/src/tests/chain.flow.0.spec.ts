@@ -39,8 +39,9 @@ describe('Node System Tests', function () {
 
   it('should execute node with processors', async function () {
     const node = nodes[0];
-    const processor1 = new PipelineProcessor('');
-    const processor2 = new PipelineProcessor('');
+    const config = { targetId: '' };
+    const processor1 = new PipelineProcessor(config);
+    const processor2 = new PipelineProcessor(config);
 
     sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
     sinon.stub(processor2, 'digest').resolves({ result2: 'data2' });
@@ -62,7 +63,8 @@ describe('Node System Tests', function () {
 
   it('should handle node execution failure', async function () {
     const node = nodes[0];
-    const failingProcessor = new PipelineProcessor('');
+    const config = { targetId: '' };
+    const failingProcessor = new PipelineProcessor(config);
     sinon
       .stub(failingProcessor, 'digest')
       .rejects(new Error('Processor failed'));
@@ -95,7 +97,8 @@ describe('Node System Tests', function () {
       params: { chainType: ChainType.PERSISTANT, services: [] },
     })) as string;
 
-    const processor = new PipelineProcessor('');
+    const config = { targetId: '' };
+    const processor = new PipelineProcessor(config);
     sinon.stub(processor, 'digest').resolves({ result: 'processed data' });
     await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,

@@ -24,7 +24,8 @@ describe('Node Supervisor Flow Test', function () {
       params: { services: [] },
     })) as string;
 
-    const processor1 = new PipelineProcessor('');
+    const config = { targetId: '' };
+    const processor1 = new PipelineProcessor(config);
     sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
 
     await nodeSupervisor.addProcessors(nodeId, [processor1]);
@@ -53,8 +54,9 @@ describe('Node Supervisor Flow Test', function () {
       params: { chainType: ChainType.PERSISTANT, services: [] },
     })) as string;
 
-    const processor1 = new PipelineProcessor('');
-    const processor2 = new PipelineProcessor('');
+    const config = { targetId: '' };
+    const processor1 = new PipelineProcessor(config);
+    const processor2 = new PipelineProcessor(config);
 
     sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
     sinon.stub(processor2, 'digest').resolves({ processed: 'data2' });
@@ -87,7 +89,8 @@ describe('Node Supervisor Flow Test', function () {
       params: { chainType: ChainType.PERSISTANT, services: [] },
     })) as string;
 
-    const processor1 = new PipelineProcessor('');
+    const config = { targetId: '' };
+    const processor1 = new PipelineProcessor(config);
     sinon.stub(processor1, 'digest').resolves({ processed: 'data1' });
 
     await nodeSupervisor.addProcessors(nodeId, [processor1]);

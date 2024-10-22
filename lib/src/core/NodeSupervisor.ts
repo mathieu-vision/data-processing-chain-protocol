@@ -22,6 +22,7 @@ import {
   SupervisorPayloadPrepareChain,
   SupervisorPayloadStartChain,
   SupervisorPayloadDeployChain,
+  PipelineMeta,
 } from '../types/types';
 import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from './Logger';
@@ -34,6 +35,7 @@ export class NodeSupervisor {
   private static instance: NodeSupervisor;
   private nodes: Map<string, Node>;
   private chains: Map<string, ChainRelation>;
+  // private meta: Map<string, PipelineMeta>;
 
   private nodeMonitoring?: NodeMonitoring;
   private broadcastSetupCallback: SetupCallback;
@@ -44,9 +46,16 @@ export class NodeSupervisor {
     this.ctn = '@container:default';
     this.nodes = new Map();
     this.chains = new Map();
+    // this.meta = new Map();
     this.remoteServiceCallback = (_payload: CallbackPayload) => {};
     this.broadcastSetupCallback = async (_message: BrodcastMessage) => {};
   }
+
+  /*
+  public getMeta(targetId: string): PipelineMeta | undefined {
+    return this.meta.get(targetId);
+  }
+  */
 
   setRemoteServiceCallback(callback: Callback): void {
     this.remoteServiceCallback = callback;
@@ -178,7 +187,10 @@ export class NodeSupervisor {
     }
 
     const processors = config.services.map(
-      (service) => new PipelineProcessor(service),
+      (service) =>
+        new PipelineProcessor(
+          typeof service === 'string' ? { targetId: service } : service,
+        ),
     );
     await this.addProcessors(nodeId, processors);
     Logger.info(
@@ -312,8 +324,11 @@ export class NodeSupervisor {
       if (remoteConfigs.length > 0 && remoteConfigs[0].services.length > 0) {
         const lastLocalNode = this.nodes.get(prevNodeId);
         if (lastLocalNode) {
+          const nextService = remoteConfigs[0].services[0];
           lastLocalNode.setNextNodeInfo(
-            remoteConfigs[0].services[0],
+            typeof nextService === 'string'
+              ? nextService
+              : nextService.targetId,
             NodeType.REMOTE,
           );
         }
@@ -325,13 +340,19 @@ export class NodeSupervisor {
     }
 
     if (remoteConfigs.length > 0) {
-      const updatedRemoteConfigs = remoteConfigs.map((config, index) => {
-        const nextConfig = remoteConfigs[index + 1];
-        return {
-          ...config,
-          nextTargetId: nextConfig ? nextConfig.services[0] : undefined,
-        };
-      });
+      const updatedRemoteConfigs: NodeConfig[] = remoteConfigs.map(
+        (config, index) => {
+          const nextConfig = remoteConfigs[index + 1];
+          return {
+            ...config,
+            nextTargetId: nextConfig
+              ? typeof nextConfig.services[0] === 'string'
+                ? nextConfig.services[0]
+                : nextConfig.services[0].targetId
+              : undefined,
+          };
+        },
+      );
       await this.broadcastNodeSetupSignal(chainId, updatedRemoteConfigs);
     }
   }
@@ -462,10 +483,14 @@ export class NodeSupervisor {
       }
       return (
         nodeConfig.chainId === chainId &&
-        nodeConfig.services.includes(serviceUid)
+        nodeConfig.services.some((service) =>
+          typeof service === 'string'
+            ? service === serviceUid
+            : service.targetId === serviceUid,
+        )
       );
     });
   }
 }
 
-export default NodeSupervisor.retrieveService();
+// export default NodeSupervisor.retrieveService();

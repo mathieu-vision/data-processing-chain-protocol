@@ -10,7 +10,7 @@
 
 **POST**: `http://localhost:8887/chain/create-and-start`
 
-**Payload** (basically, this is the chain):
+**Payload example 1, no meta data** (basically, this is the chain):
 
 ```json
 {
@@ -38,7 +38,34 @@
 }
 ```
 
----
+**Payload Example 2, with meta data**:
+
+```json
+{
+  "chainConfig": [
+    {
+      "services": [],
+      "location": "local"
+    },
+    {
+      "services": [{"targetId": "http://localhost:8888/service1", "meta":{"configuration":{"a": "some configuration"}}}],
+      "location": "remote"
+    },
+    {
+      "services": ["http://localhost:8889/service2"],
+      "location": "remote"
+    },
+    {
+      "services": ["http://localhost:8890/service3"],
+      "location": "remote"
+    }
+  ],
+  "data": {
+      "hello": "here an other data"
+   }
+}
+```
+
 ---
 
 # LiteConnector.0 Example Usage in 3 Steps
