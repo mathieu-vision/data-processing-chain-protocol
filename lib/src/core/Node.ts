@@ -13,6 +13,7 @@ import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
 import { Logger } from './Logger';
 import { NodeSupervisor } from './NodeSupervisor';
+import { NodeMonitoring, NodeReportingAgent } from './NodeMonitoring';
 
 export class Node {
   private id: string;
@@ -32,6 +33,7 @@ export class Node {
     meta?: PipelineMeta;
   } | null;
   private config: NodeConfig | null;
+  private reporter: NodeReportingAgent;
 
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
@@ -45,6 +47,8 @@ export class Node {
     this.executionQueue = Promise.resolve();
     this.nextNodeInfo = null;
     this.config = null;
+    const monitoring = NodeMonitoring.retrieveService();
+    this.reporter = monitoring.getReporterAgent();
   }
 
   private updateProgress(): void {

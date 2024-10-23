@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { NodeMonitoring } from '../core/NodeMonitoring';
+import { NodeMonitoring } from '../core/_NodeMonitoring';
 import { ProgressTracker } from '../core/ProgressTracker';
 import { ChainType, NodeSignal } from '../types/types';
 import { NodeSupervisor } from '../core/NodeSupervisor';

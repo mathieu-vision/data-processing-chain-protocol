@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { Node } from '../core/Node';
-import { NodeMonitoring } from '../core/NodeMonitoring';
+import { NodeMonitoring } from '../core/_NodeMonitoring';
 import { ProgressTracker } from '../core/ProgressTracker';
 import { ChainType, NodeStatus } from '../types/types';
 import { PipelineProcessor } from '../core/PipelineProcessor';

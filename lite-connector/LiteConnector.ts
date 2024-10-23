@@ -59,6 +59,13 @@ class SupervisorContainer {
       switch (communicationType) {
         case 'setup': {
           const { chainId, remoteConfigs } = req.body;
+          if (remoteConfigs?.services[0]?.meta?.resolver) {
+            // eslint-disable-next-line no-undef
+            console.log('waiting........');
+            // eslint-disable-next-line no-undef
+            await new Promise((resolve) => setTimeout(resolve, 10000));
+          }
+
           const nodeId = await this.nodeSupervisor.handleRequest({
             signal: NodeSignal.NODE_SETUP,
             config: { ...remoteConfigs, chainId },

@@ -154,6 +154,7 @@ declare class Node {
     private output;
     private nextNodeInfo;
     private config;
+    private reporter;
     constructor(dependencies?: string[]);
     private updateProgress;
     setConfig(config: NodeConfig): void;
@@ -185,6 +186,39 @@ declare class Node {
     } | null;
 }
 
+declare class NodeSupervisor {
+    private uid;
+    private ctn;
+    private static instance;
+    private nodes;
+    private chains;
+    private broadcastSetupCallback;
+    remoteServiceCallback: Callback;
+    private constructor();
+    static retrieveService(refresh?: boolean): NodeSupervisor;
+    setRemoteServiceCallback(callback: Callback): void;
+    setBroadcastSetupCallback(broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>): void;
+    setUid(uid: string): void;
+    handleRequest(payload: SupervisorPayload): Promise<void | string>;
+    private deployChain;
+    private createNode;
+    private setupNode;
+    addProcessors(nodeId: string, processors: PipelineProcessor[]): Promise<void>;
+    private deleteNode;
+    private pauseNode;
+    private delayNode;
+    createChain(config: ChainConfig): string;
+    private updateChain;
+    prepareChainDistribution(chainId: string): Promise<void>;
+    broadcastNodeSetupSignal(chainId: string, remoteConfigs: ChainConfig): Promise<void>;
+    startChain(chainId: string, data: PipelineData): Promise<void>;
+    private runNode;
+    runNodeByRelation(payload: CallbackPayload): Promise<void>;
+    private sendNodeData;
+    getNodes(): Map<string, Node>;
+    getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[];
+}
+
 declare class ProgressTracker {
     private totalNodes;
     private completedNodes;
@@ -204,41 +238,6 @@ declare class NodeMonitoring {
     canExecuteNode(nodeId: string): boolean;
     private getCompletedNodes;
     setProgressTracker(progressTracker: ProgressTracker): void;
-}
-
-declare class NodeSupervisor {
-    private uid;
-    private ctn;
-    private static instance;
-    private nodes;
-    private chains;
-    private nodeMonitoring?;
-    private broadcastSetupCallback;
-    remoteServiceCallback: Callback;
-    private constructor();
-    setRemoteServiceCallback(callback: Callback): void;
-    setMonitoring(nodeMonitoring: NodeMonitoring): void;
-    setBroadcastSetupCallback(broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>): void;
-    setUid(uid: string): void;
-    static retrieveService(refresh?: boolean): NodeSupervisor;
-    handleRequest(payload: SupervisorPayload): Promise<void | string>;
-    private deployChain;
-    private createNode;
-    private setupNode;
-    addProcessors(nodeId: string, processors: PipelineProcessor[]): Promise<void>;
-    private deleteNode;
-    private pauseNode;
-    private delayNode;
-    createChain(config: ChainConfig): string;
-    private updateChain;
-    prepareChainDistribution(chainId: string): Promise<void>;
-    broadcastNodeSetupSignal(chainId: string, remoteConfigs: ChainConfig): Promise<void>;
-    startChain(chainId: string, data: PipelineData): Promise<void>;
-    private runNode;
-    runNodeByRelation(payload: CallbackPayload): Promise<void>;
-    private sendNodeData;
-    getNodes(): Map<string, Node>;
-    getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[];
 }
 
 declare class PipelineDataCombiner {

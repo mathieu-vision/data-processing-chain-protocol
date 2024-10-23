@@ -3,7 +3,7 @@ import sinon from 'sinon';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { PipelineProcessor } from '../core/PipelineProcessor';
 import { ChainConfig, NodeSignal, PipelineData } from '../types/types';
-import { NodeMonitoring } from '../core/NodeMonitoring';
+import { NodeMonitoring } from '../core/_NodeMonitoring';
 import { ProgressTracker } from '../core/ProgressTracker';
 import { Node } from '../core/Node';
 

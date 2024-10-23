@@ -63,7 +63,8 @@ export const broadcastSetupCallback = async (
         },
       };
 
-      await new Promise((resolve, reject) => {
+      // await
+      void new Promise((resolve, reject) => {
         const req = (url.protocol === 'https:' ? https : http).request(
           options,
           (res) => {

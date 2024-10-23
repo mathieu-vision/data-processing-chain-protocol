@@ -1,6 +1,7 @@
 import { Logger } from './Logger';
 import { NodeStatus } from '../types/types';
 
+// todo: to be removed
 export class ProgressTracker {
   private totalNodes: number;
   private completedNodes: number = 0;

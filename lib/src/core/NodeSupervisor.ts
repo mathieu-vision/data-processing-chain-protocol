@@ -24,11 +24,12 @@ import {
   SupervisorPayloadDeployChain,
   ServiceConfig,
 } from '../types/types';
-import { NodeMonitoring } from './NodeMonitoring';
+// import { NodeMonitoring } from './NodeMonitoring';
 import { Logger } from './Logger';
 import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
 
+// Should be ChainSupervisor
 export class NodeSupervisor {
   private uid: string;
   private ctn: string;
@@ -36,7 +37,7 @@ export class NodeSupervisor {
   private nodes: Map<string, Node>;
   private chains: Map<string, ChainRelation>;
 
-  private nodeMonitoring?: NodeMonitoring;
+  // private nodeMonitoring?: NodeMonitoring;
   private broadcastSetupCallback: SetupCallback;
   remoteServiceCallback: Callback;
 
@@ -49,13 +50,22 @@ export class NodeSupervisor {
     this.broadcastSetupCallback = async (_message: BrodcastMessage) => {};
   }
 
+  static retrieveService(refresh: boolean = false): NodeSupervisor {
+    if (!NodeSupervisor.instance || refresh) {
+      const instance = new NodeSupervisor();
+      NodeSupervisor.instance = instance;
+    }
+    return NodeSupervisor.instance;
+  }
+
   setRemoteServiceCallback(callback: Callback): void {
     this.remoteServiceCallback = callback;
   }
-
+  /*
   setMonitoring(nodeMonitoring: NodeMonitoring): void {
     this.nodeMonitoring = nodeMonitoring;
   }
+  */
 
   setBroadcastSetupCallback(
     broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>,
@@ -67,15 +77,6 @@ export class NodeSupervisor {
     this.ctn = `@container:${uid}`;
     this.uid = `@supervisor:${uid}`;
   }
-
-  static retrieveService(refresh: boolean = false): NodeSupervisor {
-    if (!NodeSupervisor.instance || refresh) {
-      const instance = new NodeSupervisor();
-      NodeSupervisor.instance = instance;
-    }
-    return NodeSupervisor.instance;
-  }
-
   //
 
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
@@ -146,9 +147,11 @@ export class NodeSupervisor {
     const nodeId = node.getId();
     node.setConfig(config);
     this.nodes.set(nodeId, node);
+    /*
     if (this.nodeMonitoring) {
       this.nodeMonitoring.addNode(node);
     }
+    */
     Logger.info(
       `${this.ctn}: Node ${nodeId} created with config: ${JSON.stringify(config, null, 2)}`,
     );
@@ -212,9 +215,11 @@ export class NodeSupervisor {
   private async deleteNode(nodeId: string): Promise<void> {
     if (this.nodes.has(nodeId)) {
       this.nodes.delete(nodeId);
+      /*
       if (this.nodeMonitoring) {
         this.nodeMonitoring.deleteNode(nodeId);
       }
+      */
       Logger.info(`${this.ctn}: Node ${nodeId} deleted.`);
     } else {
       Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
@@ -355,26 +360,6 @@ export class NodeSupervisor {
           return nodeConfig;
         },
       );
-      /*
-      const updatedRemoteConfigs: NodeConfig[] = remoteConfigs.map(
-        (config, index) => {
-          const nextConfig: NodeConfig = remoteConfigs[index + 1];
-          return {
-            ...config,
-            nextTargetId: nextConfig
-              ? typeof nextConfig.services[0] === 'string'
-                ? nextConfig.services[0]
-                : nextConfig.services[0].targetId
-              : undefined,
-            nextMeta: nextConfig
-              ? typeof nextConfig.services[0] === 'string'
-                ? undefined
-                : nextConfig.services[0].meta
-              : undefined,
-          };
-        },
-      );
-      */
       await this.broadcastNodeSetupSignal(chainId, updatedRemoteConfigs);
     }
   }
