@@ -4,7 +4,8 @@ export type ProcessorPipeline = PipelineProcessor[];
 
 export type PipelineData = unknown;
 export interface PipelineMeta {
-  header: unknown;
+  header?: unknown;
+  resolver?: string;
   configuration: unknown;
 }
 export interface CallbackPayload {
@@ -162,10 +163,11 @@ export interface ServiceConfig {
 }
 
 export type NodeConfig = {
-  services: string[] | ServiceConfig[];
+  services: (string | ServiceConfig)[];
   chainId?: string;
   location?: NodeType.Type;
   nextTargetId?: string;
+  nextMeta?: PipelineMeta;
   chainType?: ChainType.Type;
 };
 

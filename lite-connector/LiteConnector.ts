@@ -1,13 +1,12 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import {
-  ChainConfig,
-  NodeConfig,
   NodeSupervisor,
   PipelineProcessor,
   SupervisorPayloadDeployChain,
   SupervisorPayloadSetup,
   setDefaultCallbacks,
+  PipelineMeta,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -113,7 +112,13 @@ class SupervisorContainer {
         setup: '/node/communicate/setup',
         run: '/node/communicate/run',
       },
-      hostResolver: (targetId: string) => {
+      hostResolver: (targetId: string, meta?: PipelineMeta) => {
+        Logger.info({
+          message: `Resolving host for ${targetId}, meta: ${JSON.stringify(meta, null, 2)}`,
+        });
+        if (meta?.resolver !== undefined) {
+          return meta.resolver;
+        }
         const url = new URL(targetId);
         const baseUrl = `${url.protocol}//${url.hostname}${url.port ? ':' + url.port : ''}`;
         return baseUrl;

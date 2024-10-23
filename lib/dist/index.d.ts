@@ -10,7 +10,8 @@ declare class PipelineProcessor {
 type ProcessorPipeline = PipelineProcessor[];
 type PipelineData = unknown;
 interface PipelineMeta {
-    header: unknown;
+    header?: unknown;
+    resolver?: string;
     configuration: unknown;
 }
 interface CallbackPayload {
@@ -120,10 +121,11 @@ interface ServiceConfig {
     meta?: PipelineMeta;
 }
 type NodeConfig = {
-    services: string[] | ServiceConfig[];
+    services: (string | ServiceConfig)[];
     chainId?: string;
     location?: NodeType.Type;
     nextTargetId?: string;
+    nextMeta?: PipelineMeta;
     chainType?: ChainType.Type;
 };
 type ChainConfig = NodeConfig[];
@@ -175,10 +177,11 @@ declare class Node {
     updateStatus(status: NodeStatus.Type, error?: Error): void;
     getError(): Error | undefined;
     getProcessors(): ProcessorPipeline[];
-    setNextNodeInfo(id: string, type: NodeType.Type): void;
+    setNextNodeInfo(id: string, type: NodeType.Type, meta?: PipelineMeta): void;
     getNextNodeInfo(): {
         id: string;
         type: NodeType.Type;
+        meta?: PipelineMeta;
     } | null;
 }
 
@@ -249,15 +252,16 @@ declare class PipelineDataCombiner {
     setCustomCombineFunction(combineFunction: CombineFonction): void;
 }
 
+type HostResolverCallback = (_targetId: string, _meta?: PipelineMeta) => string | undefined;
 interface BSCPayload {
     message: BrodcastMessage;
-    hostResolver: (_targetId: string) => string | undefined;
+    hostResolver: HostResolverCallback;
     path: string;
 }
 declare const broadcastSetupCallback: (payload: BSCPayload) => Promise<void>;
 interface RSCPayload {
     cbPayload: CallbackPayload;
-    hostResolver: (_targetId: string) => string | undefined;
+    hostResolver: HostResolverCallback;
     path: string;
 }
 declare const remoteServiceCallback: (payload: RSCPayload) => Promise<unknown>;
@@ -267,8 +271,8 @@ interface DefaultCallbackPayload {
         setup: string;
         run: string;
     };
-    hostResolver: (_targetId: string) => string;
+    hostResolver: HostResolverCallback;
 }
 declare const setDefaultCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
 
-export { type BSCPayload, type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeMonitoring, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, ProgressTracker, type RSCPayload, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, broadcastSetupCallback, remoteServiceCallback, setDefaultCallbacks };
+export { type BSCPayload, type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeMonitoring, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, ProgressTracker, type RSCPayload, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, broadcastSetupCallback, remoteServiceCallback, setDefaultCallbacks };

@@ -10,7 +10,99 @@
 
 **POST**: `http://localhost:8887/chain/create-and-start`
 
-**Payload example 1, no meta data** (basically, this is the chain):
+
+**Payload Example 2, with meta data and resolver**:
+
+```json
+{
+  "chainConfig": [
+    {
+      "services": [],
+      "location": "local"
+    },
+    {
+      "services": [
+        {
+          "targetId": "http://localhost:8888/service1",
+          "meta": {
+            "configuration": {
+              "a": "some configuration"
+            }
+          }
+        }
+      ],
+      "location": "remote"
+    },
+    {
+      "services": [
+        {
+          "targetId": "service2",
+          "meta": {
+            "resolver": "http://localhost:8889/",
+            "configuration": {
+              "a": "some configuration"
+            }
+          }
+        }
+      ],
+      "location": "remote"
+    },
+    {
+      "services": [
+        "http://localhost:8890/service3"
+      ],
+      "location": "remote"
+    }
+  ],
+  "data": {
+    "hello": "here the data"
+  }
+}
+```
+
+**Payload Example 2, with meta data**:
+
+```json
+{
+  "chainConfig": [
+    {
+      "services": [],
+      "location": "local"
+    },
+    {
+      "services": [
+        {
+          "targetId": "http://localhost:8888/service1",
+          "meta": {
+            "configuration": {
+              "a": "some configuration"
+            }
+          }
+        }
+      ],
+      "location": "remote"
+    },
+    {
+      "services": [
+        "http://localhost:8889/service2"
+      ],
+      "location": "remote"
+    },
+    {
+      "services": [
+        "http://localhost:8890/service3"
+      ],
+      "location": "remote"
+    }
+  ],
+  "data": {
+    "hello": "here an other data"
+  }
+}
+
+```
+
+**Payload example 3**:
 
 ```json
 {
@@ -34,34 +126,6 @@
   ],
   "data": {
       "hello": "here the data"
-   }
-}
-```
-
-**Payload Example 2, with meta data**:
-
-```json
-{
-  "chainConfig": [
-    {
-      "services": [],
-      "location": "local"
-    },
-    {
-      "services": [{"targetId": "http://localhost:8888/service1", "meta":{"configuration":{"a": "some configuration"}}}],
-      "location": "remote"
-    },
-    {
-      "services": ["http://localhost:8889/service2"],
-      "location": "remote"
-    },
-    {
-      "services": ["http://localhost:8890/service3"],
-      "location": "remote"
-    }
-  ],
-  "data": {
-      "hello": "here an other data"
    }
 }
 ```

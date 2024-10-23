@@ -10,6 +10,7 @@ export {
   NodeSignal,
   NodeStatus,
   PipelineData,
+  PipelineMeta,
   SupervisorPayload,
   CallbackPayload,
   BrodcastMessage,

@@ -7,6 +7,7 @@ import {
   NodeSignal,
   NodeConfig,
   ChainType,
+  PipelineMeta,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -25,7 +26,11 @@ export class Node {
   private dataType: DataType.Type;
   private executionQueue: Promise<void>;
   private output: PipelineData[];
-  private nextNodeInfo: { id: string; type: NodeType.Type } | null;
+  private nextNodeInfo: {
+    id: string;
+    type: NodeType.Type;
+    meta?: PipelineMeta;
+  } | null;
   private config: NodeConfig | null;
 
   constructor(dependencies: string[] = []) {
@@ -168,10 +173,11 @@ export class Node {
         });
       } else if (nextNodeInfo.type === NodeType.REMOTE) {
         supervisor.remoteServiceCallback({
-          // nextNodeInfo.id needs to be the next remote target service uid
+          // targetId and meta are related to the next remote target service uid
           chainId: currentNode.getConfig()?.chainId,
           targetId: nextNodeInfo.id,
           data: pipelineData,
+          meta: nextNodeInfo.meta,
         });
       }
     } else {
@@ -231,11 +237,15 @@ export class Node {
     return this.pipelines;
   }
 
-  setNextNodeInfo(id: string, type: NodeType.Type): void {
-    this.nextNodeInfo = { id, type };
+  setNextNodeInfo(id: string, type: NodeType.Type, meta?: PipelineMeta): void {
+    this.nextNodeInfo = { id, type, meta };
   }
 
-  getNextNodeInfo(): { id: string; type: NodeType.Type } | null {
+  getNextNodeInfo(): {
+    id: string;
+    type: NodeType.Type;
+    meta?: PipelineMeta;
+  } | null {
     return this.nextNodeInfo;
   }
 }

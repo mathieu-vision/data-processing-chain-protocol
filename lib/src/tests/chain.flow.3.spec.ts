@@ -77,7 +77,6 @@ describe('Node Supervisor Chain Flow Test', function () {
     );
 
     expect(terminateSpy.calledThrice, 'expect 7').to.be.true;
-    console.log(terminateSpy.lastCall.args[1]);
     expect(terminateSpy.lastCall.args[1], 'expect 8').to.deep.equal([
       {
         input: 'initialData',

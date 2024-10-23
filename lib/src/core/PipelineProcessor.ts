@@ -16,6 +16,7 @@ export class PipelineProcessor {
   static setCallbackService(callbackService: ProcessorCallback): void {
     PipelineProcessor.callbackService = callbackService;
   }
+
   async digest(data: PipelineData): Promise<PipelineData> {
     if (PipelineProcessor.callbackService) {
       return await PipelineProcessor.callbackService({

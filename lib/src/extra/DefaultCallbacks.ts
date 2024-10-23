@@ -1,13 +1,23 @@
 import { Logger } from '../core/Logger';
-import { BrodcastMessage, CallbackPayload, ChainConfig } from '../types/types';
+import {
+  BrodcastMessage,
+  CallbackPayload,
+  ChainConfig,
+  PipelineMeta,
+  ServiceConfig,
+} from '../types/types';
 import { Buffer } from 'buffer';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import * as http from 'http';
 import * as https from 'https';
 
+export type HostResolverCallback = (
+  _targetId: string,
+  _meta?: PipelineMeta,
+) => string | undefined;
 export interface BSCPayload {
   message: BrodcastMessage;
-  hostResolver: (_targetId: string) => string | undefined;
+  hostResolver: HostResolverCallback;
   path: string;
 }
 
@@ -27,7 +37,9 @@ export const broadcastSetupCallback = async (
     const service = config.services[0];
     const targetId: string =
       typeof service === 'string' ? service : service.targetId;
-    const host = hostResolver(targetId);
+    const meta = typeof service === 'string' ? undefined : service.meta;
+
+    const host = hostResolver(targetId, meta);
     if (!host) {
       Logger.warn(`No container address found for targetId: ${targetId}`);
       continue;
@@ -103,7 +115,7 @@ export const broadcastSetupCallback = async (
 
 export interface RSCPayload {
   cbPayload: CallbackPayload;
-  hostResolver: (_targetId: string) => string | undefined;
+  hostResolver: HostResolverCallback;
   path: string;
 }
 
@@ -115,7 +127,7 @@ export const remoteServiceCallback = async (payload: RSCPayload) => {
       throw new Error('payload.chainId is undefined');
     }
 
-    const nextConnectorUrl = hostResolver(cbPayload.targetId);
+    const nextConnectorUrl = hostResolver(cbPayload.targetId, cbPayload.meta);
     if (!nextConnectorUrl) {
       throw new Error(
         `Next connector URI not found for the following target service: ${cbPayload.targetId}`,
@@ -179,7 +191,7 @@ export const remoteServiceCallback = async (payload: RSCPayload) => {
 export interface DefaultCallbackPayload {
   supervisor: NodeSupervisor;
   paths: { setup: string; run: string };
-  hostResolver: (_targetId: string) => string;
+  hostResolver: HostResolverCallback;
 }
 export const setDefaultCallbacks = async (
   dcPayload: DefaultCallbackPayload,
