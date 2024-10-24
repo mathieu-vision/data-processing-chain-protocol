@@ -11,9 +11,9 @@ import {
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
-import { Logger } from './Logger';
+import { Logger } from '../extra/Logger';
 import { NodeSupervisor } from './NodeSupervisor';
-import { NodeMonitoring, NodeReportingAgent } from './NodeMonitoring';
+import { MonitoringAgent, NodeReportingAgent } from '../agents/MonitoringAgent';
 
 export class Node {
   private id: string;
@@ -33,7 +33,7 @@ export class Node {
     meta?: PipelineMeta;
   } | null;
   private config: NodeConfig | null;
-  private reporter: NodeReportingAgent;
+  private reporter: NodeReportingAgent | null = null;
 
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
@@ -47,8 +47,6 @@ export class Node {
     this.executionQueue = Promise.resolve();
     this.nextNodeInfo = null;
     this.config = null;
-    const monitoring = NodeMonitoring.retrieveService();
-    this.reporter = monitoring.getReporterAgent();
   }
 
   private updateProgress(): void {
@@ -56,6 +54,8 @@ export class Node {
   }
 
   setConfig(config: NodeConfig): void {
+    const monitoring = MonitoringAgent.retrieveService();
+    this.reporter = monitoring.genReporterAgent(config.chainId);
     this.config = config;
   }
 
@@ -92,6 +92,18 @@ export class Node {
   ): Generator<ProcessorPipeline[], void, unknown> {
     for (let i = 0; i < pipelines.length; i += count) {
       yield pipelines.slice(i, i + count);
+    }
+  }
+
+  notify(notify: NodeSignal.Type) {
+    try {
+      if (this.reporter !== null) {
+        this.reporter.notify(notify);
+      } else {
+        throw new Error('Reporter not set');
+      }
+    } catch (error) {
+      Logger.error((error as Error).message);
     }
   }
 

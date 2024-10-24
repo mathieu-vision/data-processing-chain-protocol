@@ -164,7 +164,7 @@ export interface ServiceConfig {
 
 export type NodeConfig = {
   services: (string | ServiceConfig)[];
-  chainId?: string;
+  chainId: string;
   location?: NodeType.Type;
   nextTargetId?: string;
   nextMeta?: PipelineMeta;

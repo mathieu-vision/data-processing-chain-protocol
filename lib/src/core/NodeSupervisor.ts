@@ -24,8 +24,7 @@ import {
   SupervisorPayloadDeployChain,
   ServiceConfig,
 } from '../types/types';
-// import { NodeMonitoring } from './NodeMonitoring';
-import { Logger } from './Logger';
+import { Logger } from '../extra/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
 
@@ -37,7 +36,6 @@ export class NodeSupervisor {
   private nodes: Map<string, Node>;
   private chains: Map<string, ChainRelation>;
 
-  // private nodeMonitoring?: NodeMonitoring;
   private broadcastSetupCallback: SetupCallback;
   remoteServiceCallback: Callback;
 
@@ -61,11 +59,6 @@ export class NodeSupervisor {
   setRemoteServiceCallback(callback: Callback): void {
     this.remoteServiceCallback = callback;
   }
-  /*
-  setMonitoring(nodeMonitoring: NodeMonitoring): void {
-    this.nodeMonitoring = nodeMonitoring;
-  }
-  */
 
   setBroadcastSetupCallback(
     broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>,
@@ -147,11 +140,6 @@ export class NodeSupervisor {
     const nodeId = node.getId();
     node.setConfig(config);
     this.nodes.set(nodeId, node);
-    /*
-    if (this.nodeMonitoring) {
-      this.nodeMonitoring.addNode(node);
-    }
-    */
     Logger.info(
       `${this.ctn}: Node ${nodeId} created with config: ${JSON.stringify(config, null, 2)}`,
     );
@@ -195,7 +183,17 @@ export class NodeSupervisor {
     Logger.info(
       `${this.ctn}: Node ${nodeId} setup completed with ${processors.length} processors`,
     );
+    await this.notify(nodeId, NodeSignal.NODE_SETUP);
     return nodeId;
+  }
+
+  async notify(nodeId: string, signal: NodeSignal.Type): Promise<void> {
+    const node = this.nodes.get(nodeId);
+    if (node) {
+      node.notify(signal);
+    } else {
+      Logger.warn(`${this.ctn}: Can't notify non-existing node ${nodeId}`);
+    }
   }
 
   // Todo: set as private ?
@@ -215,11 +213,6 @@ export class NodeSupervisor {
   private async deleteNode(nodeId: string): Promise<void> {
     if (this.nodes.has(nodeId)) {
       this.nodes.delete(nodeId);
-      /*
-      if (this.nodeMonitoring) {
-        this.nodeMonitoring.deleteNode(nodeId);
-      }
-      */
       Logger.info(`${this.ctn}: Node ${nodeId} deleted.`);
     } else {
       Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);

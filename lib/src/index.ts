@@ -39,8 +39,6 @@ export {
   ServiceConfig,
 } from './types/types';
 
-export { NodeMonitoring } from './core/_NodeMonitoring';
-export { ProgressTracker } from './core/ProgressTracker';
 export { PipelineDataCombiner } from './core/PipelineDataCombiner';
 
 export {
