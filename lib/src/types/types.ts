@@ -14,8 +14,24 @@ export interface CallbackPayload {
   data: PipelineData;
   meta?: PipelineMeta;
 }
-export type Callback = (_payload: CallbackPayload) => void;
-export type SetupCallback = (_message: BrodcastMessage) => Promise<void>;
+export type ServiceCallback = (_payload: CallbackPayload) => void;
+export type SetupCallback = (_message: BrodcastSetupMessage) => Promise<void>;
+export type ReportingCallback = (
+  _message: BrodcastReportingMessage,
+) => Promise<void>;
+
+export namespace DefaultCallback {
+  export const SERVICE_CALLBACK: ServiceCallback = (
+    _payload: CallbackPayload,
+  ) => {};
+  export const SETUP_CALLBACK: SetupCallback = async (
+    _message: BrodcastSetupMessage,
+  ) => {};
+  export const REPORTING_CALLBACK: ReportingCallback = async (
+    _message: BrodcastReportingMessage,
+  ) => {};
+}
+
 export type ProcessorCallback = (
   _payload: CallbackPayload,
 ) => Promise<PipelineData>;
@@ -78,7 +94,9 @@ export namespace NodeSignal {
     | 'node_send_data'
     | 'chain_prepare'
     | 'chain_start'
-    | 'chain_deploy';
+    | 'chain_deploy'
+    | 'chain_setup';
+
   export const NODE_SETUP: Type = 'node_setup';
   export const NODE_CREATE: Type = 'node_create';
   export const NODE_DELETE: Type = 'node_delete';
@@ -89,6 +107,7 @@ export namespace NodeSignal {
   export const CHAIN_PREPARE: Type = 'chain_prepare';
   export const CHAIN_START: Type = 'chain_start';
   export const CHAIN_DEPLOY: Type = 'chain_deploy';
+  export const CHAIN_SETUP: Type = 'chain_setup';
 }
 
 export type SupervisorPayloadSetup = {
@@ -172,12 +191,18 @@ export type NodeConfig = {
 };
 
 export type ChainConfig = NodeConfig[];
-export interface BrodcastMessage {
+export interface BrodcastSetupMessage {
   signal: NodeSignal.Type;
   chain: {
     id: string;
     config: ChainConfig;
   };
+}
+
+export interface BrodcastReportingMessage {
+  signal: NodeSignal.Type;
+  chainId: string;
+  nodeId: string;
 }
 
 export interface ChainRelation {

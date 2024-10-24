@@ -113,7 +113,7 @@ class SupervisorContainer {
       },
     );
 
-    await setDefaultCallbacks({
+    await setResolverCallbacks({
       supervisor: this.nodeSupervisor,
       paths: {
         setup: '/node/communicate/setup',

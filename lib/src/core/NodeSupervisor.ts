@@ -1,12 +1,12 @@
 import { Node } from './Node';
 import {
-  Callback,
+  ServiceCallback,
   NodeSignal,
   NodeStatus,
   PipelineData,
   SupervisorPayload,
   CallbackPayload,
-  BrodcastMessage,
+  BrodcastSetupMessage,
   ChainConfig,
   ChainRelation,
   NodeConfig,
@@ -23,6 +23,7 @@ import {
   SupervisorPayloadStartChain,
   SupervisorPayloadDeployChain,
   ServiceConfig,
+  DefaultCallback,
 } from '../types/types';
 import { Logger } from '../extra/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
@@ -37,15 +38,16 @@ export class NodeSupervisor {
   private chains: Map<string, ChainRelation>;
 
   private broadcastSetupCallback: SetupCallback;
-  remoteServiceCallback: Callback;
+  remoteServiceCallback: ServiceCallback;
 
   private constructor() {
     this.uid = '@supervisor:default';
     this.ctn = '@container:default';
     this.nodes = new Map();
     this.chains = new Map();
-    this.remoteServiceCallback = (_payload: CallbackPayload) => {};
-    this.broadcastSetupCallback = async (_message: BrodcastMessage) => {};
+    this.remoteServiceCallback = DefaultCallback.SERVICE_CALLBACK;
+    this.broadcastSetupCallback = DefaultCallback.SETUP_CALLBACK;
+    async (_message: BrodcastSetupMessage) => {};
   }
 
   static retrieveService(refresh: boolean = false): NodeSupervisor {
@@ -56,13 +58,11 @@ export class NodeSupervisor {
     return NodeSupervisor.instance;
   }
 
-  setRemoteServiceCallback(callback: Callback): void {
-    this.remoteServiceCallback = callback;
+  setRemoteServiceCallback(remoteServiceCallback: ServiceCallback): void {
+    this.remoteServiceCallback = remoteServiceCallback;
   }
 
-  setBroadcastSetupCallback(
-    broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>,
-  ): void {
+  setBroadcastSetupCallback(broadcastSetupCallback: SetupCallback): void {
     this.broadcastSetupCallback = broadcastSetupCallback;
   }
 
@@ -70,7 +70,6 @@ export class NodeSupervisor {
     this.ctn = `@container:${uid}`;
     this.uid = `@supervisor:${uid}`;
   }
-  //
 
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
     switch (payload.signal) {
@@ -151,26 +150,12 @@ export class NodeSupervisor {
     initiator: boolean = false,
   ): Promise<string> {
     this.updateChain([config]);
-
     const nodeId = await this.createNode(config);
     const node = this.nodes.get(nodeId);
-    if (node && config.nextTargetId !== undefined) {
-      node.setNextNodeInfo(
-        config.nextTargetId,
-        NodeType.REMOTE,
-        config.nextMeta,
-      );
-    } else {
-      if (!node) {
-        Logger.warn(
-          `${this.ctn}: Attempted to set next node info on undefined node`,
-        );
-      }
-      if (!initiator && config.nextTargetId === undefined) {
-        Logger.warn(
-          `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
-        );
-      }
+
+    if (!node) {
+      Logger.warn(`${this.ctn}: Attempted to setup undefined node`);
+      return nodeId;
     }
 
     const processors = config.services.map(
@@ -183,10 +168,22 @@ export class NodeSupervisor {
     Logger.info(
       `${this.ctn}: Node ${nodeId} setup completed with ${processors.length} processors`,
     );
+
+    if (config.nextTargetId !== undefined) {
+      node.setNextNodeInfo(
+        config.nextTargetId,
+        NodeType.REMOTE,
+        config.nextMeta,
+      );
+    } else if (!initiator) {
+      Logger.warn(
+        `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
+      );
+      this.notify(nodeId, NodeSignal.CHAIN_SETUP);
+    }
     this.notify(nodeId, NodeSignal.NODE_SETUP);
     return nodeId;
   }
-
   notify(nodeId: string, signal: NodeSignal.Type): void {
     const node = this.nodes.get(nodeId);
     if (node) {
@@ -324,6 +321,7 @@ export class NodeSupervisor {
               ? nextService
               : nextService.targetId,
             NodeType.REMOTE,
+            typeof nextService === 'string' ? void 0 : nextService.meta,
           );
         }
       }
@@ -361,7 +359,7 @@ export class NodeSupervisor {
     chainId: string,
     remoteConfigs: ChainConfig,
   ): Promise<void> {
-    const message: BrodcastMessage = {
+    const message: BrodcastSetupMessage = {
       signal: NodeSignal.NODE_SETUP,
       chain: {
         id: chainId,

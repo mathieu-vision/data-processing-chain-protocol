@@ -1,10 +1,9 @@
 import { Logger } from './Logger';
 import {
-  BrodcastMessage,
+  BrodcastSetupMessage,
   CallbackPayload,
   ChainConfig,
   PipelineMeta,
-  ServiceConfig,
 } from '../types/types';
 import { Buffer } from 'buffer';
 import { NodeSupervisor } from '../core/NodeSupervisor';
@@ -16,7 +15,7 @@ export type HostResolverCallback = (
   _meta?: PipelineMeta,
 ) => string | undefined;
 export interface BSCPayload {
-  message: BrodcastMessage;
+  message: BrodcastSetupMessage;
   hostResolver: HostResolverCallback;
   path: string;
 }
@@ -194,13 +193,13 @@ export interface DefaultCallbackPayload {
   paths: { setup: string; run: string };
   hostResolver: HostResolverCallback;
 }
-export const setDefaultCallbacks = async (
+export const setResolverCallbacks = async (
   dcPayload: DefaultCallbackPayload,
 ): Promise<void> => {
   const { supervisor, paths, hostResolver } = dcPayload;
 
   supervisor.setBroadcastSetupCallback(
-    async (message: BrodcastMessage): Promise<void> => {
+    async (message: BrodcastSetupMessage): Promise<void> => {
       const payload: BSCPayload = {
         message,
         hostResolver,

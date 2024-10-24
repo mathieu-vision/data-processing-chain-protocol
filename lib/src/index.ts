@@ -6,14 +6,15 @@ export { NodeSupervisor };
 export { PipelineProcessor };
 
 export {
-  Callback,
+  ServiceCallback,
   NodeSignal,
   NodeStatus,
   PipelineData,
   PipelineMeta,
   SupervisorPayload,
   CallbackPayload,
-  BrodcastMessage,
+  BrodcastSetupMessage,
+  BrodcastReportingMessage,
   ChainConfig,
   ChainRelation,
   NodeConfig,
@@ -46,5 +47,5 @@ export {
   BSCPayload,
   remoteServiceCallback,
   RSCPayload,
-  setDefaultCallbacks,
-} from './extra/DefaultCallbacks';
+  setResolverCallbacks,
+} from './extra/DefaultResolverCallbacks';

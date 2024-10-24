@@ -33,7 +33,7 @@ export class Node {
     meta?: PipelineMeta;
   } | null;
   private config: NodeConfig | null;
-  private reporter: NodeReportingAgent | null = null;
+  private reporting: NodeReportingAgent | null = null;
 
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
@@ -55,7 +55,7 @@ export class Node {
 
   setConfig(config: NodeConfig): void {
     const monitoring = MonitoringAgent.retrieveService();
-    this.reporter = monitoring.genReporterAgent(config.chainId, this.id);
+    this.reporting = monitoring.genReporterAgent(config.chainId, this.id);
     this.config = config;
   }
 
@@ -97,8 +97,8 @@ export class Node {
 
   notify(notify: NodeSignal.Type): void {
     try {
-      if (this.reporter !== null) {
-        this.reporter.notify(notify);
+      if (this.reporting !== null) {
+        this.reporting.notify(notify);
       } else {
         throw new Error('Reporter not set');
       }
@@ -168,6 +168,7 @@ export class Node {
     await Node.moveToNextNode(nodeId, data);
   }
 
+  // todo: should not be static
   private static async moveToNextNode(
     nodeId: string,
     pipelineData: PipelineData,
@@ -198,6 +199,7 @@ export class Node {
       }
     } else {
       Logger.info(`End of pipeline reached by node ${nodeId}.`);
+      // currentNode.reporting.notify();
     }
     const isPersistant =
       (currentNode.config?.chainType ?? 0) & ChainType.PERSISTANT;
