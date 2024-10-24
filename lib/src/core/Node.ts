@@ -55,7 +55,7 @@ export class Node {
 
   setConfig(config: NodeConfig): void {
     const monitoring = MonitoringAgent.retrieveService();
-    this.reporter = monitoring.genReporterAgent(config.chainId);
+    this.reporter = monitoring.genReporterAgent(config.chainId, this.id);
     this.config = config;
   }
 
@@ -95,7 +95,7 @@ export class Node {
     }
   }
 
-  notify(notify: NodeSignal.Type) {
+  notify(notify: NodeSignal.Type): void {
     try {
       if (this.reporter !== null) {
         this.reporter.notify(notify);

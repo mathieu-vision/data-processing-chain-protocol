@@ -183,11 +183,11 @@ export class NodeSupervisor {
     Logger.info(
       `${this.ctn}: Node ${nodeId} setup completed with ${processors.length} processors`,
     );
-    await this.notify(nodeId, NodeSignal.NODE_SETUP);
+    this.notify(nodeId, NodeSignal.NODE_SETUP);
     return nodeId;
   }
 
-  async notify(nodeId: string, signal: NodeSignal.Type): Promise<void> {
+  notify(nodeId: string, signal: NodeSignal.Type): void {
     const node = this.nodes.get(nodeId);
     if (node) {
       node.notify(signal);

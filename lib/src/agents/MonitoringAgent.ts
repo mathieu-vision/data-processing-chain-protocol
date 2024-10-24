@@ -1,11 +1,14 @@
+import { Logger } from '../extra/Logger';
 import { Agent } from './Agent';
 import { ReportingAgent } from './ReportingAgent';
 
 export class NodeReportingAgent extends ReportingAgent {
   private chainId: string;
-  constructor(chainId: string) {
+  private nodeId: string;
+  constructor(chainId: string, nodeId: string) {
     super();
     this.chainId = chainId;
+    this.nodeId = nodeId;
   }
 }
 
@@ -13,10 +16,10 @@ export class NodeReportingAgent extends ReportingAgent {
 export class MonitoringAgent extends Agent {
   private static instance: MonitoringAgent;
   // chain-id:node-reporter-agent-id
-  private reporters: Map<string, string>;
+  private reportings: Map<string, string>;
   constructor() {
     super();
-    this.reporters = new Map();
+    this.reportings = new Map();
   }
 
   static retrieveService(refresh: boolean = false): MonitoringAgent {
@@ -27,11 +30,14 @@ export class MonitoringAgent extends Agent {
     return MonitoringAgent.instance;
   }
 
-  genReporterAgent(chainId: string) {
+  genReporterAgent(chainId: string, nodeId: string) {
     NodeReportingAgent.authorize(this);
-    const reporter = new NodeReportingAgent(chainId);
+    const reporting = new NodeReportingAgent(chainId, nodeId);
+    reporting.on('notification', (signal) => {
+      Logger.info(`Receive signal: ${signal}`);
+    });
     // todo: put the agent in a local list of reporters
-    return reporter;
+    return reporting;
   }
 
   getReporterAgent() {}
