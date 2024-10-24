@@ -326,6 +326,7 @@ export class NodeSupervisor {
               ? nextService
               : nextService.targetId,
             NodeType.REMOTE,
+            typeof nextService === 'string' ? undefined : nextService.meta,
           );
         }
       }
@@ -355,26 +356,6 @@ export class NodeSupervisor {
           return nodeConfig;
         },
       );
-      /*
-      const updatedRemoteConfigs: NodeConfig[] = remoteConfigs.map(
-        (config, index) => {
-          const nextConfig: NodeConfig = remoteConfigs[index + 1];
-          return {
-            ...config,
-            nextTargetId: nextConfig
-              ? typeof nextConfig.services[0] === 'string'
-                ? nextConfig.services[0]
-                : nextConfig.services[0].targetId
-              : undefined,
-            nextMeta: nextConfig
-              ? typeof nextConfig.services[0] === 'string'
-                ? undefined
-                : nextConfig.services[0].meta
-              : undefined,
-          };
-        },
-      );
-      */
       await this.broadcastNodeSetupSignal(chainId, updatedRemoteConfigs);
     }
   }
