@@ -5,8 +5,10 @@ import {
   PipelineProcessor,
   SupervisorPayloadDeployChain,
   SupervisorPayloadSetup,
-  setDefaultCallbacks,
+  setResolverCallbacks,
   PipelineMeta,
+  setReportingCallbacks,
+  BrodcastReportingMessage,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -129,6 +131,17 @@ class SupervisorContainer {
         const url = new URL(targetId);
         const baseUrl = `${url.protocol}//${url.hostname}${url.port ? ':' + url.port : ''}`;
         return baseUrl;
+      },
+    });
+
+    await setMonitoringCallbacks({
+      supervisor: this.nodeSupervisor,
+      paths: {
+        report: '/node/communicate/report',
+      },
+      reportSignalHandler: async (message: ReportingMessage): Promise<void> => {
+        Logger.info({ message: `${JSON.stringify(message, null, 2)}` });
+        // here handle process like start chain etc...
       },
     });
 

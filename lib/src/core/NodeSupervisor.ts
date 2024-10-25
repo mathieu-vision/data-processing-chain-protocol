@@ -24,10 +24,13 @@ import {
   SupervisorPayloadDeployChain,
   ServiceConfig,
   DefaultCallback,
+  ReportingCallback,
+  BroadcastReportingCallback,
 } from '../types/types';
 import { Logger } from '../extra/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
+import { MonitoringAgent } from 'agents/MonitoringAgent';
 
 // Should be ChainSupervisor
 export class NodeSupervisor {
@@ -47,7 +50,8 @@ export class NodeSupervisor {
     this.chains = new Map();
     this.remoteServiceCallback = DefaultCallback.SERVICE_CALLBACK;
     this.broadcastSetupCallback = DefaultCallback.SETUP_CALLBACK;
-    async (_message: BrodcastSetupMessage) => {};
+    // eslint-disable-next-line no-unused-vars
+    async (message: BrodcastSetupMessage) => {};
   }
 
   static retrieveService(refresh: boolean = false): NodeSupervisor {
@@ -64,6 +68,18 @@ export class NodeSupervisor {
 
   setBroadcastSetupCallback(broadcastSetupCallback: SetupCallback): void {
     this.broadcastSetupCallback = broadcastSetupCallback;
+  }
+
+  setBroadcastReportingCallback(
+    broadcastReportingCallback: BroadcastReportingCallback,
+  ): void {
+    const monitoring = MonitoringAgent.retrieveService();
+    monitoring.setBroadcastReportingCallback(broadcastReportingCallback);
+  }
+
+  setMonitoringCallback(reportingCallback: ReportingCallback): void {
+    const monitoring = MonitoringAgent.retrieveService();
+    monitoring.setReportingCallback(reportingCallback);
   }
 
   setUid(uid: string) {

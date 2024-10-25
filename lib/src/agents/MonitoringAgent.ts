@@ -17,13 +17,20 @@ export class NodeReportingAgent extends ReportingAgent {
 // Receive reports from NodeReporters
 export class MonitoringAgent extends Agent {
   private static instance: MonitoringAgent;
+  private reportingCallback: ReportingCallback;
   private broadcastReportingCallback: ReportingCallback;
   // chain-id:node-reporter-agent-id
   private reportings: Map<string, string>;
   constructor() {
     super();
     this.reportings = new Map();
-    this.broadcastReportingCallback = DefaultCallback.REPORTING_CALLBACK;
+    this.reportingCallback = DefaultCallback.REPORTING_CALLBACK;
+    this.broadcastReportingCallback =
+      DefaultCallback.BROADCAST_REPORTING_CALLBACK;
+  }
+
+  setReportingCallback(reportingCallback: ReportingCallback): void {
+    this.reportingCallback = reportingCallback;
   }
 
   setBroadcastReportingCallback(
@@ -43,9 +50,9 @@ export class MonitoringAgent extends Agent {
   genReporterAgent(chainId: string, nodeId: string): NodeReportingAgent {
     NodeReportingAgent.authorize(this);
     const reporting = new NodeReportingAgent(chainId, nodeId);
-    reporting.on('notification', async (signal) => {
+    reporting.on('signal', async (signal) => {
       Logger.info(`Receive signal: ${signal}`);
-      await this.broadcastReportingCallback({
+      await this.reportingCallback({
         signal,
         chainId,
         nodeId,

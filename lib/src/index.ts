@@ -14,7 +14,7 @@ export {
   SupervisorPayload,
   CallbackPayload,
   BrodcastSetupMessage,
-  BrodcastReportingMessage,
+  ReportingMessage,
   ChainConfig,
   ChainRelation,
   NodeConfig,
@@ -49,3 +49,8 @@ export {
   RSCPayload,
   setResolverCallbacks,
 } from './extra/DefaultResolverCallbacks';
+
+export {
+  BRCPayload,
+  setReportingCallbacks,
+} from './extra/DefaultReportingCallbacks';

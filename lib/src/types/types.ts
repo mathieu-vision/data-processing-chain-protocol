@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { PipelineProcessor } from '../core/PipelineProcessor';
 
 export type ProcessorPipeline = PipelineProcessor[];
@@ -6,6 +7,7 @@ export type PipelineData = unknown;
 export interface PipelineMeta {
   header?: unknown;
   resolver?: string;
+  monitoringHost?: string;
   configuration: unknown;
 }
 export interface CallbackPayload {
@@ -14,26 +16,32 @@ export interface CallbackPayload {
   data: PipelineData;
   meta?: PipelineMeta;
 }
-export type ServiceCallback = (_payload: CallbackPayload) => void;
-export type SetupCallback = (_message: BrodcastSetupMessage) => Promise<void>;
-export type ReportingCallback = (
-  _message: BrodcastReportingMessage,
+export type ServiceCallback = (payload: CallbackPayload) => void;
+export type SetupCallback = (message: BrodcastSetupMessage) => Promise<void>;
+export type ReportingCallback = (message: ReportingMessage) => Promise<void>;
+export type BroadcastReportingCallback = (
+  message: BroadcastReportingMessage,
 ) => Promise<void>;
 
 export namespace DefaultCallback {
+  // todo: should be remote_service_callback
   export const SERVICE_CALLBACK: ServiceCallback = (
-    _payload: CallbackPayload,
+    payload: CallbackPayload,
   ) => {};
+  // todo: should be broadcast_setup_callback
   export const SETUP_CALLBACK: SetupCallback = async (
-    _message: BrodcastSetupMessage,
+    message: BrodcastSetupMessage,
   ) => {};
   export const REPORTING_CALLBACK: ReportingCallback = async (
-    _message: BrodcastReportingMessage,
+    message: ReportingMessage,
+  ) => {};
+  export const BROADCAST_REPORTING_CALLBACK: ReportingCallback = async (
+    message: BroadcastReportingMessage,
   ) => {};
 }
 
 export type ProcessorCallback = (
-  _payload: CallbackPayload,
+  payload: CallbackPayload,
 ) => Promise<PipelineData>;
 
 export namespace NodeType {
@@ -55,7 +63,7 @@ export namespace CombineStrategy {
   export const CUSTOM: Type = 'custom';
 }
 
-export type CombineFonction = (_dataSets: PipelineData[]) => unknown[];
+export type CombineFonction = (dataSets: PipelineData[]) => unknown[];
 
 export interface ChainState {
   completed: string[];
@@ -199,7 +207,13 @@ export interface BrodcastSetupMessage {
   };
 }
 
-export interface BrodcastReportingMessage {
+export interface ReportingMessage {
+  signal: NodeSignal.Type;
+  chainId: string;
+  nodeId: string;
+}
+
+export interface BroadcastReportingMessage {
   signal: NodeSignal.Type;
   chainId: string;
   nodeId: string;

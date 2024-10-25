@@ -12,6 +12,7 @@ type PipelineData = unknown;
 interface PipelineMeta {
     header?: unknown;
     resolver?: string;
+    monitoringHost?: string;
     configuration: unknown;
 }
 interface CallbackPayload {
@@ -20,9 +21,11 @@ interface CallbackPayload {
     data: PipelineData;
     meta?: PipelineMeta;
 }
-type Callback = (_payload: CallbackPayload) => void;
-type SetupCallback = (_message: BrodcastMessage) => Promise<void>;
-type ProcessorCallback = (_payload: CallbackPayload) => Promise<PipelineData>;
+type ServiceCallback = (payload: CallbackPayload) => void;
+type SetupCallback = (message: BrodcastSetupMessage) => Promise<void>;
+type ReportingCallback = (message: ReportingMessage) => Promise<void>;
+type BroadcastReportingCallback = (message: BroadcastReportingMessage) => Promise<void>;
+type ProcessorCallback = (payload: CallbackPayload) => Promise<PipelineData>;
 declare namespace NodeType {
     type Type = 'local' | 'remote';
     const LOCAL: Type;
@@ -39,7 +42,7 @@ declare namespace CombineStrategy {
     const UNION: Type;
     const CUSTOM: Type;
 }
-type CombineFonction = (_dataSets: PipelineData[]) => unknown[];
+type CombineFonction = (dataSets: PipelineData[]) => unknown[];
 interface ChainState {
     completed: string[];
     pending: string[];
@@ -59,7 +62,7 @@ declare namespace NodeStatus {
     const FAILED: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_deploy';
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_deploy' | 'chain_setup';
     const NODE_SETUP: Type;
     const NODE_CREATE: Type;
     const NODE_DELETE: Type;
@@ -70,6 +73,7 @@ declare namespace NodeSignal {
     const CHAIN_PREPARE: Type;
     const CHAIN_START: Type;
     const CHAIN_DEPLOY: Type;
+    const CHAIN_SETUP: Type;
 }
 type SupervisorPayloadSetup = {
     signal: typeof NodeSignal.NODE_SETUP;
@@ -129,12 +133,22 @@ type NodeConfig = {
     chainType?: ChainType.Type;
 };
 type ChainConfig = NodeConfig[];
-interface BrodcastMessage {
+interface BrodcastSetupMessage {
     signal: NodeSignal.Type;
     chain: {
         id: string;
         config: ChainConfig;
     };
+}
+interface ReportingMessage {
+    signal: NodeSignal.Type;
+    chainId: string;
+    nodeId: string;
+}
+interface BroadcastReportingMessage {
+    signal: NodeSignal.Type;
+    chainId: string;
+    nodeId: string;
 }
 interface ChainRelation {
     rootNodeId?: string;
@@ -154,7 +168,7 @@ declare class Node {
     private output;
     private nextNodeInfo;
     private config;
-    private reporter;
+    private reporting;
     constructor(dependencies?: string[]);
     private updateProgress;
     setConfig(config: NodeConfig): void;
@@ -194,17 +208,19 @@ declare class NodeSupervisor {
     private nodes;
     private chains;
     private broadcastSetupCallback;
-    remoteServiceCallback: Callback;
+    remoteServiceCallback: ServiceCallback;
     private constructor();
     static retrieveService(refresh?: boolean): NodeSupervisor;
-    setRemoteServiceCallback(callback: Callback): void;
-    setBroadcastSetupCallback(broadcastSetupCallback: (_message: BrodcastMessage) => Promise<void>): void;
+    setRemoteServiceCallback(remoteServiceCallback: ServiceCallback): void;
+    setBroadcastSetupCallback(broadcastSetupCallback: SetupCallback): void;
+    setBroadcastReportingCallback(broadcastReportingCallback: BroadcastReportingCallback): void;
+    setMonitoringCallback(reportingCallback: ReportingCallback): void;
     setUid(uid: string): void;
     handleRequest(payload: SupervisorPayload): Promise<void | string>;
     private deployChain;
     private createNode;
     private setupNode;
-    notify(nodeId: string, signal: NodeSignal.Type): Promise<void>;
+    notify(nodeId: string, signal: NodeSignal.Type): void;
     addProcessors(nodeId: string, processors: PipelineProcessor[]): Promise<void>;
     private deleteNode;
     private pauseNode;
@@ -232,9 +248,9 @@ declare class PipelineDataCombiner {
     setCustomCombineFunction(combineFunction: CombineFonction): void;
 }
 
-type HostResolverCallback = (_targetId: string, _meta?: PipelineMeta) => string | undefined;
+type HostResolverCallback = (targetId: string, meta?: PipelineMeta) => string | undefined;
 interface BSCPayload {
-    message: BrodcastMessage;
+    message: BrodcastSetupMessage;
     hostResolver: HostResolverCallback;
     path: string;
 }
@@ -244,7 +260,7 @@ interface RSCPayload {
     hostResolver: HostResolverCallback;
     path: string;
 }
-declare const remoteServiceCallback: (payload: RSCPayload) => Promise<unknown>;
+declare const remoteServiceCallback: (payload: RSCPayload) => Promise<void>;
 interface DefaultCallbackPayload {
     supervisor: NodeSupervisor;
     paths: {
@@ -253,6 +269,22 @@ interface DefaultCallbackPayload {
     };
     hostResolver: HostResolverCallback;
 }
-declare const setDefaultCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
+declare const setResolverCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
 
-export { type BSCPayload, type BrodcastMessage, type Callback, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type RSCPayload, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, broadcastSetupCallback, remoteServiceCallback, setDefaultCallbacks };
+type ReportSignalHandlerCallback = (message: ReportingMessage) => Promise<void>;
+type MonitoringResolverCallback = (meta?: PipelineMeta) => Promise<string | undefined>;
+interface BRCPayload {
+    message: BroadcastReportingMessage;
+    monitoringResolver: MonitoringResolverCallback;
+}
+interface DefaultReportingCallbackPayload {
+    supervisor: NodeSupervisor;
+    paths: {
+        report: string;
+    };
+    reportSignalHandler: ReportSignalHandlerCallback;
+    monitoringResolver?: MonitoringResolverCallback;
+}
+declare const setReportingCallbacks: (dcPayload: DefaultReportingCallbackPayload) => Promise<void>;
+
+export { type BRCPayload, type BSCPayload, type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type RSCPayload, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, broadcastSetupCallback, remoteServiceCallback, setReportingCallbacks, setResolverCallbacks };

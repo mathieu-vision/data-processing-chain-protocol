@@ -5,14 +5,14 @@ import {
   ChainConfig,
   PipelineMeta,
 } from '../types/types';
-import { Buffer } from 'buffer';
 import { NodeSupervisor } from '../core/NodeSupervisor';
-import * as http from 'http';
-import * as https from 'https';
+import { post } from './http';
 
 export type HostResolverCallback = (
-  _targetId: string,
-  _meta?: PipelineMeta,
+  // eslint-disable-next-line no-unused-vars
+  targetId: string,
+  // eslint-disable-next-line no-unused-vars
+  meta?: PipelineMeta,
 ) => string | undefined;
 export interface BSCPayload {
   message: BrodcastSetupMessage;
@@ -45,66 +45,12 @@ export const broadcastSetupCallback = async (
     }
     try {
       // Send a POST request to set up the node on a remote container with the specified host address
-      const postData = JSON.stringify({
+      const data = JSON.stringify({
         chainId,
         remoteConfigs: config,
       });
-
       const url = new URL(path, host);
-      const options = {
-        hostname: url.hostname,
-        port: url.port,
-        path: url.pathname,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(postData),
-        },
-      };
-
-      // await
-      void new Promise((resolve, reject) => {
-        const req = (url.protocol === 'https:' ? https : http).request(
-          options,
-          (res) => {
-            let data = '';
-            res.on('data', (chunk) => {
-              data += chunk;
-            });
-            res.on('end', () => {
-              if (
-                res.statusCode &&
-                res.statusCode >= 200 &&
-                res.statusCode < 300
-              ) {
-                Logger.info(
-                  `Setup request sent to ${host} for targetId ${targetId}. Response: ${data}`,
-                );
-                resolve(data);
-              } else {
-                Logger.error(
-                  `Setup request to ${host} for targetId ${targetId} failed with status ${res.statusCode}`,
-                );
-                reject(
-                  new Error(
-                    `HTTP Error: ${res.statusCode} ${res.statusMessage} - URL: ${options.hostname}${options.path}`,
-                  ),
-                );
-              }
-            });
-          },
-        );
-
-        req.on('error', (error) => {
-          Logger.error(
-            `Error sending setup request to ${host} for targetId ${targetId}: ${error.message}`,
-          );
-          reject(error);
-        });
-
-        req.write(postData);
-        req.end();
-      });
+      void post(url, data);
     } catch (error) {
       Logger.error(
         `Unexpected error sending setup request to ${host} for targetId ${targetId}: ${(error as Error).message}`,
@@ -133,53 +79,11 @@ export const remoteServiceCallback = async (payload: RSCPayload) => {
         `Next connector URI not found for the following target service: ${cbPayload.targetId}`,
       );
     }
+
     const url = new URL(path, nextConnectorUrl);
     Logger.info(`Sending data to next connector on: ${url.href}`);
-
-    const postData = JSON.stringify(cbPayload);
-    const options = {
-      hostname: url.hostname,
-      port: url.port,
-      path: url.pathname,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData),
-      },
-    };
-
-    return new Promise((resolve, reject) => {
-      const req = (url.protocol === 'https:' ? https : http).request(
-        options,
-        (res) => {
-          let data = '';
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-          res.on('end', () => {
-            if (
-              res.statusCode &&
-              res.statusCode >= 200 &&
-              res.statusCode < 300
-            ) {
-              resolve(data);
-            } else {
-              throw new Error(
-                `HTTP Error: ${res.statusCode} ${res.statusMessage} - URL: ${options.hostname}${options.path}`,
-              );
-            }
-          });
-        },
-      );
-
-      req.on('error', (error) => {
-        Logger.error(`Error sending data to next connector: ${error.message}`);
-        reject(error);
-      });
-
-      req.write(postData);
-      req.end();
-    });
+    const data = JSON.stringify(cbPayload);
+    await post(url, data);
   } catch (error) {
     Logger.error(
       `Error sending data to next connector: ${(error as Error).message}`,

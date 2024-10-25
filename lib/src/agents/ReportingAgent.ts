@@ -23,7 +23,7 @@ export abstract class ReportingAgent extends Agent {
   notify(signal: NodeSignal.Type): void {
     Logger.info(`Signal ${signal} from ${0}`);
     this.signals.push(signal);
-    this.emit('notification', signal);
+    this.emit('signal', signal);
   }
 
   getSignals(): NodeSignal.Type[] {
