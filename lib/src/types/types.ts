@@ -77,20 +77,25 @@ export namespace ChainType {
   export const DEFAULT: Type = 0b00000001;
 }
 
-export namespace NodeStatus {
+export namespace ChainStatus {
   export type Type =
-    | 'pending'
-    | 'in-progress' // running
-    | 'completed'
-    | 'failed'
-    | 'paused';
-  export const PAUSED: Type = 'paused';
-  export const PENDING: Type = 'pending';
-  export const IN_PROGRESS: Type = 'in-progress';
-  export const COMPLETED: Type = 'completed';
-  export const FAILED: Type = 'failed';
+    | 'node_pending'
+    | 'node_in-progress' // running
+    | 'node_completed'
+    | 'node_failed'
+    | 'node_paused'
+    | 'node_setup_completed'
+    | 'chain_setup_completed';
+  export const NODE_PAUSED: Type = 'node_paused';
+  export const NODE_PENDING: Type = 'node_pending';
+  export const NODE_IN_PROGRESS: Type = 'node_in-progress';
+  export const NODE_COMPLETED: Type = 'node_completed';
+  export const NODE_FAILED: Type = 'node_failed';
+  export const NODE_SETUP_COMPLETED: Type = 'node_setup_completed';
+  export const CHAIN_SETUP_COMPLETED: Type = 'chain_setup_completed';
 }
 
+// handler signal
 export namespace NodeSignal {
   export type Type =
     | 'node_setup'
@@ -102,8 +107,8 @@ export namespace NodeSignal {
     | 'node_send_data'
     | 'chain_prepare'
     | 'chain_start'
-    | 'chain_deploy'
-    | 'chain_setup';
+    | 'chain_deploy';
+  // | 'chain_setup';
 
   export const NODE_SETUP: Type = 'node_setup';
   export const NODE_CREATE: Type = 'node_create';
@@ -115,7 +120,7 @@ export namespace NodeSignal {
   export const CHAIN_PREPARE: Type = 'chain_prepare';
   export const CHAIN_START: Type = 'chain_start';
   export const CHAIN_DEPLOY: Type = 'chain_deploy';
-  export const CHAIN_SETUP: Type = 'chain_setup';
+  // export const CHAIN_SETUP: Type = 'chain_setup';
 }
 
 export type SupervisorPayloadSetup = {
@@ -192,10 +197,12 @@ export interface ServiceConfig {
 export type NodeConfig = {
   services: (string | ServiceConfig)[];
   chainId: string;
+  index?: number;
   location?: NodeType.Type;
   nextTargetId?: string;
   nextMeta?: PipelineMeta;
   chainType?: ChainType.Type;
+  monitoringHost?: string;
 };
 
 export type ChainConfig = NodeConfig[];
@@ -207,16 +214,18 @@ export interface BrodcastSetupMessage {
   };
 }
 
-export interface ReportingMessage {
-  signal: NodeSignal.Type;
+export interface ReportingPayload {
   chainId: string;
   nodeId: string;
+  index: number;
 }
 
-export interface BroadcastReportingMessage {
-  signal: NodeSignal.Type;
-  chainId: string;
-  nodeId: string;
+export interface ReportingMessage extends ReportingPayload {
+  signal: ChainStatus.Type;
+}
+
+export interface BroadcastReportingMessage extends ReportingPayload {
+  signal: ChainStatus.Type;
 }
 
 export interface ChainRelation {

@@ -8,7 +8,7 @@ export { PipelineProcessor };
 export {
   ServiceCallback,
   NodeSignal,
-  NodeStatus,
+  ChainStatus,
   PipelineData,
   PipelineMeta,
   SupervisorPayload,
@@ -52,5 +52,5 @@ export {
 
 export {
   BRCPayload,
-  setReportingCallbacks,
+  setMonitoringCallbacks,
 } from './extra/DefaultReportingCallbacks';

@@ -2,7 +2,7 @@ import { Node } from './Node';
 import {
   ServiceCallback,
   NodeSignal,
-  NodeStatus,
+  ChainStatus,
   PipelineData,
   SupervisorPayload,
   CallbackPayload,
@@ -125,7 +125,7 @@ export class NodeSupervisor {
       case NodeSignal.CHAIN_DEPLOY: {
         return await this.deployChain(
           (payload as SupervisorPayloadDeployChain).config,
-          (payload as SupervisorPayloadDeployChain).data,
+          // (payload as SupervisorPayloadDeployChain).data,
         );
       }
       default:
@@ -135,7 +135,7 @@ export class NodeSupervisor {
 
   private async deployChain(
     config: ChainConfig,
-    data: PipelineData,
+    // data: PipelineData,
   ): Promise<string> {
     if (!config) {
       throw new Error(`${this.ctn}: Chain configuration is required`);
@@ -143,7 +143,7 @@ export class NodeSupervisor {
     Logger.info(`${this.ctn}: Starting a new chain deployment...`);
     const chainId = this.createChain(config);
     await this.prepareChainDistribution(chainId);
-    await this.startChain(chainId, data);
+    // await this.startChain(chainId, data);
     Logger.info(
       `${this.ctn}: Chain ${chainId} successfully deployed and started.`,
     );
@@ -174,6 +174,8 @@ export class NodeSupervisor {
       return nodeId;
     }
 
+    await this.setRemoteMonitoringHost(config);
+
     const processors = config.services.map(
       (service) =>
         new PipelineProcessor(
@@ -195,15 +197,15 @@ export class NodeSupervisor {
       Logger.warn(
         `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
       );
-      this.notify(nodeId, NodeSignal.CHAIN_SETUP);
+      this.notify(nodeId, ChainStatus.CHAIN_SETUP_COMPLETED);
     }
-    this.notify(nodeId, NodeSignal.NODE_SETUP);
+    this.notify(nodeId, ChainStatus.NODE_SETUP_COMPLETED);
     return nodeId;
   }
-  notify(nodeId: string, signal: NodeSignal.Type): void {
+  notify(nodeId: string, status: ChainStatus.Type): void {
     const node = this.nodes.get(nodeId);
     if (node) {
-      node.notify(signal);
+      node.notify(status);
     } else {
       Logger.warn(`${this.ctn}: Can't notify non-existing node ${nodeId}`);
     }
@@ -235,7 +237,7 @@ export class NodeSupervisor {
   private async pauseNode(nodeId: string): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
-      node.updateStatus(NodeStatus.PAUSED);
+      node.updateStatus(ChainStatus.NODE_PAUSED);
       Logger.info(`${this.ctn}: Node ${nodeId} paused.`);
     } else {
       Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
@@ -259,6 +261,11 @@ export class NodeSupervisor {
       config,
     };
     this.chains.set(chainId, relation);
+    const monitoringHost = config[0]?.monitoringHost;
+    config.forEach((value: NodeConfig, index: number) => {
+      value.index = index;
+      value.monitoringHost = monitoringHost;
+    });
     Logger.header(`${this.ctn}: Chain ${chainId} creation has started...`);
     return chainId;
   }
@@ -286,6 +293,17 @@ export class NodeSupervisor {
       );
     }
     return chainId;
+  }
+
+  private async setRemoteMonitoringHost(config: NodeConfig): Promise<void> {
+    const remoteMonitoringHost = config.monitoringHost;
+    if (!remoteMonitoringHost) {
+      throw new Error(
+        `${this.ctn}: No Monitoring Host set for Chain ${config.chainId} during distribution`,
+      );
+    }
+    const monitoring = MonitoringAgent.retrieveService();
+    monitoring.setRemoteMonitoringHost(config.chainId, remoteMonitoringHost);
   }
 
   async prepareChainDistribution(chainId: string): Promise<void> {

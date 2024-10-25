@@ -2,7 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import {
-  BrodcastMessage,
+  BrodcastSetupMessage,
   NodeSupervisor,
   PipelineProcessor,
   SupervisorPayloadSetup,
@@ -270,7 +270,7 @@ export class LiteConnector {
 
     // Example of the required broadcast setup callback, using the default broadcastSetupCallback from the dpcp library
     this.nodeSupervisor.setBroadcastSetupCallback(
-      async (message: BrodcastMessage): Promise<void> => {
+      async (message: BrodcastSetupMessage): Promise<void> => {
         const payload: BSCPayload = {
           message,
           hostResolver: (targetId: string) => {

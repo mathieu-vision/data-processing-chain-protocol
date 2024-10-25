@@ -1,6 +1,6 @@
 import {
   DataType,
-  NodeStatus,
+  ChainStatus,
   PipelineData,
   ProcessorPipeline,
   NodeType,
@@ -20,7 +20,7 @@ export class Node {
   private pipelines: ProcessorPipeline[];
   // Todo:
   private dependencies: string[];
-  private status: NodeStatus.Type;
+  private status: ChainStatus.Type;
   private error?: Error;
   private delay: number;
   private progress: number;
@@ -40,7 +40,7 @@ export class Node {
     this.output = [];
     this.pipelines = [];
     this.dependencies = dependencies;
-    this.status = NodeStatus.PENDING;
+    this.status = ChainStatus.NODE_PENDING;
     this.delay = 0;
     this.progress = 0;
     this.dataType = DataType.RAW;
@@ -54,8 +54,17 @@ export class Node {
   }
 
   setConfig(config: NodeConfig): void {
-    const monitoring = MonitoringAgent.retrieveService();
-    this.reporting = monitoring.genReporterAgent(config.chainId, this.id);
+    const { chainId, index } = config;
+    if (index !== undefined) {
+      const monitoring = MonitoringAgent.retrieveService();
+      this.reporting = monitoring.genReporterAgent({
+        chainId,
+        nodeId: this.id,
+        index,
+      });
+    } else {
+      Logger.warn('Node index is not defined');
+    }
     this.config = config;
   }
 
@@ -95,7 +104,7 @@ export class Node {
     }
   }
 
-  notify(notify: NodeSignal.Type): void {
+  notify(notify: ChainStatus.Type): void {
     try {
       if (this.reporting !== null) {
         this.reporting.notify(notify);
@@ -110,7 +119,7 @@ export class Node {
   async execute(data: PipelineData): Promise<void> {
     this.executionQueue = this.executionQueue.then(async () => {
       try {
-        this.updateStatus(NodeStatus.IN_PROGRESS);
+        this.updateStatus(ChainStatus.NODE_IN_PROGRESS);
         // todo: monitor this step
         if (this.delay > 0) {
           await this.sleep(this.delay);
@@ -140,9 +149,9 @@ export class Node {
           });
         }
 
-        this.updateStatus(NodeStatus.COMPLETED);
+        this.updateStatus(ChainStatus.NODE_COMPLETED);
       } catch (error) {
-        this.updateStatus(NodeStatus.FAILED, error as Error);
+        this.updateStatus(ChainStatus.NODE_FAILED, error as Error);
         Logger.error(`Node ${this.id} execution failed: ${error}`);
       }
     });
@@ -233,7 +242,7 @@ export class Node {
     return this.dataType;
   }
 
-  getStatus(): NodeStatus.Type {
+  getStatus(): ChainStatus.Type {
     return this.status;
   }
 
@@ -241,9 +250,9 @@ export class Node {
     return this.dependencies;
   }
 
-  updateStatus(status: NodeStatus.Type, error?: Error): void {
+  updateStatus(status: ChainStatus.Type, error?: Error): void {
     this.status = status;
-    if (status === NodeStatus.FAILED) {
+    if (status === ChainStatus.NODE_FAILED) {
       this.error = error;
     }
   }

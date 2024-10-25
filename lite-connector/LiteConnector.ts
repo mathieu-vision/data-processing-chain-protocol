@@ -7,8 +7,9 @@ import {
   SupervisorPayloadSetup,
   setResolverCallbacks,
   PipelineMeta,
-  setReportingCallbacks,
-  BrodcastReportingMessage,
+  ReportingMessage,
+  setMonitoringCallbacks,
+  ChainStatus,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -62,8 +63,7 @@ class SupervisorContainer {
         case 'setup': {
           const { chainId, remoteConfigs } = req.body;
           if (remoteConfigs?.services[0]?.meta?.resolver) {
-            // eslint-disable-next-line no-undef
-            console.log('waiting........');
+            Logger.warn({ message: 'waiting........' });
             // eslint-disable-next-line no-undef
             await new Promise((resolve) => setTimeout(resolve, 10000));
           }
@@ -83,7 +83,14 @@ class SupervisorContainer {
             .status(200)
             .json({ message: 'Data received and processed successfully' });
           break;
-
+        case 'notify': {
+          const { nodeId, signal } = req.body;
+          this.nodeSupervisor.notify(nodeId, signal);
+          res.status(200).json({
+            message: 'Notify the signal to the supervisor monitoring',
+          });
+          break;
+        }
         default:
           res.status(400).json({ error: 'Invalid communication type' });
           return;
@@ -137,11 +144,17 @@ class SupervisorContainer {
     await setMonitoringCallbacks({
       supervisor: this.nodeSupervisor,
       paths: {
-        report: '/node/communicate/report',
+        notify: '/node/communicate/notify',
       },
       reportSignalHandler: async (message: ReportingMessage): Promise<void> => {
         Logger.info({ message: `${JSON.stringify(message, null, 2)}` });
-        // here handle process like start chain etc...
+        //
+        // Here we handle the necessary actions
+        //
+        switch (message.signal) {
+          case ChainStatus.CHAIN_SETUP_COMPLETED:
+            break;
+        }
       },
     });
 

@@ -1,4 +1,9 @@
-import { DefaultCallback, ReportingCallback } from '../types/types';
+import {
+  DefaultCallback,
+  ReportingCallback,
+  ReportingMessage,
+  ReportingPayload,
+} from '../types/types';
 import { Logger } from '../extra/Logger';
 import { Agent } from './Agent';
 import { ReportingAgent } from './ReportingAgent';
@@ -19,14 +24,23 @@ export class MonitoringAgent extends Agent {
   private static instance: MonitoringAgent;
   private reportingCallback: ReportingCallback;
   private broadcastReportingCallback: ReportingCallback;
+  private remoteMonitoringHost: Map<string, string>;
   // chain-id:node-reporter-agent-id
-  private reportings: Map<string, string>;
+  // private reportings: Map<string, string>;
   constructor() {
     super();
-    this.reportings = new Map();
+    this.remoteMonitoringHost = new Map();
     this.reportingCallback = DefaultCallback.REPORTING_CALLBACK;
     this.broadcastReportingCallback =
       DefaultCallback.BROADCAST_REPORTING_CALLBACK;
+  }
+
+  static retrieveService(refresh: boolean = false): MonitoringAgent {
+    if (!MonitoringAgent.instance || refresh) {
+      const instance = new MonitoringAgent();
+      MonitoringAgent.instance = instance;
+    }
+    return MonitoringAgent.instance;
   }
 
   setReportingCallback(reportingCallback: ReportingCallback): void {
@@ -39,29 +53,27 @@ export class MonitoringAgent extends Agent {
     this.broadcastReportingCallback = broadcastReportingCallback;
   }
 
-  static retrieveService(refresh: boolean = false): MonitoringAgent {
-    if (!MonitoringAgent.instance || refresh) {
-      const instance = new MonitoringAgent();
-      MonitoringAgent.instance = instance;
-    }
-    return MonitoringAgent.instance;
+  getRemoteMonitoringHost(chainId: string): string | undefined {
+    return this.remoteMonitoringHost.get(chainId);
   }
 
-  genReporterAgent(chainId: string, nodeId: string): NodeReportingAgent {
+  setRemoteMonitoringHost(chainId: string, remoteMonitoringHost: string): void {
+    this.remoteMonitoringHost.set(chainId, remoteMonitoringHost);
+  }
+
+  genReporterAgent(payload: ReportingPayload): NodeReportingAgent {
+    const { chainId, nodeId, index } = payload;
     NodeReportingAgent.authorize(this);
     const reporting = new NodeReportingAgent(chainId, nodeId);
     reporting.on('signal', async (signal) => {
       Logger.info(`Receive signal: ${signal}`);
-      await this.reportingCallback({
-        signal,
-        chainId,
-        nodeId,
-      });
+      const message: ReportingMessage = { ...payload, signal };
+      if (index > 0) {
+        void this.broadcastReportingCallback(message);
+      } else {
+        await this.reportingCallback(message);
+      }
     });
-    // todo: put the agent in a local list of reporters
     return reporting;
   }
-
-  getReporterAgent() {}
-  // todo: pull messages/states from reporters ?
 }

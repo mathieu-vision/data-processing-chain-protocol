@@ -1,11 +1,8 @@
-import {
-  PipelineMeta,
-  ReportingMessage,
-  BroadcastReportingMessage,
-} from '../types/types';
+import { ReportingMessage, BroadcastReportingMessage } from '../types/types';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { Logger } from './Logger';
 import { post } from './http';
+import { MonitoringAgent } from 'agents/MonitoringAgent';
 
 export type ReportSignalHandlerCallback = (
   // eslint-disable-next-line no-unused-vars
@@ -14,7 +11,7 @@ export type ReportSignalHandlerCallback = (
 
 export type MonitoringResolverCallback = (
   // eslint-disable-next-line no-unused-vars
-  meta?: PipelineMeta,
+  chainId: string,
 ) => Promise<string | undefined>;
 
 export interface MCPayload {
@@ -24,6 +21,7 @@ export interface MCPayload {
 
 export interface BRCPayload {
   message: BroadcastReportingMessage;
+  path: string;
   monitoringResolver: MonitoringResolverCallback;
 }
 
@@ -35,20 +33,22 @@ export const reportingCallback = async (payload: MCPayload): Promise<void> => {
 };
 export interface DefaultReportingCallbackPayload {
   supervisor: NodeSupervisor;
-  paths: { report: string };
+  paths: { notify: string };
   reportSignalHandler: ReportSignalHandlerCallback;
   monitoringResolver?: MonitoringResolverCallback;
 }
 
 const defaultMonitoringResolver = async (
-  meta?: PipelineMeta,
+  chainId: string,
 ): Promise<string | undefined> => {
   try {
-    Logger.info({
-      message: `Resolving host for monitoring meta: ${JSON.stringify(meta, null, 2)}`,
-    });
-    if (meta?.monitoringHost !== undefined) {
-      return meta?.monitoringHost;
+    const monitoring = MonitoringAgent.retrieveService();
+    const monitoringHost = monitoring.getRemoteMonitoringHost(chainId);
+    if (monitoringHost !== undefined) {
+      Logger.info({
+        message: `Resolving host for monitoring: ${monitoringHost}`,
+      });
+      return monitoringHost;
     } else throw new Error('monitoring not found');
   } catch (error) {
     Logger.error({ message: (error as Error).message });
@@ -58,12 +58,14 @@ const defaultMonitoringResolver = async (
 const broadcastReportingCallback = async (
   payload: BRCPayload,
 ): Promise<void> => {
-  const url = new URL('', '');
-  const data = JSON.stringify(payload.message);
+  const { message, path, monitoringResolver } = payload;
+  const monitoringHost = await monitoringResolver(message.chainId);
+  const url = new URL(path, monitoringHost);
+  const data = JSON.stringify(message);
   await post(url, data);
 };
 
-export const setReportingCallbacks = async (
+export const setMonitoringCallbacks = async (
   dcPayload: DefaultReportingCallbackPayload,
 ): Promise<void> => {
   const { supervisor, paths, reportSignalHandler, monitoringResolver } =
@@ -83,6 +85,7 @@ export const setReportingCallbacks = async (
     async (message: BroadcastReportingMessage): Promise<void> => {
       const payload: BRCPayload = {
         message,
+        path: paths.notify,
         monitoringResolver: monitoringResolver ?? defaultMonitoringResolver,
       };
       await broadcastReportingCallback(payload);

@@ -53,16 +53,18 @@ declare namespace ChainType {
     const PERSISTANT: Type;
     const DEFAULT: Type;
 }
-declare namespace NodeStatus {
-    type Type = 'pending' | 'in-progress' | 'completed' | 'failed' | 'paused';
-    const PAUSED: Type;
-    const PENDING: Type;
-    const IN_PROGRESS: Type;
-    const COMPLETED: Type;
-    const FAILED: Type;
+declare namespace ChainStatus {
+    type Type = 'node_pending' | 'node_in-progress' | 'node_completed' | 'node_failed' | 'node_paused' | 'node_setup_completed' | 'chain_setup_completed';
+    const NODE_PAUSED: Type;
+    const NODE_PENDING: Type;
+    const NODE_IN_PROGRESS: Type;
+    const NODE_COMPLETED: Type;
+    const NODE_FAILED: Type;
+    const NODE_SETUP_COMPLETED: Type;
+    const CHAIN_SETUP_COMPLETED: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_deploy' | 'chain_setup';
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_deploy';
     const NODE_SETUP: Type;
     const NODE_CREATE: Type;
     const NODE_DELETE: Type;
@@ -73,7 +75,6 @@ declare namespace NodeSignal {
     const CHAIN_PREPARE: Type;
     const CHAIN_START: Type;
     const CHAIN_DEPLOY: Type;
-    const CHAIN_SETUP: Type;
 }
 type SupervisorPayloadSetup = {
     signal: typeof NodeSignal.NODE_SETUP;
@@ -127,10 +128,12 @@ interface ServiceConfig {
 type NodeConfig = {
     services: (string | ServiceConfig)[];
     chainId: string;
+    index?: number;
     location?: NodeType.Type;
     nextTargetId?: string;
     nextMeta?: PipelineMeta;
     chainType?: ChainType.Type;
+    monitoringHost?: string;
 };
 type ChainConfig = NodeConfig[];
 interface BrodcastSetupMessage {
@@ -140,15 +143,16 @@ interface BrodcastSetupMessage {
         config: ChainConfig;
     };
 }
-interface ReportingMessage {
-    signal: NodeSignal.Type;
+interface ReportingPayload {
     chainId: string;
     nodeId: string;
+    index: number;
 }
-interface BroadcastReportingMessage {
-    signal: NodeSignal.Type;
-    chainId: string;
-    nodeId: string;
+interface ReportingMessage extends ReportingPayload {
+    signal: ChainStatus.Type;
+}
+interface BroadcastReportingMessage extends ReportingPayload {
+    signal: ChainStatus.Type;
 }
 interface ChainRelation {
     rootNodeId?: string;
@@ -178,7 +182,7 @@ declare class Node {
     addPipeline(pipeline: ProcessorPipeline): void;
     private processPipeline;
     private getPipelineGenerator;
-    notify(notify: NodeSignal.Type): void;
+    notify(notify: ChainStatus.Type): void;
     execute(data: PipelineData): Promise<void>;
     sendData(): Promise<void>;
     private static terminate;
@@ -188,9 +192,9 @@ declare class Node {
     setDelay(delay: number): void;
     private sleep;
     getDataType(): DataType.Type;
-    getStatus(): NodeStatus.Type;
+    getStatus(): ChainStatus.Type;
     getDependencies(): string[];
-    updateStatus(status: NodeStatus.Type, error?: Error): void;
+    updateStatus(status: ChainStatus.Type, error?: Error): void;
     getError(): Error | undefined;
     getProcessors(): ProcessorPipeline[];
     setNextNodeInfo(id: string, type: NodeType.Type, meta?: PipelineMeta): void;
@@ -220,13 +224,14 @@ declare class NodeSupervisor {
     private deployChain;
     private createNode;
     private setupNode;
-    notify(nodeId: string, signal: NodeSignal.Type): void;
+    notify(nodeId: string, status: ChainStatus.Type): void;
     addProcessors(nodeId: string, processors: PipelineProcessor[]): Promise<void>;
     private deleteNode;
     private pauseNode;
     private delayNode;
     createChain(config: ChainConfig): string;
     private updateChain;
+    private setRemoteMonitoringHost;
     prepareChainDistribution(chainId: string): Promise<void>;
     broadcastNodeSetupSignal(chainId: string, remoteConfigs: ChainConfig): Promise<void>;
     startChain(chainId: string, data: PipelineData): Promise<void>;
@@ -272,19 +277,20 @@ interface DefaultCallbackPayload {
 declare const setResolverCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
 
 type ReportSignalHandlerCallback = (message: ReportingMessage) => Promise<void>;
-type MonitoringResolverCallback = (meta?: PipelineMeta) => Promise<string | undefined>;
+type MonitoringResolverCallback = (chainId: string) => Promise<string | undefined>;
 interface BRCPayload {
     message: BroadcastReportingMessage;
+    path: string;
     monitoringResolver: MonitoringResolverCallback;
 }
 interface DefaultReportingCallbackPayload {
     supervisor: NodeSupervisor;
     paths: {
-        report: string;
+        notify: string;
     };
     reportSignalHandler: ReportSignalHandlerCallback;
     monitoringResolver?: MonitoringResolverCallback;
 }
-declare const setReportingCallbacks: (dcPayload: DefaultReportingCallbackPayload) => Promise<void>;
+declare const setMonitoringCallbacks: (dcPayload: DefaultReportingCallbackPayload) => Promise<void>;
 
-export { type BRCPayload, type BSCPayload, type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeSignal, NodeStatus, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type RSCPayload, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, broadcastSetupCallback, remoteServiceCallback, setReportingCallbacks, setResolverCallbacks };
+export { type BRCPayload, type BSCPayload, type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type RSCPayload, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, broadcastSetupCallback, remoteServiceCallback, setMonitoringCallbacks, setResolverCallbacks };
