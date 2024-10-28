@@ -62,6 +62,7 @@ const broadcastReportingCallback = async (
   const monitoringHost = await monitoringResolver(message.chainId);
   const url = new URL(path, monitoringHost);
   const data = JSON.stringify(message);
+  Logger.info(`Data send to ${url}: ${JSON.stringify(data, null, 2)}`);
   await post(url, data);
 };
 

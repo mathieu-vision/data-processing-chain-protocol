@@ -6,9 +6,9 @@ import {
 } from '../types/types';
 import { Logger } from '../extra/Logger';
 import { Agent } from './Agent';
-import { ReportingAgent } from './ReportingAgent';
+import { ReportingAgentBase } from './ReportingAgent';
 
-export class NodeReportingAgent extends ReportingAgent {
+export class ReportingAgent extends ReportingAgentBase {
   constructor(
     // eslint-disable-next-line no-unused-vars
     readonly chainId: string,
@@ -61,10 +61,10 @@ export class MonitoringAgent extends Agent {
     this.remoteMonitoringHost.set(chainId, remoteMonitoringHost);
   }
 
-  genReporterAgent(payload: ReportingPayload): NodeReportingAgent {
+  genReportingAgent(payload: ReportingPayload): ReportingAgent {
     const { chainId, nodeId, index } = payload;
-    NodeReportingAgent.authorize(this);
-    const reporting = new NodeReportingAgent(chainId, nodeId);
+    ReportingAgent.authorize(this);
+    const reporting = new ReportingAgent(chainId, nodeId);
     reporting.on('signal', async (signal) => {
       Logger.info(`Receive signal: ${signal}`);
       const message: ReportingMessage = { ...payload, signal };

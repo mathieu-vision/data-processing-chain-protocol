@@ -202,7 +202,36 @@ export class NodeSupervisor {
     this.notify(nodeId, ChainStatus.NODE_SETUP_COMPLETED);
     return nodeId;
   }
-  notify(nodeId: string, status: ChainStatus.Type): void {
+
+  handleNotification(chainId: string, status: ChainStatus.Type): void {
+    try {
+      const chain = this.chains.get(chainId);
+      if (!chain) {
+        Logger.warn(`${this.ctn}: Chain with ID ${chainId} not found.`);
+        return;
+      }
+      const rootNodeId = chain.rootNodeId;
+      if (!rootNodeId) {
+        Logger.warn(`${this.ctn}: Root node ID missing for chain ${chainId}.`);
+        return;
+      }
+      const node = this.nodes.get(rootNodeId);
+      if (!node) {
+        Logger.warn(`${this.ctn}: Node with ID ${rootNodeId} not found.`);
+        return;
+      }
+      node.notify(status);
+      Logger.info(
+        `${this.ctn}: Notification sent to node ${rootNodeId} with status ${status}.`,
+      );
+    } catch (error) {
+      Logger.error(
+        `${this.ctn}: Failed to handle notification for chain ${chainId}: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  private notify(nodeId: string, status: ChainStatus.Type): void {
     const node = this.nodes.get(nodeId);
     if (node) {
       node.notify(status);
@@ -211,7 +240,6 @@ export class NodeSupervisor {
     }
   }
 
-  // Todo: set as private ?
   async addProcessors(
     nodeId: string,
     processors: PipelineProcessor[],

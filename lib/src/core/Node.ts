@@ -13,7 +13,7 @@ import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
 import { Logger } from '../extra/Logger';
 import { NodeSupervisor } from './NodeSupervisor';
-import { MonitoringAgent, NodeReportingAgent } from '../agents/MonitoringAgent';
+import { MonitoringAgent, ReportingAgent } from '../agents/MonitoringAgent';
 
 export class Node {
   private id: string;
@@ -33,7 +33,7 @@ export class Node {
     meta?: PipelineMeta;
   } | null;
   private config: NodeConfig | null;
-  private reporting: NodeReportingAgent | null = null;
+  private reporting: ReportingAgent | null = null;
 
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
@@ -57,7 +57,7 @@ export class Node {
     const { chainId, index } = config;
     if (index !== undefined) {
       const monitoring = MonitoringAgent.retrieveService();
-      this.reporting = monitoring.genReporterAgent({
+      this.reporting = monitoring.genReportingAgent({
         chainId,
         nodeId: this.id,
         index,

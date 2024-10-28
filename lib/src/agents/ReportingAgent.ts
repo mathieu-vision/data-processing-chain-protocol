@@ -3,25 +3,25 @@ import { Agent } from './Agent';
 import { ChainStatus } from '../types/types';
 
 // Node monitoring and status reporting agent
-export abstract class ReportingAgent extends Agent {
+export abstract class ReportingAgentBase extends Agent {
   private static authorizedAgent: Agent | null = null;
   private status: ChainStatus.Type[] = [];
   constructor() {
     super();
-    if (!(ReportingAgent.authorizedAgent instanceof Agent)) {
+    if (!(ReportingAgentBase.authorizedAgent instanceof Agent)) {
       throw new Error(
         'Node Reporter needs to be instantiated by an authorized Agent',
       );
     }
-    ReportingAgent.authorizedAgent = null;
+    ReportingAgentBase.authorizedAgent = null;
   }
 
   static authorize(agent: Agent): void {
-    ReportingAgent.authorizedAgent = agent;
+    ReportingAgentBase.authorizedAgent = agent;
   }
 
   notify(status: ChainStatus.Type): void {
-    Logger.info(`Status ${status} from ${0}`);
+    Logger.info(`Status ${status} from ${this.uid}`);
     this.status.push(status);
     this.emit('signal', status);
   }

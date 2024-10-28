@@ -62,10 +62,15 @@ class SupervisorContainer {
       switch (communicationType) {
         case 'setup': {
           const { chainId, remoteConfigs } = req.body;
-          if (remoteConfigs?.services[0]?.meta?.resolver) {
-            Logger.warn({ message: 'waiting........' });
+
+          // The following simulates a process that takes time to complete
+          const resolver = remoteConfigs?.services[0]?.meta?.resolver;
+          if (resolver) {
+            Logger.warn({
+              message: `${resolver} is taking longer than expected to complete...`,
+            });
             // eslint-disable-next-line no-undef
-            await new Promise((resolve) => setTimeout(resolve, 10000));
+            await new Promise((resolve) => setTimeout(resolve, 5000));
           }
 
           const nodeId = await this.nodeSupervisor.handleRequest({
@@ -84,8 +89,8 @@ class SupervisorContainer {
             .json({ message: 'Data received and processed successfully' });
           break;
         case 'notify': {
-          const { nodeId, signal } = req.body;
-          this.nodeSupervisor.notify(nodeId, signal);
+          const { chainId, signal } = req.body;
+          this.nodeSupervisor.handleNotification(chainId, signal);
           res.status(200).json({
             message: 'Notify the signal to the supervisor monitoring',
           });
@@ -153,6 +158,10 @@ class SupervisorContainer {
         //
         switch (message.signal) {
           case ChainStatus.CHAIN_SETUP_COMPLETED:
+            Logger.info({
+              message: `reportSignalHandler: Chain setup completed`,
+            });
+
             break;
         }
       },

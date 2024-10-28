@@ -224,7 +224,8 @@ declare class NodeSupervisor {
     private deployChain;
     private createNode;
     private setupNode;
-    notify(nodeId: string, status: ChainStatus.Type): void;
+    handleNotification(chainId: string, status: ChainStatus.Type): void;
+    private notify;
     addProcessors(nodeId: string, processors: PipelineProcessor[]): Promise<void>;
     private deleteNode;
     private pauseNode;
