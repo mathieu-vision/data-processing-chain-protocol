@@ -1,4 +1,5 @@
 /* eslint-disable no-unused-vars */
+import { Logger } from 'extra/Logger';
 import { PipelineProcessor } from '../core/PipelineProcessor';
 
 export type ProcessorPipeline = PipelineProcessor[];
@@ -27,17 +28,25 @@ export namespace DefaultCallback {
   // todo: should be remote_service_callback
   export const SERVICE_CALLBACK: ServiceCallback = (
     payload: CallbackPayload,
-  ) => {};
+  ) => {
+    Logger.warn('REMOTE_SERVICE_CALLBACK not set');
+  };
   // todo: should be broadcast_setup_callback
   export const SETUP_CALLBACK: SetupCallback = async (
     message: BrodcastSetupMessage,
-  ) => {};
+  ) => {
+    Logger.warn('SETUP_CALLBACK not set');
+  };
   export const REPORTING_CALLBACK: ReportingCallback = async (
     message: ReportingMessage,
-  ) => {};
+  ) => {
+    Logger.warn('REPORTING_CALLBACK not set');
+  };
   export const BROADCAST_REPORTING_CALLBACK: ReportingCallback = async (
     message: BroadcastReportingMessage,
-  ) => {};
+  ) => {
+    Logger.warn('BROADCAST_REPORTING_CALLBACK not set');
+  };
 }
 
 export type ProcessorCallback = (

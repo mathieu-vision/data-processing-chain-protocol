@@ -93,14 +93,14 @@ export const remoteServiceCallback = async (payload: RSCPayload) => {
 };
 
 export interface DefaultCallbackPayload {
-  supervisor: NodeSupervisor;
   paths: { setup: string; run: string };
   hostResolver: HostResolverCallback;
 }
 export const setResolverCallbacks = async (
   dcPayload: DefaultCallbackPayload,
 ): Promise<void> => {
-  const { supervisor, paths, hostResolver } = dcPayload;
+  const { paths, hostResolver } = dcPayload;
+  const supervisor = NodeSupervisor.retrieveService();
 
   supervisor.setBroadcastSetupCallback(
     async (message: BrodcastSetupMessage): Promise<void> => {

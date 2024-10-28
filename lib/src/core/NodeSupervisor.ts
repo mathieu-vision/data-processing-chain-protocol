@@ -11,22 +11,11 @@ import {
   ChainRelation,
   NodeConfig,
   NodeType,
-  SupervisorPayloadSetup,
-  SupervisorPayloadCreate,
-  SupervisorPayloadDelay,
-  SupervisorPayloadDelete,
-  SupervisorPayloadPause,
-  SupervisorPayloadRun,
-  SupervisorPayloadSendData,
   SetupCallback,
-  SupervisorPayloadPrepareChain,
-  SupervisorPayloadStartChain,
-  SupervisorPayloadDeployChain,
   ServiceConfig,
   DefaultCallback,
   ReportingCallback,
   BroadcastReportingCallback,
-  SupervisorPayloadStartPendingChain,
 } from '../types/types';
 import { Logger } from '../extra/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
@@ -51,8 +40,6 @@ export class NodeSupervisor {
     this.chains = new Map();
     this.remoteServiceCallback = DefaultCallback.SERVICE_CALLBACK;
     this.broadcastSetupCallback = DefaultCallback.SETUP_CALLBACK;
-    // eslint-disable-next-line no-unused-vars
-    async (message: BrodcastSetupMessage) => {};
   }
 
   static retrieveService(refresh: boolean = false): NodeSupervisor {

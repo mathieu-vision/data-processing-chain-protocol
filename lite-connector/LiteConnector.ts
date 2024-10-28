@@ -129,7 +129,6 @@ class SupervisorContainer {
     );
 
     await setResolverCallbacks({
-      supervisor: this.nodeSupervisor,
       paths: {
         setup: '/node/communicate/setup',
         run: '/node/communicate/run',
@@ -148,29 +147,8 @@ class SupervisorContainer {
     });
 
     await setMonitoringCallbacks({
-      supervisor: this.nodeSupervisor,
       paths: {
         notify: '/node/communicate/notify',
-      },
-      reportSignalHandler: async (message: ReportingMessage): Promise<void> => {
-        Logger.info({ message: `${JSON.stringify(message, null, 2)}` });
-        //
-        // Here we handle the necessary actions
-        //
-        switch (message.signal) {
-          case ChainStatus.CHAIN_SETUP_COMPLETED:
-            {
-              const payload: SupervisorPayloadStartPendingChain = {
-                signal: NodeSignal.CHAIN_START_PENDING,
-                id: message.chainId,
-              };
-              await this.nodeSupervisor.handleRequest(payload);
-              Logger.info({
-                message: `reportSignalHandler: Chain setup completed`,
-              });
-            }
-            break;
-        }
       },
     });
 

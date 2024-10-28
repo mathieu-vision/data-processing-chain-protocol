@@ -1,4 +1,10 @@
-import { ReportingMessage, BroadcastReportingMessage } from '../types/types';
+import {
+  ReportingMessage,
+  BroadcastReportingMessage,
+  ChainStatus,
+  SupervisorPayloadStartPendingChain,
+  NodeSignal,
+} from '../types/types';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { Logger } from './Logger';
 import { post } from './http';
@@ -31,11 +37,31 @@ export const reportingCallback = async (payload: MCPayload): Promise<void> => {
   await reportSignalHandler(message);
 };
 export interface DefaultReportingCallbackPayload {
-  supervisor: NodeSupervisor;
   paths: { notify: string };
-  reportSignalHandler: ReportSignalHandlerCallback;
+  reportSignalHandler?: ReportSignalHandlerCallback;
   monitoringResolver?: MonitoringResolverCallback;
 }
+
+const defaultReportSignalHander = async (
+  message: ReportingMessage,
+): Promise<void> => {
+  Logger.info({ message: `${JSON.stringify(message, null, 2)}` });
+  switch (message.signal) {
+    case ChainStatus.CHAIN_SETUP_COMPLETED:
+      {
+        const supervisor = NodeSupervisor.retrieveService();
+        const payload: SupervisorPayloadStartPendingChain = {
+          signal: NodeSignal.CHAIN_START_PENDING,
+          id: message.chainId,
+        };
+        await supervisor.handleRequest(payload);
+        Logger.info({
+          message: `reportSignalHandler: Chain setup completed`,
+        });
+      }
+      break;
+  }
+};
 
 const defaultMonitoringResolver = async (
   chainId: string,
@@ -61,21 +87,21 @@ const broadcastReportingCallback = async (
   const monitoringHost = await monitoringResolver(message.chainId);
   const url = new URL(path, monitoringHost);
   const data = JSON.stringify(message);
-  Logger.info(`DRC: Data send to ${url}: ${JSON.stringify(data, null, 2)}`);
+  Logger.info(`DRC: Sending message to ${url}`);
   await post(url, data);
 };
 
 export const setMonitoringCallbacks = async (
   dcPayload: DefaultReportingCallbackPayload,
 ): Promise<void> => {
-  const { supervisor, paths, reportSignalHandler, monitoringResolver } =
-    dcPayload;
+  const { paths, reportSignalHandler, monitoringResolver } = dcPayload;
+  const supervisor = NodeSupervisor.retrieveService();
 
   supervisor.setMonitoringCallback(
     async (message: ReportingMessage): Promise<void> => {
       const payload: MCPayload = {
         message,
-        reportSignalHandler,
+        reportSignalHandler: reportSignalHandler ?? defaultReportSignalHander,
       };
       await reportingCallback(payload);
     },

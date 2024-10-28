@@ -275,7 +275,6 @@ interface RSCPayload {
 }
 declare const remoteServiceCallback: (payload: RSCPayload) => Promise<void>;
 interface DefaultCallbackPayload {
-    supervisor: NodeSupervisor;
     paths: {
         setup: string;
         run: string;
@@ -292,11 +291,10 @@ interface BRCPayload {
     monitoringResolver: MonitoringResolverCallback;
 }
 interface DefaultReportingCallbackPayload {
-    supervisor: NodeSupervisor;
     paths: {
         notify: string;
     };
-    reportSignalHandler: ReportSignalHandlerCallback;
+    reportSignalHandler?: ReportSignalHandlerCallback;
     monitoringResolver?: MonitoringResolverCallback;
 }
 declare const setMonitoringCallbacks: (dcPayload: DefaultReportingCallbackPayload) => Promise<void>;
