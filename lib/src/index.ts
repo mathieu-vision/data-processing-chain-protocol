@@ -31,6 +31,7 @@ export {
   SupervisorPayloadSendData,
   SupervisorPayloadPrepareChain,
   SupervisorPayloadStartChain,
+  SupervisorPayloadStartPendingChain,
   SupervisorPayloadDeployChain,
   ChainState,
   DataType,

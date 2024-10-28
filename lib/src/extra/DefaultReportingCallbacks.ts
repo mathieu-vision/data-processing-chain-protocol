@@ -27,7 +27,6 @@ export interface BRCPayload {
 
 // Default broadcastReportingCallback to be set on initial supervisor
 export const reportingCallback = async (payload: MCPayload): Promise<void> => {
-  Logger.info(JSON.stringify(payload, null, 2));
   const { message, reportSignalHandler } = payload;
   await reportSignalHandler(message);
 };
@@ -46,7 +45,7 @@ const defaultMonitoringResolver = async (
     const monitoringHost = monitoring.getRemoteMonitoringHost(chainId);
     if (monitoringHost !== undefined) {
       Logger.info({
-        message: `Resolving host for monitoring: ${monitoringHost}`,
+        message: `DRC: Resolving host for monitoring: ${monitoringHost}`,
       });
       return monitoringHost;
     } else throw new Error('monitoring not found');
@@ -62,7 +61,7 @@ const broadcastReportingCallback = async (
   const monitoringHost = await monitoringResolver(message.chainId);
   const url = new URL(path, monitoringHost);
   const data = JSON.stringify(message);
-  Logger.info(`Data send to ${url}: ${JSON.stringify(data, null, 2)}`);
+  Logger.info(`DRC: Data send to ${url}: ${JSON.stringify(data, null, 2)}`);
   await post(url, data);
 };
 

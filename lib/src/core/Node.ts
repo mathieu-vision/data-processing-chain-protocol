@@ -158,8 +158,8 @@ export class Node {
 
     const supervisor = NodeSupervisor.retrieveService();
     await supervisor.handleRequest({
-      id: this.id,
       signal: NodeSignal.NODE_SEND_DATA,
+      id: this.id,
     });
   }
 
@@ -193,9 +193,9 @@ export class Node {
     if (nextNodeInfo) {
       if (nextNodeInfo.type === NodeType.LOCAL) {
         await supervisor.handleRequest({
+          signal: NodeSignal.NODE_RUN,
           id: nextNodeInfo.id,
           data: pipelineData,
-          signal: NodeSignal.NODE_RUN,
         });
       } else if (nextNodeInfo.type === NodeType.REMOTE) {
         supervisor.remoteServiceCallback({

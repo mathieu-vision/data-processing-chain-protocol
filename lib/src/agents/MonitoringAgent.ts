@@ -66,7 +66,7 @@ export class MonitoringAgent extends Agent {
     ReportingAgent.authorize(this);
     const reporting = new ReportingAgent(chainId, nodeId);
     reporting.on('signal', async (signal) => {
-      Logger.info(`Receive signal: ${signal}`);
+      Logger.info(`Receive signal: ${signal} for node ${nodeId}`);
       const message: ReportingMessage = { ...payload, signal };
       if (index > 0) {
         void this.broadcastReportingCallback(message);

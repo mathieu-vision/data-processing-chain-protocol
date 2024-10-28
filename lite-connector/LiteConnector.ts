@@ -10,6 +10,7 @@ import {
   ReportingMessage,
   setMonitoringCallbacks,
   ChainStatus,
+  SupervisorPayloadStartPendingChain,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -158,10 +159,16 @@ class SupervisorContainer {
         //
         switch (message.signal) {
           case ChainStatus.CHAIN_SETUP_COMPLETED:
-            Logger.info({
-              message: `reportSignalHandler: Chain setup completed`,
-            });
-
+            {
+              const payload: SupervisorPayloadStartPendingChain = {
+                signal: NodeSignal.CHAIN_START_PENDING,
+                id: message.chainId,
+              };
+              await this.nodeSupervisor.handleRequest(payload);
+              Logger.info({
+                message: `reportSignalHandler: Chain setup completed`,
+              });
+            }
             break;
         }
       },

@@ -26,6 +26,7 @@ import {
   DefaultCallback,
   ReportingCallback,
   BroadcastReportingCallback,
+  SupervisorPayloadStartPendingChain,
 } from '../types/types';
 import { Logger } from '../extra/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
@@ -90,52 +91,38 @@ export class NodeSupervisor {
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
     switch (payload.signal) {
       case NodeSignal.NODE_SETUP:
-        return await this.setupNode((payload as SupervisorPayloadSetup).config);
+        return await this.setupNode(payload.config);
       case NodeSignal.NODE_CREATE:
-        return await this.createNode(
-          (payload as SupervisorPayloadCreate).params,
-        );
+        return await this.createNode(payload.params);
       case NodeSignal.NODE_DELETE:
-        return await this.deleteNode((payload as SupervisorPayloadDelete).id);
+        return await this.deleteNode(payload.id);
       case NodeSignal.NODE_PAUSE:
-        return await this.pauseNode((payload as SupervisorPayloadPause).id);
+        return await this.pauseNode(payload.id);
       case NodeSignal.NODE_DELAY:
-        return await this.delayNode(
-          (payload as SupervisorPayloadDelay).id,
-          (payload as SupervisorPayloadDelay).delay,
-        );
+        return await this.delayNode(payload.id, payload.delay);
       case NodeSignal.NODE_RUN:
-        return await this.runNode(
-          (payload as SupervisorPayloadRun).id,
-          (payload as SupervisorPayloadRun).data,
-        );
+        return await this.runNode(payload.id, payload.data);
       case NodeSignal.NODE_SEND_DATA:
-        return await this.sendNodeData(
-          (payload as SupervisorPayloadSendData).id,
-        );
+        return await this.sendNodeData(payload.id);
       case NodeSignal.CHAIN_PREPARE:
-        return await this.prepareChainDistribution(
-          (payload as SupervisorPayloadPrepareChain).id,
-        );
+        return await this.prepareChainDistribution(payload.id);
       case NodeSignal.CHAIN_START:
-        return await this.startChain(
-          (payload as SupervisorPayloadStartChain).id,
-          (payload as SupervisorPayloadStartChain).data,
-        );
+        return await this.startChain(payload.id, payload.data);
+      case NodeSignal.CHAIN_START_PENDING:
+        return await this.startPendingChain(payload.id);
       case NodeSignal.CHAIN_DEPLOY: {
-        return await this.deployChain(
-          (payload as SupervisorPayloadDeployChain).config,
-          // (payload as SupervisorPayloadDeployChain).data,
-        );
+        return await this.deployChain(payload.config, payload.data);
       }
       default:
-        Logger.warn(`${this.ctn}: Unknown signal received: ${payload.signal}`);
+        Logger.warn(
+          `${this.ctn}: Unknown signal received: ${JSON.stringify(payload, null, 2)}`,
+        );
     }
   }
 
   private async deployChain(
     config: ChainConfig,
-    // data: PipelineData,
+    data: PipelineData,
   ): Promise<string> {
     if (!config) {
       throw new Error(`${this.ctn}: Chain configuration is required`);
@@ -144,6 +131,10 @@ export class NodeSupervisor {
     const chainId = this.createChain(config);
     await this.prepareChainDistribution(chainId);
     // await this.startChain(chainId, data);
+    const chain = this.chains.get(chainId);
+    if (chain) {
+      chain.dataRef = data;
+    }
     Logger.info(
       `${this.ctn}: Chain ${chainId} successfully deployed and started.`,
     );
@@ -438,6 +429,17 @@ export class NodeSupervisor {
       Logger.error(
         `${this.ctn}: Failed to broadcast node creation signal: ${error}`,
       );
+    }
+  }
+
+  async startPendingChain(chainId: string) {
+    const chain = this.chains.get(chainId);
+    const data = chain?.dataRef;
+    if (data) {
+      await this.startChain(chainId, data);
+    } else {
+      Logger.error(`${this.ctn}: Can't start chain ${chainId}`);
+      throw new Error('Something went wrong while starting pending chain');
     }
   }
 

@@ -107,76 +107,99 @@ export namespace NodeSignal {
     | 'node_send_data'
     | 'chain_prepare'
     | 'chain_start'
+    | 'chain_start_pending'
     | 'chain_deploy';
-  // | 'chain_setup';
 
-  export const NODE_SETUP: Type = 'node_setup';
-  export const NODE_CREATE: Type = 'node_create';
-  export const NODE_DELETE: Type = 'node_delete';
-  export const NODE_PAUSE: Type = 'node_pause';
-  export const NODE_DELAY: Type = 'node_delay';
-  export const NODE_RUN: Type = 'node_run';
-  export const NODE_SEND_DATA: Type = 'node_send_data';
-  export const CHAIN_PREPARE: Type = 'chain_prepare';
-  export const CHAIN_START: Type = 'chain_start';
-  export const CHAIN_DEPLOY: Type = 'chain_deploy';
-  // export const CHAIN_SETUP: Type = 'chain_setup';
+  export const NODE_SETUP: 'node_setup' = 'node_setup';
+  export const NODE_CREATE: 'node_create' = 'node_create';
+  export const NODE_DELETE: 'node_delete' = 'node_delete';
+  export const NODE_PAUSE: 'node_pause' = 'node_pause';
+  export const NODE_DELAY: 'node_delay' = 'node_delay';
+  export const NODE_RUN: 'node_run' = 'node_run';
+  export const NODE_SEND_DATA: 'node_send_data' = 'node_send_data';
+  export const CHAIN_PREPARE: 'chain_prepare' = 'chain_prepare';
+  export const CHAIN_START: 'chain_start' = 'chain_start';
+  export const CHAIN_START_PENDING: 'chain_start_pending' =
+    'chain_start_pending';
+  export const CHAIN_DEPLOY: 'chain_deploy' = 'chain_deploy';
 }
 
 export type SupervisorPayloadSetup = {
-  signal: typeof NodeSignal.NODE_SETUP;
+  signal: 'node_setup';
   config: NodeConfig;
 };
 
 export type SupervisorPayloadCreate = {
-  signal: typeof NodeSignal.NODE_CREATE;
+  signal: 'node_create';
   params: NodeConfig;
 };
 
 export type SupervisorPayloadDelete = {
-  signal: typeof NodeSignal.NODE_DELETE;
+  signal: 'node_delete';
   id: string;
 };
 
 export type SupervisorPayloadPause = {
-  signal: typeof NodeSignal.NODE_PAUSE;
+  signal: 'node_pause';
   id: string;
 };
 
 export type SupervisorPayloadDelay = {
-  signal: typeof NodeSignal.NODE_DELAY;
+  signal: 'node_delay';
   id: string;
   delay: number;
 };
 
 export type SupervisorPayloadRun = {
-  signal: typeof NodeSignal.NODE_RUN;
+  signal: 'node_run';
   id: string;
   data: PipelineData;
 };
 
 export type SupervisorPayloadSendData = {
-  signal: typeof NodeSignal.NODE_SEND_DATA;
+  signal: 'node_send_data';
   id: string;
 };
 
 export type SupervisorPayloadPrepareChain = {
-  signal: typeof NodeSignal.CHAIN_PREPARE;
+  signal: 'chain_prepare';
   id: string;
 };
 
 export type SupervisorPayloadStartChain = {
-  signal: typeof NodeSignal.CHAIN_START;
+  signal: 'chain_start';
   id: string;
   data: PipelineData;
 };
 
+export type SupervisorPayloadStartPendingChain = {
+  signal: 'chain_start_pending';
+  id: string;
+};
+
 export type SupervisorPayloadDeployChain = {
-  signal: typeof NodeSignal.CHAIN_DEPLOY;
+  signal: 'chain_deploy';
   config: ChainConfig;
   data: PipelineData;
 };
+/*
+export type SupervisorPayloadMap = {
+  node_setup: SupervisorPayloadSetup;
+  node_create: SupervisorPayloadCreate;
+  node_delete: SupervisorPayloadDelete;
+  node_pause: SupervisorPayloadPause;
+  node_delay: SupervisorPayloadDelay;
+  node_run: SupervisorPayloadRun;
+  node_send_data: SupervisorPayloadSendData;
+  chain_prepare: SupervisorPayloadPrepareChain;
+  chain_start: SupervisorPayloadStartChain;
+  chain_start_pending: SupervisorPayloadStartPendingChain;
+  chain_deploy: SupervisorPayloadDeployChain;
+};
 
+export type SupervisorPayload =
+  SupervisorPayloadMap[keyof SupervisorPayloadMap];
+*/
 export type SupervisorPayload =
   | SupervisorPayloadSetup
   | SupervisorPayloadCreate
@@ -187,6 +210,7 @@ export type SupervisorPayload =
   | SupervisorPayloadSendData
   | SupervisorPayloadPrepareChain
   | SupervisorPayloadStartChain
+  | SupervisorPayloadStartPendingChain
   | SupervisorPayloadDeployChain;
 
 export interface ServiceConfig {
@@ -230,5 +254,6 @@ export interface BroadcastReportingMessage extends ReportingPayload {
 
 export interface ChainRelation {
   rootNodeId?: string;
+  dataRef?: PipelineData;
   config: ChainConfig;
 }

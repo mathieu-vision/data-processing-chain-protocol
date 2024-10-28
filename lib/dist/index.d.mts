@@ -64,63 +64,68 @@ declare namespace ChainStatus {
     const CHAIN_SETUP_COMPLETED: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_deploy';
-    const NODE_SETUP: Type;
-    const NODE_CREATE: Type;
-    const NODE_DELETE: Type;
-    const NODE_PAUSE: Type;
-    const NODE_DELAY: Type;
-    const NODE_RUN: Type;
-    const NODE_SEND_DATA: Type;
-    const CHAIN_PREPARE: Type;
-    const CHAIN_START: Type;
-    const CHAIN_DEPLOY: Type;
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_start_pending' | 'chain_deploy';
+    const NODE_SETUP: 'node_setup';
+    const NODE_CREATE: 'node_create';
+    const NODE_DELETE: 'node_delete';
+    const NODE_PAUSE: 'node_pause';
+    const NODE_DELAY: 'node_delay';
+    const NODE_RUN: 'node_run';
+    const NODE_SEND_DATA: 'node_send_data';
+    const CHAIN_PREPARE: 'chain_prepare';
+    const CHAIN_START: 'chain_start';
+    const CHAIN_START_PENDING: 'chain_start_pending';
+    const CHAIN_DEPLOY: 'chain_deploy';
 }
 type SupervisorPayloadSetup = {
-    signal: typeof NodeSignal.NODE_SETUP;
+    signal: 'node_setup';
     config: NodeConfig;
 };
 type SupervisorPayloadCreate = {
-    signal: typeof NodeSignal.NODE_CREATE;
+    signal: 'node_create';
     params: NodeConfig;
 };
 type SupervisorPayloadDelete = {
-    signal: typeof NodeSignal.NODE_DELETE;
+    signal: 'node_delete';
     id: string;
 };
 type SupervisorPayloadPause = {
-    signal: typeof NodeSignal.NODE_PAUSE;
+    signal: 'node_pause';
     id: string;
 };
 type SupervisorPayloadDelay = {
-    signal: typeof NodeSignal.NODE_DELAY;
+    signal: 'node_delay';
     id: string;
     delay: number;
 };
 type SupervisorPayloadRun = {
-    signal: typeof NodeSignal.NODE_RUN;
+    signal: 'node_run';
     id: string;
     data: PipelineData;
 };
 type SupervisorPayloadSendData = {
-    signal: typeof NodeSignal.NODE_SEND_DATA;
+    signal: 'node_send_data';
     id: string;
 };
 type SupervisorPayloadPrepareChain = {
-    signal: typeof NodeSignal.CHAIN_PREPARE;
+    signal: 'chain_prepare';
     id: string;
 };
 type SupervisorPayloadStartChain = {
-    signal: typeof NodeSignal.CHAIN_START;
+    signal: 'chain_start';
     id: string;
     data: PipelineData;
 };
+type SupervisorPayloadStartPendingChain = {
+    signal: 'chain_start_pending';
+    id: string;
+};
 type SupervisorPayloadDeployChain = {
-    signal: typeof NodeSignal.CHAIN_DEPLOY;
+    signal: 'chain_deploy';
     config: ChainConfig;
     data: PipelineData;
 };
-type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | SupervisorPayloadDelete | SupervisorPayloadPause | SupervisorPayloadDelay | SupervisorPayloadRun | SupervisorPayloadSendData | SupervisorPayloadPrepareChain | SupervisorPayloadStartChain | SupervisorPayloadDeployChain;
+type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | SupervisorPayloadDelete | SupervisorPayloadPause | SupervisorPayloadDelay | SupervisorPayloadRun | SupervisorPayloadSendData | SupervisorPayloadPrepareChain | SupervisorPayloadStartChain | SupervisorPayloadStartPendingChain | SupervisorPayloadDeployChain;
 interface ServiceConfig {
     targetId: string;
     meta?: PipelineMeta;
@@ -156,6 +161,7 @@ interface BroadcastReportingMessage extends ReportingPayload {
 }
 interface ChainRelation {
     rootNodeId?: string;
+    dataRef?: PipelineData;
     config: ChainConfig;
 }
 
@@ -235,6 +241,7 @@ declare class NodeSupervisor {
     private setRemoteMonitoringHost;
     prepareChainDistribution(chainId: string): Promise<void>;
     broadcastNodeSetupSignal(chainId: string, remoteConfigs: ChainConfig): Promise<void>;
+    startPendingChain(chainId: string): Promise<void>;
     startChain(chainId: string, data: PipelineData): Promise<void>;
     private runNode;
     runNodeByRelation(payload: CallbackPayload): Promise<void>;
@@ -294,4 +301,4 @@ interface DefaultReportingCallbackPayload {
 }
 declare const setMonitoringCallbacks: (dcPayload: DefaultReportingCallbackPayload) => Promise<void>;
 
-export { type BRCPayload, type BSCPayload, type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type RSCPayload, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, broadcastSetupCallback, remoteServiceCallback, setMonitoringCallbacks, setResolverCallbacks };
+export { type BRCPayload, type BSCPayload, type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type RSCPayload, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, type SupervisorPayloadStartPendingChain, broadcastSetupCallback, remoteServiceCallback, setMonitoringCallbacks, setResolverCallbacks };
