@@ -15,11 +15,13 @@ import { Logger } from '../extra/Logger';
 import { NodeSupervisor } from './NodeSupervisor';
 import { MonitoringAgent, ReportingAgent } from '../agents/MonitoringAgent';
 
+/**
+ * Represents a single executable node within a chain
+ */
 export class Node {
   private id: string;
   private pipelines: ProcessorPipeline[];
-  // Todo:
-  private dependencies: string[];
+  private dependencies: string[]; // Todo
   private status: ChainStatus.Type;
   private error?: Error;
   private delay: number;
@@ -35,6 +37,10 @@ export class Node {
   private config: NodeConfig | null;
   private reporting: ReportingAgent | null = null;
 
+  /**
+   * Creates a new Node instance
+   * @param {string[]} dependencies - Array of node dependency IDs
+   */
   constructor(dependencies: string[] = []) {
     this.id = randomUUID();
     this.output = [];
@@ -49,10 +55,18 @@ export class Node {
     this.config = null;
   }
 
+  /**
+   * Updates the execution progress based on pipeline count
+   * @private
+   */
   private updateProgress(): void {
     this.progress += 1 / this.pipelines.length;
   }
 
+  /**
+   * Configures the node and sets up monitoring if index is provided
+   * @param {NodeConfig} config - Configuration containing services, chainId, index and other options
+   */
   setConfig(config: NodeConfig): void {
     const { chainId, index } = config;
     if (index !== undefined) {
@@ -68,22 +82,45 @@ export class Node {
     this.config = config;
   }
 
+  /**
+   * Gets the node's current execution queue promise
+   * @returns {Promise<void>} Current execution queue
+   */
   getExecutionQueue(): Promise<void> {
     return this.executionQueue;
   }
+
+  /**
+   * Gets the node's configuration
+   * @returns {NodeConfig | null} Node configuration if set
+   */
   getConfig(): NodeConfig | null {
     return this.config;
   }
 
+  /**
+   * Gets the node's unique identifier
+   * @returns {string} UUID of the node
+   */
   getId(): string {
     return this.id;
   }
 
+  /**
+   * Adds a processor pipeline to the node
+   * @param {ProcessorPipeline} pipeline - Array of PipelineProcessor instances
+   */
   addPipeline(pipeline: ProcessorPipeline): void {
     this.pipelines.push(pipeline);
   }
 
-  // digest the data through successive processing stages
+  /**
+   * Digest the data through successive processing stages
+   * @param {ProcessorPipeline} pipeline - Array of processors to execute
+   * @param {PipelineData} data - Data to process
+   * @returns {Promise<PipelineData>} Processed data
+   * @private
+   */
   private async processPipeline(
     pipeline: ProcessorPipeline,
     data: PipelineData,
@@ -104,6 +141,10 @@ export class Node {
     }
   }
 
+  /**
+   * Notifies about node status changes through the reporting agent
+   * @param {ChainStatus.Type} notify - Node status to report
+   */
   notify(notify: ChainStatus.Type): void {
     try {
       if (this.reporting !== null) {
@@ -116,6 +157,11 @@ export class Node {
     }
   }
 
+  /**
+   * Executes node processing on input data
+   * @param {PipelineData} data - Data to process
+   * @returns {Promise<void>}
+   */
   async execute(data: PipelineData): Promise<void> {
     this.executionQueue = this.executionQueue.then(async () => {
       try {
@@ -163,7 +209,10 @@ export class Node {
     });
   }
 
-  // ...
+  /**
+   * Sends processed data to the next node after execution completion
+   * @returns {Promise<void>}
+   */
   async sendData(): Promise<void> {
     // make sure the queue has finished
     await this.executionQueue;
@@ -171,6 +220,13 @@ export class Node {
     await Node.terminate(this.id, this.output);
   }
 
+  /**
+   * Terminates node execution and handles final data
+   * @param {string} nodeId - Node identifier
+   * @param {PipelineData[]} pipelineData - Array of processed data
+   * @private
+   * @static
+   */
   private static async terminate(nodeId: string, pipelineData: PipelineData[]) {
     // todo: format data
     const data = pipelineData[0]; // tmp
@@ -178,6 +234,13 @@ export class Node {
   }
 
   // todo: should not be static
+  /**
+   * Routes data to next node based on NodeType (LOCAL/REMOTE)
+   * @param {string} nodeId - Current node identifier
+   * @param {PipelineData} pipelineData - Data to pass forward
+   * @private
+   * @static
+   */
   private static async moveToNextNode(
     nodeId: string,
     pipelineData: PipelineData,
@@ -222,14 +285,27 @@ export class Node {
     }
   }
 
+  /**
+   * Gets execution progress value
+   * @returns {number} Progress between 0 and 1
+   */
   getProgress(): number {
     return this.progress;
   }
 
+  /**
+   * Checks if node dependencies are satisfied
+   * @param {Set<string>} executedNodes - Set of completed node IDs
+   * @returns {boolean} Whether node can execute
+   */
   canExecute(executedNodes: Set<string>): boolean {
     return this.dependencies.every((dep) => executedNodes.has(dep));
   }
 
+  /**
+   * Sets execution delay in milliseconds
+   * @param {number} delay - Delay amount
+   */
   setDelay(delay: number): void {
     this.delay = delay;
   }
@@ -238,18 +314,35 @@ export class Node {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  /**
+   * Gets current data type (RAW/COMPRESSED)
+   * @returns {DataType.Type} Current data type
+   */
   getDataType(): DataType.Type {
     return this.dataType;
   }
 
+  /**
+   * Gets current node status
+   * @returns {ChainStatus.Type} Current chain status
+   */
   getStatus(): ChainStatus.Type {
     return this.status;
   }
 
+  /**
+   * Gets node dependency IDs
+   * @returns {string[]} Array of dependency node IDs
+   */
   getDependencies(): string[] {
     return this.dependencies;
   }
 
+  /**
+   * Updates node status and handles error reporting
+   * @param {ChainStatus.Type} status - New status to set
+   * @param {Error} [error] - Optional error if status is NODE_FAILED
+   */
   updateStatus(status: ChainStatus.Type, error?: Error): void {
     this.status = status;
     if (status === ChainStatus.NODE_FAILED) {
@@ -259,18 +352,37 @@ export class Node {
       this.reporting.notify(status);
     }
   }
+
+  /**
+   * Gets last error if node failed
+   * @returns {Error|undefined} Error object if failed
+   */
   getError(): Error | undefined {
     return this.error;
   }
 
+  /**
+   * Gets all processor pipelines
+   * @returns {ProcessorPipeline[]} Array of processor pipelines
+   */
   getProcessors(): ProcessorPipeline[] {
     return this.pipelines;
   }
 
+  /**
+   * Sets next node routing information
+   * @param {string} id - Next node ID
+   * @param {NodeType.Type} type - Next node type (LOCAL/REMOTE)
+   * @param {PipelineMeta} [meta] - Optional pipeline metadata for next node
+   */
   setNextNodeInfo(id: string, type: NodeType.Type, meta?: PipelineMeta): void {
     this.nextNodeInfo = { id, type, meta };
   }
 
+  /**
+   * Gets next node routing information
+   * @returns {{ id: string, type: NodeType.Type, meta?: PipelineMeta } | null} Next node info or null
+   */
   getNextNodeInfo(): {
     id: string;
     type: NodeType.Type;

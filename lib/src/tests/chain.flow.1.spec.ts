@@ -97,12 +97,14 @@ describe('Virtual Connector Chain Execution', function () {
   });
 
   it('should handle node failure in the chain', async function () {
+    const chainId = 'chain-02';
     const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: {
         chainType: ChainType.PERSISTANT,
         services: [],
-        chainId: '',
+        chainId,
+        index: 0,
       },
     })) as string;
     const node2Id = (await nodeSupervisor.handleRequest({
@@ -110,16 +112,21 @@ describe('Virtual Connector Chain Execution', function () {
       params: {
         chainType: ChainType.PERSISTANT,
         services: [node1Id],
-        chainId: '',
+        chainId,
+        index: 1,
       },
     })) as string;
 
     const config = { targetId: '' };
+    const processor1 = new PipelineProcessor(config);
     const failingProcessor = new PipelineProcessor(config);
+
+    sinon.stub(processor1, 'digest').resolves({ result1: 'data1' });
     sinon
       .stub(failingProcessor, 'digest')
       .rejects(new Error('Processor failed'));
 
+    await nodeSupervisor.addProcessors(node1Id, [processor1]);
     await nodeSupervisor.addProcessors(node2Id, [failingProcessor]);
 
     await nodeSupervisor.handleRequest({
@@ -131,15 +138,27 @@ describe('Virtual Connector Chain Execution', function () {
     await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_RUN,
       id: node2Id,
-      data: { initial: 'data' },
+      data: { initial: 'data', result1: 'data1' },
     });
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    /*
-    const chainState = nodeMonitoring.getChainState();
-    expect(chainState.completed).to.have.members([node1Id]);
-    expect(chainState.failed).to.have.members([node2Id]);
-    */
+    const chainState = monitoring.getChainStatus(chainId);
+    expect(chainState, 'expect chain state to be defined').to.not.be.undefined;
+    if (chainState) {
+      const completedNodes = Object.keys(chainState).filter(
+        (nodeId) => chainState[nodeId].node_completed === true,
+      );
+      expect(completedNodes, 'expect node1 to be completed').to.have.members([
+        node1Id,
+      ]);
+
+      const failedNodes = Object.keys(chainState).filter(
+        (nodeId) => chainState[nodeId].node_failed === true,
+      );
+      expect(failedNodes, 'expect node2 to be failed').to.have.members([
+        node2Id,
+      ]);
+    }
   });
 });

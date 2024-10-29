@@ -21,7 +21,10 @@ describe('Node Supervisor Flow Test', function () {
   it('should create a node, process data, and send output', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { services: [] },
+      params: {
+        services: [],
+        chainId: '',
+      },
     })) as string;
 
     const config = { targetId: '' };
@@ -51,7 +54,11 @@ describe('Node Supervisor Flow Test', function () {
   it('should handle multiple processors and output correctly', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { chainType: ChainType.PERSISTANT, services: [] },
+      params: {
+        chainType: ChainType.PERSISTANT,
+        services: [],
+        chainId: '',
+      },
     })) as string;
 
     const config = { targetId: '' };
@@ -86,7 +93,11 @@ describe('Node Supervisor Flow Test', function () {
   it('should handle delayed node execution', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { chainType: ChainType.PERSISTANT, services: [] },
+      params: {
+        chainType: ChainType.PERSISTANT,
+        services: [],
+        chainId: '',
+      },
     })) as string;
 
     const config = { targetId: '' };

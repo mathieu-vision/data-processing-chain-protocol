@@ -3,20 +3,17 @@ import sinon from 'sinon';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { PipelineProcessor } from '../core/PipelineProcessor';
 import { ChainConfig, NodeSignal, PipelineData } from '../types/types';
-import { NodeMonitoring } from '../core/_NodeMonitoring';
-import { ProgressTracker } from '../core/ProgressTracker';
 import { Node } from '../core/Node';
+import { MonitoringAgent } from '../agents/MonitoringAgent';
 
 describe('Node Supervisor Chain Flow Test', function () {
   let nodeSupervisor: NodeSupervisor;
-  let nodeMonitoring: NodeMonitoring;
+  let monitoring: MonitoringAgent;
 
   beforeEach(function () {
     nodeSupervisor = NodeSupervisor.retrieveService(true);
+    monitoring = MonitoringAgent.retrieveService();
     nodeSupervisor.setUid('test');
-    const progressTracker = new ProgressTracker(3);
-    nodeMonitoring = new NodeMonitoring([], progressTracker);
-    nodeSupervisor.setMonitoring(nodeMonitoring);
   });
 
   afterEach(function () {
@@ -34,9 +31,22 @@ describe('Node Supervisor Chain Flow Test', function () {
       });
 
     const chainConfig: ChainConfig = [
-      { services: ['service1'], location: 'local' },
-      { services: ['service2'], location: 'local' },
-      { services: ['service3'], location: 'local' },
+      {
+        services: ['service1'],
+        location: 'local',
+        chainId: '',
+        monitoringHost: 'http://fakehost.test',
+      },
+      {
+        services: ['service2'],
+        location: 'local',
+        chainId: '',
+      },
+      {
+        services: ['service3'],
+        location: 'local',
+        chainId: '',
+      },
     ];
 
     let callOrder: string[] = [];
@@ -86,9 +96,26 @@ describe('Node Supervisor Chain Flow Test', function () {
       },
     ]);
 
-    const chainState = nodeMonitoring.getChainState();
-    expect(chainState.completed, 'expect 9').to.have.lengthOf(3);
-    expect(chainState.pending, 'expect 10').to.be.empty;
-    expect(chainState.failed, 'expect 11').to.be.empty;
+    const chainState = monitoring.getChainStatus(chainId);
+    expect(chainState, 'expect chain state to be defined').to.not.be.undefined;
+    if (chainState) {
+      const completedNodes = Object.keys(chainState).filter(
+        (nodeId) => chainState[nodeId].node_completed === true,
+      );
+      expect(
+        completedNodes,
+        'expect all nodes to be completed',
+      ).to.have.lengthOf(3);
+
+      const pendingNodes = Object.keys(chainState).filter(
+        (nodeId) => chainState[nodeId].node_completed === false,
+      );
+      expect(pendingNodes, 'expect no pending nodes').to.be.empty;
+
+      const failedNodes = Object.keys(chainState).filter(
+        (nodeId) => chainState[nodeId].node_failed === true,
+      );
+      expect(failedNodes, 'expect no failed nodes').to.be.empty;
+    }
   });
 });

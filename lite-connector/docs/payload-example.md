@@ -10,6 +10,26 @@
 
 **POST**: `http://localhost:8887/chain/create-and-start`
 
+**Payload Example 1, with meta data, resolver and configuration*:
+
+```json
+{
+  "chainConfig": [
+    {
+      "services": [],
+      "location": "local",
+      "monitoringHost": "http://localhost:8887/"
+    },
+    {
+      "services": [{"targetId": "service1", "meta":{"resolver": "http://localhost:8888/", "configuration":{"a": "some configuration"}}}],
+      "location": "remote"
+    }
+  ],
+  "data": {
+      "hello": "here the data"
+   }
+}
+```
 
 **Payload Example 2, with meta data and resolver**:
 
@@ -18,7 +38,8 @@
   "chainConfig": [
     {
       "services": [],
-      "location": "local"
+      "location": "local",
+      "monitoringHost": "http://localhost:8887/"
     },
     {
       "services": [
@@ -60,14 +81,15 @@
 }
 ```
 
-**Payload Example 2, with meta data**:
+**Payload Example 3, with meta data**:
 
 ```json
 {
   "chainConfig": [
     {
       "services": [],
-      "location": "local"
+      "location": "local",
+      "monitoringHost": "http://localhost:8887/"
     },
     {
       "services": [
@@ -102,14 +124,15 @@
 
 ```
 
-**Payload example 3**:
+**Payload example 4**:
 
 ```json
 {
   "chainConfig": [
     {
       "services": [],
-      "location": "local"
+      "location": "local",
+      "monitoringHost": "http://localhost:8887/"
     },
     {
       "services": ["http://localhost:8888/service1"],

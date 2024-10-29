@@ -22,7 +22,9 @@ import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
 import { MonitoringAgent } from '../agents/MonitoringAgent';
 
-// Should be ChainSupervisor
+/**
+ * Manages the lifecycle and distribution of nodes within a processing chain
+ */
 export class NodeSupervisor {
   private uid: string;
   private ctn: string;
@@ -33,6 +35,10 @@ export class NodeSupervisor {
   private broadcastSetupCallback: SetupCallback;
   remoteServiceCallback: ServiceCallback;
 
+  /**
+   * Creates a new NodeSupervisor instance
+   * @private
+   */
   private constructor() {
     this.uid = '@supervisor:default';
     this.ctn = '@container:default';
@@ -42,6 +48,11 @@ export class NodeSupervisor {
     this.broadcastSetupCallback = DefaultCallback.SETUP_CALLBACK;
   }
 
+  /**
+   * Retrieves or creates a NodeSupervisor instance (Singleton pattern)
+   * @param {boolean} refresh - Whether to force create a new instance
+   * @returns {NodeSupervisor} The NodeSupervisor instance
+   */
   static retrieveService(refresh: boolean = false): NodeSupervisor {
     if (!NodeSupervisor.instance || refresh) {
       const instance = new NodeSupervisor();
@@ -50,14 +61,26 @@ export class NodeSupervisor {
     return NodeSupervisor.instance;
   }
 
+  /**
+   * Sets the remote service callback function
+   * @param {ServiceCallback} remoteServiceCallback - The callback to handle remote service calls
+   */
   setRemoteServiceCallback(remoteServiceCallback: ServiceCallback): void {
     this.remoteServiceCallback = remoteServiceCallback;
   }
 
+  /**
+   * Sets the broadcast setup callback function
+   * @param {SetupCallback} broadcastSetupCallback - The callback to handle broadcast setup signals
+   */
   setBroadcastSetupCallback(broadcastSetupCallback: SetupCallback): void {
     this.broadcastSetupCallback = broadcastSetupCallback;
   }
 
+  /**
+   * Sets the broadcast reporting callback function
+   * @param {BroadcastReportingCallback} broadcastReportingCallback - The callback to handle broadcast reporting signals
+   */
   setBroadcastReportingCallback(
     broadcastReportingCallback: BroadcastReportingCallback,
   ): void {
@@ -65,16 +88,29 @@ export class NodeSupervisor {
     monitoring.setBroadcastReportingCallback(broadcastReportingCallback);
   }
 
+  /**
+   * Sets the monitoring reporting callback function
+   * @param {ReportingCallback} reportingCallback - The callback to handle monitoring reports
+   */
   setMonitoringCallback(reportingCallback: ReportingCallback): void {
     const monitoring = MonitoringAgent.retrieveService();
     monitoring.setReportingCallback(reportingCallback);
   }
 
+  /**
+   * Sets the unique identifier for this supervisor instance
+   * @param {string} uid - The unique identifier
+   */
   setUid(uid: string) {
     this.ctn = `@container:${uid}`;
     this.uid = `@supervisor:${uid}`;
   }
 
+  /**
+   * Handles supervisor requests (node setup, creation, deletion, etc.)
+   * @param {SupervisorPayload} payload - The request payload
+   * @returns {Promise<void|string>} Promise resolving to a string if applicable
+   */
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
     switch (payload.signal) {
       case NodeSignal.NODE_SETUP:
@@ -107,6 +143,12 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Deploys a new processing chain
+   * @param {ChainConfig} config - Configuration for the new chain
+   * @param {PipelineData} data - Initial data to start the chain
+   * @returns {Promise<string>} The new chain identifier
+   */
   private async deployChain(
     config: ChainConfig,
     data: PipelineData,
@@ -127,6 +169,11 @@ export class NodeSupervisor {
     return chainId;
   }
 
+  /**
+   * Creates a new node with the given configuration
+   * @param {NodeConfig} config - The node configuration
+   * @returns {Promise<string>} The new node identifier
+   */
   private async createNode(config: NodeConfig): Promise<string> {
     const node = new Node();
     const nodeId = node.getId();
@@ -138,6 +185,12 @@ export class NodeSupervisor {
     return nodeId;
   }
 
+  /**
+   * Sets up a new node with the given configuration
+   * @param {NodeConfig} config - The node configuration
+   * @param {boolean} initiator - Whether the node is the chain initiator
+   * @returns {Promise<string>} The new node identifier
+   */
   private async setupNode(
     config: NodeConfig,
     initiator: boolean = false,
@@ -180,6 +233,11 @@ export class NodeSupervisor {
     return nodeId;
   }
 
+  /**
+   * Handles a notification about a chain status change
+   * @param {string} chainId - The chain identifier
+   * @param {ChainStatus.Type} status - The new chain status
+   */
   handleNotification(chainId: string, status: ChainStatus.Type): void {
     try {
       const chain = this.chains.get(chainId);
@@ -208,6 +266,11 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Notifies a node about a chain status change
+   * @param {string} nodeId - The node identifier to notify
+   * @param {ChainStatus.Type} status - The new chain status to notify
+   */
   private notify(nodeId: string, status: ChainStatus.Type): void {
     const node = this.nodes.get(nodeId);
     if (node) {
@@ -217,6 +280,11 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Adds processors to a node
+   * @param {string} nodeId - The node identifier
+   * @param {PipelineProcessor[]} processors - Array of processors to add
+   */
   async addProcessors(
     nodeId: string,
     processors: PipelineProcessor[],
@@ -230,6 +298,10 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Deletes a node
+   * @param {string} nodeId - The node identifier to delete
+   */
   private async deleteNode(nodeId: string): Promise<void> {
     if (this.nodes.has(nodeId)) {
       this.nodes.delete(nodeId);
@@ -239,6 +311,10 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Pauses a node
+   * @param {string} nodeId - The node identifier to pause
+   */
   private async pauseNode(nodeId: string): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
@@ -249,6 +325,11 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Delays the execution of a node
+   * @param {string} nodeId - The node identifier
+   * @param {number} delay - The delay in milliseconds
+   */
   private async delayNode(nodeId: string, delay: number): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
@@ -259,6 +340,11 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Creates a new chain with the given configuration
+   * @param {ChainConfig} config - The chain configuration
+   * @returns {string} The new chain identifier
+   */
   createChain(config: ChainConfig): string {
     const timestamp = Date.now();
     const chainId = `${this.uid}-${timestamp}-${randomUUID().slice(0, 8)}`;
@@ -275,7 +361,11 @@ export class NodeSupervisor {
     return chainId;
   }
 
-  // todo: review
+  /**
+   * Updates an existing chain with new configurations
+   * @param {ChainConfig} config - The new chain configurations to add
+   * @returns {string} The chain identifier
+   */
   private updateChain(config: ChainConfig): string {
     if (config.length === 0 || !config[0].chainId) {
       throw new Error('Invalid chain configuration');
@@ -300,6 +390,10 @@ export class NodeSupervisor {
     return chainId;
   }
 
+  /**
+   * Sets the remote monitoring host for a chain
+   * @param {NodeConfig} config - The node configuration containing the monitoring host
+   */
   private async setRemoteMonitoringHost(config: NodeConfig): Promise<void> {
     const remoteMonitoringHost = config.monitoringHost;
     if (!remoteMonitoringHost) {
@@ -311,6 +405,10 @@ export class NodeSupervisor {
     monitoring.setRemoteMonitoringHost(config.chainId, remoteMonitoringHost);
   }
 
+  /**
+   * Prepares the distribution of a processing chain
+   * @param {string} chainId - The chain identifier
+   */
   async prepareChainDistribution(chainId: string): Promise<void> {
     Logger.header(
       `${this.ctn}: Chain distribution for ${chainId} in progress...`,
@@ -394,6 +492,11 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Broadcasts a setup signal for remote nodes in a chain
+   * @param {string} chainId - The chain identifier
+   * @param {ChainConfig} remoteConfigs - The remote node configurations
+   */
   async broadcastNodeSetupSignal(
     chainId: string,
     remoteConfigs: ChainConfig,
@@ -418,6 +521,10 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Starts a pending chain
+   * @param {string} chainId - The chain identifier
+   */
   async startPendingChain(chainId: string) {
     const chain = this.chains.get(chainId);
     const data = chain?.dataRef;
@@ -429,6 +536,11 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Starts a new chain
+   * @param {string} chainId - The chain identifier
+   * @param {PipelineData} data - The initial data to process
+   */
   async startChain(chainId: string, data: PipelineData): Promise<void> {
     Logger.header(`Chain ${chainId} requested...`);
     const chain = this.chains.get(chainId);
@@ -461,6 +573,11 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Executes a node with the given data
+   * @param {string} nodeId - The node identifier
+   * @param {PipelineData} data - The data to process
+   */
   private async runNode(nodeId: string, data: PipelineData): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
@@ -470,6 +587,10 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Executes a node based on the given callback payload
+   * @param {CallbackPayload} payload - The payload containing target ID, chain ID, and data
+   */
   async runNodeByRelation(payload: CallbackPayload): Promise<void> {
     try {
       const { targetId, chainId, data } = payload;
@@ -502,6 +623,10 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Sends data from a node
+   * @param {string} nodeId - The node identifier
+   */
   private async sendNodeData(nodeId: string): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
@@ -518,11 +643,20 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Gets all the nodes managed by this supervisor
+   * @returns {Map<string, Node>} Map of nodes
+   */
   getNodes(): Map<string, Node> {
     return this.nodes;
   }
 
-  //
+  /**
+   * Gets all nodes associated with a specific service and chain
+   * @param {string} serviceUid - The service identifier
+   * @param {string} chainId - The chain identifier
+   * @returns {Node[]} Array of nodes matching the criteria
+   */
   getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[] {
     return Array.from(this.nodes.values()).filter((node) => {
       const nodeConfig = node.getConfig();
