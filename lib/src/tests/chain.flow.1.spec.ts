@@ -16,6 +16,7 @@ describe('Virtual Connector Chain Execution', function () {
 
   it('should create and execute a chain of nodes', async function () {
     const chainId = 'chain-01';
+    const count = 3;
     const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: {
@@ -23,6 +24,7 @@ describe('Virtual Connector Chain Execution', function () {
         services: [],
         chainId,
         index: 0,
+        count,
       },
     })) as string;
     const node2Id = (await nodeSupervisor.handleRequest({
@@ -32,6 +34,7 @@ describe('Virtual Connector Chain Execution', function () {
         services: [node1Id],
         chainId,
         index: 1,
+        count,
       },
     })) as string;
     const node3Id = (await nodeSupervisor.handleRequest({
@@ -41,6 +44,7 @@ describe('Virtual Connector Chain Execution', function () {
         services: [node2Id],
         chainId,
         index: 2,
+        count,
       },
     })) as string;
 
@@ -98,6 +102,7 @@ describe('Virtual Connector Chain Execution', function () {
 
   it('should handle node failure in the chain', async function () {
     const chainId = 'chain-02';
+    const count = 2;
     const node1Id = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
       params: {
@@ -105,6 +110,7 @@ describe('Virtual Connector Chain Execution', function () {
         services: [],
         chainId,
         index: 0,
+        count,
       },
     })) as string;
     const node2Id = (await nodeSupervisor.handleRequest({
@@ -114,6 +120,7 @@ describe('Virtual Connector Chain Execution', function () {
         services: [node1Id],
         chainId,
         index: 1,
+        count,
       },
     })) as string;
 

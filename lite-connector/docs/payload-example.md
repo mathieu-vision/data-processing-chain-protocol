@@ -201,7 +201,8 @@ This endpoint allows dispatching the `targetUID` and `connectorURI` relations to
   "chainConfig": [
     {
       "services": [],
-      "location": "local"
+      "location": "local",
+      "monitoringHost": "http://localhost:8887/"
     },
     {
       "services": ["service1"],
