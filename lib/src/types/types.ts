@@ -1,9 +1,9 @@
 /* eslint-disable no-unused-vars */
-import { Logger } from 'extra/Logger';
+import { Logger } from '../extra/Logger';
 import { PipelineProcessor } from '../core/PipelineProcessor';
 
+export type ReportingSignalType = 'local-signal' | 'global-signal';
 export type ProcessorPipeline = PipelineProcessor[];
-
 export type PipelineData = unknown;
 export interface PipelineMeta {
   header?: unknown;
@@ -89,7 +89,7 @@ export namespace ChainType {
 export namespace ChainStatus {
   export type Type =
     | 'node_pending'
-    | 'node_in-progress' // running
+    | 'node_in_progress' // running
     | 'node_completed'
     | 'node_failed'
     | 'node_paused'
@@ -97,7 +97,7 @@ export namespace ChainStatus {
     | 'chain_setup_completed';
   export const NODE_PAUSED: Type = 'node_paused';
   export const NODE_PENDING: Type = 'node_pending';
-  export const NODE_IN_PROGRESS: Type = 'node_in-progress';
+  export const NODE_IN_PROGRESS: Type = 'node_in_progress';
   export const NODE_COMPLETED: Type = 'node_completed';
   export const NODE_FAILED: Type = 'node_failed';
   export const NODE_SETUP_COMPLETED: Type = 'node_setup_completed';

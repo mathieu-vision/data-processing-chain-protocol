@@ -63,7 +63,7 @@ export class Node {
         index,
       });
     } else {
-      Logger.warn('Node index is not defined');
+      Logger.warn('Node index is not defined, configuration failed');
     }
     this.config = config;
   }
@@ -107,7 +107,7 @@ export class Node {
   notify(notify: ChainStatus.Type): void {
     try {
       if (this.reporting !== null) {
-        this.reporting.notify(notify);
+        this.reporting.notify(notify, 'global-signal');
       } else {
         throw new Error('Reporter not set');
       }
@@ -254,6 +254,9 @@ export class Node {
     this.status = status;
     if (status === ChainStatus.NODE_FAILED) {
       this.error = error;
+    }
+    if (this.reporting) {
+      this.reporting.notify(status);
     }
   }
   getError(): Error | undefined {

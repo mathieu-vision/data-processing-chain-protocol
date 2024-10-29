@@ -1,6 +1,6 @@
 import { Logger } from '../extra/Logger';
 import { Agent } from './Agent';
-import { ChainStatus } from '../types/types';
+import { ChainStatus, ReportingSignalType } from '../types/types';
 
 // Node monitoring and status reporting agent
 export abstract class ReportingAgentBase extends Agent {
@@ -20,10 +20,13 @@ export abstract class ReportingAgentBase extends Agent {
     ReportingAgentBase.authorizedAgent = agent;
   }
 
-  notify(status: ChainStatus.Type): void {
+  notify(
+    status: ChainStatus.Type,
+    type: ReportingSignalType = 'local-signal',
+  ): void {
     Logger.info(`Status ${status} from ${this.uid}`);
     this.status.push(status);
-    this.emit('signal', status);
+    this.emit(type, status);
   }
 
   getSignals(): ChainStatus.Type[] {

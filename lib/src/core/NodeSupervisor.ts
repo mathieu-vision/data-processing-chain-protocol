@@ -20,7 +20,7 @@ import {
 import { Logger } from '../extra/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
-import { MonitoringAgent } from 'agents/MonitoringAgent';
+import { MonitoringAgent } from '../agents/MonitoringAgent';
 
 // Should be ChainSupervisor
 export class NodeSupervisor {
@@ -117,7 +117,6 @@ export class NodeSupervisor {
     Logger.info(`${this.ctn}: Starting a new chain deployment...`);
     const chainId = this.createChain(config);
     await this.prepareChainDistribution(chainId);
-    // await this.startChain(chainId, data);
     const chain = this.chains.get(chainId);
     if (chain) {
       chain.dataRef = data;

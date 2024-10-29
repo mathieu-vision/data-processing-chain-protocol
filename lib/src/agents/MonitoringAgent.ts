@@ -19,16 +19,22 @@ export class ReportingAgent extends ReportingAgentBase {
   }
 }
 
+interface ChainStatus {
+  [key: string]: {
+    [key: string]: boolean;
+  };
+}
+
 // Receive reports from NodeReporters
 export class MonitoringAgent extends Agent {
   private static instance: MonitoringAgent;
   private reportingCallback: ReportingCallback;
   private broadcastReportingCallback: ReportingCallback;
   private remoteMonitoringHost: Map<string, string>;
-  // chain-id:node-reporter-agent-id
-  // private reportings: Map<string, string>;
+  private status: Map<string, ChainStatus>;
   constructor() {
     super();
+    this.status = new Map();
     this.remoteMonitoringHost = new Map();
     this.reportingCallback = DefaultCallback.REPORTING_CALLBACK;
     this.broadcastReportingCallback =
@@ -65,7 +71,8 @@ export class MonitoringAgent extends Agent {
     const { chainId, nodeId, index } = payload;
     ReportingAgent.authorize(this);
     const reporting = new ReportingAgent(chainId, nodeId);
-    reporting.on('signal', async (signal) => {
+    //
+    reporting.on('global-signal', async (signal) => {
       Logger.info(`Receive signal: ${signal} for node ${nodeId}`);
       const message: ReportingMessage = { ...payload, signal };
       if (index > 0) {
@@ -74,6 +81,20 @@ export class MonitoringAgent extends Agent {
         await this.reportingCallback(message);
       }
     });
+    //
+    reporting.on('local-signal', async (signal) => {
+      const message: ReportingMessage = { ...payload, signal };
+      const update: ChainStatus = {
+        [message.nodeId]: { [message.signal]: true },
+      };
+      let prev = this.status.get(message.chainId) ?? {};
+      const next = { ...prev, ...update };
+      this.status.set(message.chainId, next);
+    });
     return reporting;
+  }
+
+  getChainStatus(chainId: string): ChainStatus | undefined {
+    return this.status.get(chainId);
   }
 }

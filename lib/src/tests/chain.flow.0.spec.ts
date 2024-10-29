@@ -1,40 +1,24 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { Node } from '../core/Node';
-import { NodeMonitoring } from '../core/_NodeMonitoring';
-import { ProgressTracker } from '../core/ProgressTracker';
-import { ChainType, NodeStatus } from '../types/types';
+import { ChainType, ChainStatus } from '../types/types';
 import { PipelineProcessor } from '../core/PipelineProcessor';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { NodeSignal } from '../types/types';
 
 describe('Node System Tests', function () {
   let nodes: Node[];
-  let nodeMonitoring: NodeMonitoring;
-  let progressTracker: ProgressTracker;
   let nodeSupervisor: NodeSupervisor;
 
   beforeEach(function () {
     nodes = [new Node(), new Node(['node1']), new Node(['node2'])];
-    progressTracker = new ProgressTracker(nodes.length);
-    nodeMonitoring = new NodeMonitoring(nodes, progressTracker);
     nodeSupervisor = NodeSupervisor.retrieveService(true);
-    nodeSupervisor.setMonitoring(nodeMonitoring);
   });
 
   it('should create nodes with correct dependencies', function () {
     expect(nodes[0].getDependencies()).to.be.empty;
     expect(nodes[1].getDependencies()).to.deep.equal(['node1']);
     expect(nodes[2].getDependencies()).to.deep.equal(['node2']);
-  });
-
-  it('should update node status correctly', async function () {
-    const nodeId = nodes[0].getId();
-    nodeMonitoring.updateNodeStatus(nodeId, NodeStatus.IN_PROGRESS);
-    expect(nodes[0].getStatus()).to.equal(NodeStatus.IN_PROGRESS);
-
-    nodeMonitoring.updateNodeStatus(nodeId, NodeStatus.COMPLETED);
-    expect(nodes[0].getStatus()).to.equal(NodeStatus.COMPLETED);
   });
 
   it('should execute node with processors', async function () {
@@ -58,7 +42,7 @@ describe('Node System Tests', function () {
       (processor2.digest as sinon.SinonStub).calledWith({ result1: 'data1' }),
     ).to.be.true;
 
-    expect(node.getStatus()).to.equal(NodeStatus.COMPLETED);
+    expect(node.getStatus()).to.equal(ChainStatus.NODE_COMPLETED);
   });
 
   it('should handle node execution failure', async function () {
@@ -74,27 +58,20 @@ describe('Node System Tests', function () {
     await node.execute({ initial: 'data' });
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(node.getStatus()).to.equal(NodeStatus.FAILED);
+    expect(node.getStatus()).to.equal(ChainStatus.NODE_FAILED);
     expect(node.getError())
       .to.be.an('error')
       .with.property('message', 'Processor failed');
   });
 
-  it('should correctly report chain state', function () {
-    nodeMonitoring.updateNodeStatus(nodes[0].getId(), NodeStatus.COMPLETED);
-    nodeMonitoring.updateNodeStatus(nodes[1].getId(), NodeStatus.IN_PROGRESS);
-    nodeMonitoring.updateNodeStatus(nodes[2].getId(), NodeStatus.FAILED);
-
-    const chainState = nodeMonitoring.getChainState();
-    expect(chainState.completed).to.have.length(1);
-    expect(chainState.pending).to.have.length(1);
-    expect(chainState.failed).to.have.length(1);
-  });
-
   it('should create and run a node through the supervisor', async function () {
     const nodeId = (await nodeSupervisor.handleRequest({
       signal: NodeSignal.NODE_CREATE,
-      params: { chainType: ChainType.PERSISTANT, services: [] },
+      params: {
+        chainType: ChainType.PERSISTANT,
+        services: [],
+        chainId: '',
+      },
     })) as string;
 
     const config = { targetId: '' };
@@ -109,21 +86,6 @@ describe('Node System Tests', function () {
     const nodes = nodeSupervisor.getNodes();
     const node = nodes.get(nodeId);
     expect(node, 'expect 1').to.exist;
-    expect(node!.getStatus(), 'expect 2').to.equal(NodeStatus.COMPLETED);
-  });
-
-  it('should send data to a node through the supervisor interface', async function () {
-    const nodeId = await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_CREATE,
-      params: { services: [] },
-    });
-
-    await nodeSupervisor.handleRequest({
-      signal: NodeSignal.NODE_SEND_DATA,
-      id: nodeId as string,
-      data: { newData: 'test' },
-    });
-
-    // Todo: review
+    expect(node!.getStatus(), 'expect 2').to.equal(ChainStatus.NODE_COMPLETED);
   });
 });
