@@ -191,24 +191,7 @@ export type SupervisorPayloadDeployChain = {
   config: ChainConfig;
   data: PipelineData;
 };
-/*
-export type SupervisorPayloadMap = {
-  node_setup: SupervisorPayloadSetup;
-  node_create: SupervisorPayloadCreate;
-  node_delete: SupervisorPayloadDelete;
-  node_pause: SupervisorPayloadPause;
-  node_delay: SupervisorPayloadDelay;
-  node_run: SupervisorPayloadRun;
-  node_send_data: SupervisorPayloadSendData;
-  chain_prepare: SupervisorPayloadPrepareChain;
-  chain_start: SupervisorPayloadStartChain;
-  chain_start_pending: SupervisorPayloadStartPendingChain;
-  chain_deploy: SupervisorPayloadDeployChain;
-};
 
-export type SupervisorPayload =
-  SupervisorPayloadMap[keyof SupervisorPayloadMap];
-*/
 export type SupervisorPayload =
   | SupervisorPayloadSetup
   | SupervisorPayloadCreate
@@ -230,7 +213,8 @@ export interface ServiceConfig {
 export type NodeConfig = {
   services: (string | ServiceConfig)[];
   chainId: string;
-  index?: number;
+  index?: number; // automatically set
+  count?: number; // automatically set
   location?: NodeType.Type;
   nextTargetId?: string;
   nextMeta?: PipelineMeta;
@@ -251,6 +235,7 @@ export interface ReportingPayload {
   chainId: string;
   nodeId: string;
   index: number;
+  count: number;
 }
 
 export interface ReportingMessage extends ReportingPayload {

@@ -8,6 +8,7 @@ import {
   NodeConfig,
   ChainType,
   PipelineMeta,
+  ReportingSignalType,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -68,13 +69,14 @@ export class Node {
    * @param {NodeConfig} config - Configuration containing services, chainId, index and other options
    */
   setConfig(config: NodeConfig): void {
-    const { chainId, index } = config;
-    if (index !== undefined) {
+    const { chainId, index, count } = config;
+    if (index !== undefined && count !== undefined) {
       const monitoring = MonitoringAgent.retrieveService();
       this.reporting = monitoring.genReportingAgent({
         chainId,
         nodeId: this.id,
         index,
+        count,
       });
     } else {
       Logger.warn('Node index is not defined, configuration failed');
@@ -145,10 +147,13 @@ export class Node {
    * Notifies about node status changes through the reporting agent
    * @param {ChainStatus.Type} notify - Node status to report
    */
-  notify(notify: ChainStatus.Type): void {
+  notify(
+    notify: ChainStatus.Type,
+    type: ReportingSignalType = 'local-signal',
+  ): void {
     try {
       if (this.reporting !== null) {
-        this.reporting.notify(notify, 'global-signal');
+        this.reporting.notify(notify, type);
       } else {
         throw new Error('Reporter not set');
       }

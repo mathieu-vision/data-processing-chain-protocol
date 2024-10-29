@@ -47,8 +47,16 @@ const defaultReportSignalHander = async (
 ): Promise<void> => {
   Logger.info({ message: `${JSON.stringify(message, null, 2)}` });
   switch (message.signal) {
-    case ChainStatus.CHAIN_SETUP_COMPLETED:
-      {
+    case ChainStatus.NODE_SETUP_COMPLETED: {
+      const monitoring = MonitoringAgent.retrieveService();
+      let count = monitoring.getChainSetupCount(message.chainId);
+      if (!count) {
+        monitoring.setChainSetupCount(message.chainId, 1);
+      } else {
+        monitoring.setChainSetupCount(message.chainId, count + 1);
+      }
+      count = monitoring.getChainSetupCount(message.chainId);
+      if (count && count >= message.count) {
         const supervisor = NodeSupervisor.retrieveService();
         const payload: SupervisorPayloadStartPendingChain = {
           signal: NodeSignal.CHAIN_START_PENDING,
@@ -60,6 +68,20 @@ const defaultReportSignalHander = async (
         });
       }
       break;
+    }
+    /*
+    case ChainStatus.CHAIN_SETUP_COMPLETED: {
+      const supervisor = NodeSupervisor.retrieveService();
+      const payload: SupervisorPayloadStartPendingChain = {
+        signal: NodeSignal.CHAIN_START_PENDING,
+        id: message.chainId,
+      };
+      await supervisor.handleRequest(payload);
+      Logger.info({
+        message: `reportSignalHandler: Chain setup completed`,
+      });
+      break;
+    }*/
   }
 };
 

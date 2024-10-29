@@ -16,6 +16,7 @@ import {
   DefaultCallback,
   ReportingCallback,
   BroadcastReportingCallback,
+  ReportingSignalType,
 } from '../types/types';
 import { Logger } from '../extra/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
@@ -164,7 +165,7 @@ export class NodeSupervisor {
       chain.dataRef = data;
     }
     Logger.info(
-      `${this.ctn}: Chain ${chainId} successfully deployed and started.`,
+      `${this.ctn}: Deployment for chain ${chainId} has successfully started...`,
     );
     return chainId;
   }
@@ -224,17 +225,18 @@ export class NodeSupervisor {
         config.nextMeta,
       );
     } else if (!initiator) {
+      //
       Logger.warn(
         `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
       );
-      this.notify(nodeId, ChainStatus.CHAIN_SETUP_COMPLETED);
+      // this.notify(nodeId, ChainStatus.CHAIN_SETUP_COMPLETED, 'global-signal');
     }
-    this.notify(nodeId, ChainStatus.NODE_SETUP_COMPLETED);
+    this.notify(nodeId, ChainStatus.NODE_SETUP_COMPLETED, 'global-signal');
     return nodeId;
   }
 
   /**
-   * Handles a notification about a chain status change
+   * Handles externals notifications about a chain status change
    * @param {string} chainId - The chain identifier
    * @param {ChainStatus.Type} status - The new chain status
    */
@@ -255,7 +257,7 @@ export class NodeSupervisor {
         Logger.warn(`${this.ctn}: Node with ID ${rootNodeId} not found.`);
         return;
       }
-      node.notify(status);
+      node.notify(status, 'global-signal');
       Logger.info(
         `${this.ctn}: Notification sent to node ${rootNodeId} with status ${status}.`,
       );
@@ -271,10 +273,14 @@ export class NodeSupervisor {
    * @param {string} nodeId - The node identifier to notify
    * @param {ChainStatus.Type} status - The new chain status to notify
    */
-  private notify(nodeId: string, status: ChainStatus.Type): void {
+  private notify(
+    nodeId: string,
+    status: ChainStatus.Type,
+    type: ReportingSignalType = 'local-signal',
+  ): void {
     const node = this.nodes.get(nodeId);
     if (node) {
-      node.notify(status);
+      node.notify(status, type);
     } else {
       Logger.warn(`${this.ctn}: Can't notify non-existing node ${nodeId}`);
     }
@@ -346,17 +352,31 @@ export class NodeSupervisor {
    * @returns {string} The new chain identifier
    */
   createChain(config: ChainConfig): string {
+    if (!config || !Array.isArray(config)) {
+      throw new Error('Invalid chain configuration: config must be an array');
+    }
     const timestamp = Date.now();
     const chainId = `${this.uid}-${timestamp}-${randomUUID().slice(0, 8)}`;
     const relation: ChainRelation = {
       config,
     };
+
     this.chains.set(chainId, relation);
     const monitoringHost = config[0]?.monitoringHost;
-    config.forEach((value: NodeConfig, index: number) => {
-      value.index = index;
-      value.monitoringHost = monitoringHost;
-    });
+    const count = Array.isArray(config) ? config.length : 0;
+
+    if (count > 0) {
+      config.forEach((value: NodeConfig, index: number) => {
+        if (value) {
+          value.index = index;
+          value.count = count;
+          value.monitoringHost = monitoringHost;
+        }
+      });
+    } else {
+      Logger.warn(`${this.ctn}: Chain configuration is empty`);
+    }
+
     Logger.header(`${this.ctn}: Chain ${chainId} creation has started...`);
     return chainId;
   }

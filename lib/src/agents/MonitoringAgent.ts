@@ -40,7 +40,9 @@ export class MonitoringAgent extends Agent {
   private reportingCallback: ReportingCallback;
   private broadcastReportingCallback: ReportingCallback;
   private remoteMonitoringHost: Map<string, string>;
+  // Todo: merge the following
   private status: Map<string, ChainStatus>;
+  private setupCounts: Map<string, number>;
 
   /**
    * Creates a new MonitoringAgent instance
@@ -48,6 +50,7 @@ export class MonitoringAgent extends Agent {
   constructor() {
     super();
     this.status = new Map();
+    this.setupCounts = new Map();
     this.remoteMonitoringHost = new Map();
     this.reportingCallback = DefaultCallback.REPORTING_CALLBACK;
     this.broadcastReportingCallback =
@@ -114,7 +117,7 @@ export class MonitoringAgent extends Agent {
     const reporting = new ReportingAgent(chainId, nodeId);
     //
     reporting.on('global-signal', async (signal) => {
-      Logger.info(`Receive signal: ${signal} for node ${nodeId}`);
+      Logger.info(`Receive global-signal: ${signal} for node ${nodeId}`);
       const message: ReportingMessage = { ...payload, signal };
       if (index > 0) {
         void this.broadcastReportingCallback(message);
@@ -124,6 +127,7 @@ export class MonitoringAgent extends Agent {
     });
     //
     reporting.on('local-signal', async (signal) => {
+      Logger.info(`Receive local-signal: ${signal} for node ${nodeId}`);
       const message: ReportingMessage = { ...payload, signal };
       const update: ChainStatus = {
         [message.nodeId]: { [message.signal]: true },
@@ -142,5 +146,13 @@ export class MonitoringAgent extends Agent {
    */
   getChainStatus(chainId: string): ChainStatus | undefined {
     return this.status.get(chainId);
+  }
+
+  getChainSetupCount(chainId: string): number | undefined {
+    return this.setupCounts.get(chainId);
+  }
+
+  setChainSetupCount(chainId: string, count: number): void {
+    this.setupCounts.set(chainId, count);
   }
 }

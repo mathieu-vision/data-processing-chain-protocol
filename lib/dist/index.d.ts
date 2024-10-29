@@ -7,6 +7,7 @@ declare class PipelineProcessor {
     digest(data: PipelineData): Promise<PipelineData>;
 }
 
+type ReportingSignalType = 'local-signal' | 'global-signal';
 type ProcessorPipeline = PipelineProcessor[];
 type PipelineData = unknown;
 interface PipelineMeta {
@@ -134,6 +135,7 @@ type NodeConfig = {
     services: (string | ServiceConfig)[];
     chainId: string;
     index?: number;
+    count?: number;
     location?: NodeType.Type;
     nextTargetId?: string;
     nextMeta?: PipelineMeta;
@@ -152,6 +154,7 @@ interface ReportingPayload {
     chainId: string;
     nodeId: string;
     index: number;
+    count: number;
 }
 interface ReportingMessage extends ReportingPayload {
     signal: ChainStatus.Type;
@@ -230,7 +233,7 @@ declare class Node {
      * Notifies about node status changes through the reporting agent
      * @param {ChainStatus.Type} notify - Node status to report
      */
-    notify(notify: ChainStatus.Type): void;
+    notify(notify: ChainStatus.Type, type?: ReportingSignalType): void;
     /**
      * Executes node processing on input data
      * @param {PipelineData} data - Data to process
@@ -398,7 +401,7 @@ declare class NodeSupervisor {
      */
     private setupNode;
     /**
-     * Handles a notification about a chain status change
+     * Handles externals notifications about a chain status change
      * @param {string} chainId - The chain identifier
      * @param {ChainStatus.Type} status - The new chain status
      */
