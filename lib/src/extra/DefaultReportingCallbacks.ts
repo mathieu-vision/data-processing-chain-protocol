@@ -10,39 +10,69 @@ import { Logger } from './Logger';
 import { post } from './http';
 import { MonitoringAgent } from 'agents/MonitoringAgent';
 
+/**
+ * Type defining a callback to handle reporting signals
+ * @param {ReportingMessage} message - The reporting message containing signal and metadata
+ * @returns {Promise<void>}
+ */
 export type ReportSignalHandlerCallback = (
   // eslint-disable-next-line no-unused-vars
   message: ReportingMessage,
 ) => Promise<void>;
 
+/**
+ * Type defining a callback to resolve the monitoring host for a chain
+ * @param {string} chainId - The ID of the chain to find the monitoring host for
+ * @returns {Promise<string | undefined>}
+ */
 export type MonitoringResolverCallback = (
   // eslint-disable-next-line no-unused-vars
   chainId: string,
 ) => Promise<string | undefined>;
 
+/**
+ * Interface for the monitoring payload
+ */
 export interface MCPayload {
   message: ReportingMessage;
   reportSignalHandler: ReportSignalHandlerCallback;
 }
 
+/**
+ * Interface for the broadcast reporting payload
+ */
 export interface BRCPayload {
   message: BroadcastReportingMessage;
   path: string;
   monitoringResolver: MonitoringResolverCallback;
 }
 
-// Default broadcastReportingCallback to be set on initial supervisor
+/**
+ * Default callback for reporting, to be set on the initial supervisor
+ * @param {MCPayload} payload - Contains the message and report signal handler callback
+ * @returns {Promise<void>}
+ */
 export const reportingCallback = async (payload: MCPayload): Promise<void> => {
   const { message, reportSignalHandler } = payload;
   await reportSignalHandler(message);
 };
+
+/**
+ * Interface to configure default reporting callbacks
+ */
 export interface DefaultReportingCallbackPayload {
   paths: { notify: string };
   reportSignalHandler?: ReportSignalHandlerCallback;
   monitoringResolver?: MonitoringResolverCallback;
 }
 
-const defaultReportSignalHander = async (
+/**
+ * Default handler for reporting signals
+ * Primarily handles the start of chains once setup is completed
+ * @param {ReportingMessage} message - The reporting message containing the signal and metadata
+ * @returns {Promise<void>}
+ */
+const defaultReportSignalHandler = async (
   message: ReportingMessage,
 ): Promise<void> => {
   Logger.info({ message: `${JSON.stringify(message, null, 2)}` });
@@ -69,22 +99,14 @@ const defaultReportSignalHander = async (
       }
       break;
     }
-    /*
-    case ChainStatus.CHAIN_SETUP_COMPLETED: {
-      const supervisor = NodeSupervisor.retrieveService();
-      const payload: SupervisorPayloadStartPendingChain = {
-        signal: NodeSignal.CHAIN_START_PENDING,
-        id: message.chainId,
-      };
-      await supervisor.handleRequest(payload);
-      Logger.info({
-        message: `reportSignalHandler: Chain setup completed`,
-      });
-      break;
-    }*/
   }
 };
 
+/**
+ * Default resolver to find the monitoring host for a chain
+ * @param {string} chainId - The ID of the chain to locate the monitoring host
+ * @returns {Promise<string | undefined>}
+ */
 const defaultMonitoringResolver = async (
   chainId: string,
 ): Promise<string | undefined> => {
@@ -96,12 +118,17 @@ const defaultMonitoringResolver = async (
         message: `DRC: Resolving host for monitoring: ${monitoringHost}`,
       });
       return monitoringHost;
-    } else throw new Error('monitoring not found');
+    } else throw new Error('Monitoring host not found');
   } catch (error) {
     Logger.error({ message: (error as Error).message });
   }
 };
 
+/**
+ * Handles broadcasting reporting messages to monitoring hosts
+ * @param {BRCPayload} payload - Contains the broadcast message, path, and monitoring resolver
+ * @returns {Promise<void>}
+ */
 const broadcastReportingCallback = async (
   payload: BRCPayload,
 ): Promise<void> => {
@@ -113,6 +140,13 @@ const broadcastReportingCallback = async (
   await post(url, data);
 };
 
+/**
+ * Configures monitoring callbacks for the supervisor
+ * - Sets up the local reporting callback
+ * - Sets up the broadcast reporting callback
+ * @param {DefaultReportingCallbackPayload} dcPayload - Configuration for paths and handlers
+ * @returns {Promise<void>}
+ */
 export const setMonitoringCallbacks = async (
   dcPayload: DefaultReportingCallbackPayload,
 ): Promise<void> => {
@@ -123,7 +157,7 @@ export const setMonitoringCallbacks = async (
     async (message: ReportingMessage): Promise<void> => {
       const payload: MCPayload = {
         message,
-        reportSignalHandler: reportSignalHandler ?? defaultReportSignalHander,
+        reportSignalHandler: reportSignalHandler ?? defaultReportSignalHandler,
       };
       await reportingCallback(payload);
     },

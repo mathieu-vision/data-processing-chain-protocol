@@ -1,9 +1,28 @@
+/**
+ * Represents a processor that encapsulate external services within a pipeline
+ */
 declare class PipelineProcessor {
+    /** Static callback service used by all processor instances */
     static callbackService: ProcessorCallback;
+    /** Optional metadata associated with this processor */
     private meta?;
+    /** Target service identifier for this processor */
     private targetId;
+    /**
+     * Creates a new PipelineProcessor instance
+     * @param {ServiceConfig} config - Configuration containing targetId and optional metadata
+     */
     constructor(config: ServiceConfig);
+    /**
+     * Sets the static callback service used by all processor instances
+     * @param {ProcessorCallback} callbackService - The callback function to process data
+     */
     static setCallbackService(callbackService: ProcessorCallback): void;
+    /**
+     * Processes input data through the callback service
+     * @param {PipelineData} data - Data to be processed
+     * @returns {Promise<PipelineData>} Processed data
+     */
     digest(data: PipelineData): Promise<PipelineData>;
 }
 
@@ -514,19 +533,39 @@ declare class PipelineDataCombiner {
     setCustomCombineFunction(combineFunction: CombineFonction): void;
 }
 
+/**
+ * Type defining a host resolution function to build a URL from target information
+ */
 type HostResolverCallback = (targetId: string, meta?: PipelineMeta) => string | undefined;
+/**
+ * Interface for the setup configuration broadcast payload
+ */
 interface BSCPayload {
     message: BrodcastSetupMessage;
     hostResolver: HostResolverCallback;
     path: string;
 }
+/**
+ * Manages broadcasting setup configurations to different remote nodes
+ * @param {BSCPayload} payload - Contains the message to broadcast, host resolution function, and path
+ */
 declare const broadcastSetupCallback: (payload: BSCPayload) => Promise<void>;
+/**
+ * Interface for the payload of remote service calls
+ */
 interface RSCPayload {
     cbPayload: CallbackPayload;
     hostResolver: HostResolverCallback;
     path: string;
 }
+/**
+ * Manages sending data to remote services
+ * @param {RSCPayload} payload - Contains data to send, host resolution function, and path
+ */
 declare const remoteServiceCallback: (payload: RSCPayload) => Promise<void>;
+/**
+ * Interface for configuring default callbacks
+ */
 interface DefaultCallbackPayload {
     paths: {
         setup: string;
@@ -534,15 +573,37 @@ interface DefaultCallbackPayload {
     };
     hostResolver: HostResolverCallback;
 }
+/**
+ * Configures resolution callbacks for the node supervisor
+ * - Configures the setup broadcast callback
+ * - Configures the remote service callback
+ * @param {DefaultCallbackPayload} dcPayload - Configuration for paths and host resolver
+ */
 declare const setResolverCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
 
+/**
+ * Type defining a callback to handle reporting signals
+ * @param {ReportingMessage} message - The reporting message containing signal and metadata
+ * @returns {Promise<void>}
+ */
 type ReportSignalHandlerCallback = (message: ReportingMessage) => Promise<void>;
+/**
+ * Type defining a callback to resolve the monitoring host for a chain
+ * @param {string} chainId - The ID of the chain to find the monitoring host for
+ * @returns {Promise<string | undefined>}
+ */
 type MonitoringResolverCallback = (chainId: string) => Promise<string | undefined>;
+/**
+ * Interface for the broadcast reporting payload
+ */
 interface BRCPayload {
     message: BroadcastReportingMessage;
     path: string;
     monitoringResolver: MonitoringResolverCallback;
 }
+/**
+ * Interface to configure default reporting callbacks
+ */
 interface DefaultReportingCallbackPayload {
     paths: {
         notify: string;
@@ -550,6 +611,13 @@ interface DefaultReportingCallbackPayload {
     reportSignalHandler?: ReportSignalHandlerCallback;
     monitoringResolver?: MonitoringResolverCallback;
 }
+/**
+ * Configures monitoring callbacks for the supervisor
+ * - Sets up the local reporting callback
+ * - Sets up the broadcast reporting callback
+ * @param {DefaultReportingCallbackPayload} dcPayload - Configuration for paths and handlers
+ * @returns {Promise<void>}
+ */
 declare const setMonitoringCallbacks: (dcPayload: DefaultReportingCallbackPayload) => Promise<void>;
 
 export { type BRCPayload, type BSCPayload, type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type RSCPayload, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, type SupervisorPayloadStartPendingChain, broadcastSetupCallback, remoteServiceCallback, setMonitoringCallbacks, setResolverCallbacks };
