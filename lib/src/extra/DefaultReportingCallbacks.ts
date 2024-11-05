@@ -9,6 +9,7 @@ import { NodeSupervisor } from '../core/NodeSupervisor';
 import { Logger } from './Logger';
 import { post } from './http';
 import { MonitoringAgent } from 'agents/MonitoringAgent';
+import { MonitoringSignalHandler } from 'agents/MonitoringSignalHandler';
 
 /**
  * Type defining a callback to handle reporting signals
@@ -76,30 +77,7 @@ const defaultReportSignalHandler = async (
   message: ReportingMessage,
 ): Promise<void> => {
   Logger.info({ message: `${JSON.stringify(message, null, 2)}` });
-  switch (message.signal) {
-    case ChainStatus.NODE_SETUP_COMPLETED: {
-      const monitoring = MonitoringAgent.retrieveService();
-      let count = monitoring.getChainSetupCount(message.chainId);
-      if (!count) {
-        monitoring.setChainSetupCount(message.chainId, 1);
-      } else {
-        monitoring.setChainSetupCount(message.chainId, count + 1);
-      }
-      count = monitoring.getChainSetupCount(message.chainId);
-      if (count && count >= message.count) {
-        const supervisor = NodeSupervisor.retrieveService();
-        const payload: SupervisorPayloadStartPendingChain = {
-          signal: NodeSignal.CHAIN_START_PENDING,
-          id: message.chainId,
-        };
-        await supervisor.handleRequest(payload);
-        Logger.info({
-          message: `reportSignalHandler: Chain setup completed`,
-        });
-      }
-      break;
-    }
-  }
+  await MonitoringSignalHandler.handle(message);
 };
 
 /**

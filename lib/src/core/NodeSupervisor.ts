@@ -225,11 +225,9 @@ export class NodeSupervisor {
         config.nextMeta,
       );
     } else if (!initiator) {
-      //
       Logger.warn(
         `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
       );
-      // this.notify(nodeId, ChainStatus.CHAIN_SETUP_COMPLETED, 'global-signal');
     }
     this.notify(nodeId, ChainStatus.NODE_SETUP_COMPLETED, 'global-signal');
     return nodeId;
