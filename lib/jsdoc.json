@@ -1,0 +1,26 @@
+{
+  "tags": {
+    "allowUnknownTags": true
+  },
+  "plugins": ["jsdoc-babel"],
+  "babel": {
+    "extensions": ["ts"],
+    "ignore": ["**/*.spec.ts"],
+    "babelrc": false,
+    "configFile": false,
+    "presets": [
+      ["@babel/preset-typescript", { "allowNamespaces": true }]
+    ]
+  },
+  "source": {
+    "include": ["src"],
+    "includePattern": "\\.ts$",
+    "excludePattern": "(node_modules/|docs)"
+  },
+  "opts": {
+    "encoding": "utf8",
+    "destination": "./docs/",
+    "recurse": true,
+    "template": "templates/default"
+  }
+}
