@@ -1,0 +1,11 @@
+{
+  "entryPoints": ["./src"],
+  "out": "html-doc",
+  "exclude": ["**/node_modules/**", "**/*.spec.ts"],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "theme": "default",
+  "categoryOrder": ["*"],
+  "skipErrorChecking": true
+}
