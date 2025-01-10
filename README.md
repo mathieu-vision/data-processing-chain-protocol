@@ -24,7 +24,3 @@ This project is licensed under the MIT License.
 ## Contributing
 
 Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
-
-## Contact
-
-For more information, please contact the project maintainers.
