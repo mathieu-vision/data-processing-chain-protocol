@@ -88,6 +88,34 @@ sequenceDiagram
     end
 ```
 
+## 2a. Callbacks Flow Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    title Callback Interactions Sequence Diagram
+    participant Node
+    participant NodeSupervisor
+    participant ReportingAgent
+    participant ProcessorCallback
+    participant ReportingCallback
+    participant SetupCallback
+    participant RemoteNodes
+
+    Note over Node,ProcessorCallback: Pipeline Processing Flow
+    Node->>ProcessorCallback: Remote service invocation (targetId, meta)
+    ProcessorCallback-->>Node: Return processed data
+    
+    Note over Node,ReportingCallback: Status Reporting Flow
+    Node->>ReportingAgent: Emit signal (local/global)
+    ReportingAgent->>ReportingCallback: Forward status notification
+    ReportingCallback->>MonitoringAgent: HTTP POST /notify
+    
+    Note over NodeSupervisor,RemoteNodes: Chain Initialization Flow
+    NodeSupervisor->>SetupCallback: Broadcast node setup (chainId, config)
+    SetupCallback->>RemoteNodes: Distribute configuration
+    RemoteNodes-->>SetupCallback: Setup confirmation
+```
+
 ## 3. Global Lifecycle Flowchart
 
 ```mermaid
