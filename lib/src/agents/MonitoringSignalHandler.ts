@@ -23,9 +23,9 @@ export class MonitoringSignalHandler {
    * @returns {Promise<void>} - Resolves when the message is fully processed.
    */
   static async handle(message: ReportingMessage) {
+    const monitoring = MonitoringAgent.retrieveService();
     switch (message.signal) {
       case ChainStatus.NODE_SETUP_COMPLETED: {
-        const monitoring = MonitoringAgent.retrieveService();
         let count = monitoring.getChainSetupCount(message.chainId);
         if (!count) {
           monitoring.setChainSetupCount(message.chainId, 1);
@@ -46,6 +46,11 @@ export class MonitoringSignalHandler {
         }
         break;
       }
+      case ChainStatus.CHILD_CHAIN_COMPLETED:
+        await monitoring.handleChildChainCompletion(
+          '' /*message.childChainId!*/,
+        );
+        break;
       default:
         Logger.info({
           message: `MonitoringSignalHandler: Signal handler not found for ${message.signal}`,

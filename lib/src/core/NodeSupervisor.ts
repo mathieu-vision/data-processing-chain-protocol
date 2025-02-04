@@ -65,6 +65,10 @@ export class NodeSupervisor {
     return NodeSupervisor.instance;
   }
 
+  getChain(chainId: string): ChainRelation | undefined {
+    return this.chains.get(chainId);
+  }
+
   /**
    * Sets the remote service callback function
    * @param {ServiceCallback} remoteServiceCallback - The callback to handle remote service calls

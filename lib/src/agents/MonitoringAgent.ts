@@ -1,5 +1,6 @@
 import {
   DefaultCallback,
+  NodeSignal,
   ReportingCallback,
   ReportingMessage,
   ReportingPayload,
@@ -7,6 +8,7 @@ import {
 import { Logger } from '../extra/Logger';
 import { Agent } from './Agent';
 import { ReportingAgentBase } from './ReportingAgent';
+import { NodeSupervisor } from 'core/NodeSupervisor';
 /**
  * Class for a node monitoring and status reporting agent
  */
@@ -43,7 +45,17 @@ export class MonitoringAgent extends Agent {
   // Todo: merge the following
   private status: Map<string, ChainStatus>;
   private setupCounts: Map<string, number>;
-  private childChains: Map<string, string[]>;
+
+  // private childChains: Map<string, string[]>;
+
+  private chainHierarchy: Map<
+    string,
+    {
+      parentId?: string;
+      children: string[];
+      completedChildren: Set<string>;
+    }
+  > = new Map();
 
   /**
    * Creates a new MonitoringAgent instance
@@ -53,8 +65,7 @@ export class MonitoringAgent extends Agent {
     this.status = new Map();
     this.setupCounts = new Map();
     this.remoteMonitoringHost = new Map();
-    this.childChains = new Map();
-
+    //this.childChains = new Map();
     this.reportingCallback = DefaultCallback.REPORTING_CALLBACK;
     this.broadcastReportingCallback =
       DefaultCallback.BROADCAST_REPORTING_CALLBACK;
@@ -158,10 +169,82 @@ export class MonitoringAgent extends Agent {
   setChainSetupCount(chainId: string, count: number): void {
     this.setupCounts.set(chainId, count);
   }
-  // tmp
+
+  async handleChildChainCompletion(childChainId: string) {
+    const childEntry = this.chainHierarchy.get(childChainId);
+    if (!childEntry || !childEntry.parentId) return;
+
+    const parentEntry = this.chainHierarchy.get(childEntry.parentId);
+    if (parentEntry) {
+      parentEntry.completedChildren.add(childChainId);
+      await this.checkChainReadiness(childEntry.parentId);
+    }
+  }
+
   trackChildChain(parentChainId: string, childChainId: string) {
-    const children = this.childChains.get(parentChainId) || [];
-    children.push(childChainId);
-    this.childChains.set(parentChainId, children);
+    const parentEntry = this.chainHierarchy.get(parentChainId) || {
+      children: [],
+      completedChildren: new Set(),
+    };
+    parentEntry.children.push(childChainId);
+    this.chainHierarchy.set(parentChainId, parentEntry);
+
+    this.chainHierarchy.set(childChainId, {
+      parentId: parentChainId,
+      children: [],
+      completedChildren: new Set(),
+    });
+  }
+
+  private async checkChainReadiness(chainId: string) {
+    try {
+      const entry = this.chainHierarchy.get(chainId);
+      if (!entry) {
+        Logger.error(`No hierarchy entry found for chain ${chainId}`);
+        return;
+      }
+
+      const supervisor = NodeSupervisor.retrieveService();
+      const chain = supervisor.getChain(chainId);
+      if (!chain) {
+        Logger.error(`No chain found for id ${chainId}`);
+        return;
+      }
+
+      const setupCount = this.setupCounts.get(chainId) || 0;
+      const config = chain.config.length || 0;
+
+      Logger.info(
+        `Chain ${chainId} setup status: ${setupCount}/${config} configs ready`,
+      );
+      Logger.info(
+        `Children completed: ${entry.completedChildren.size}/${entry.children.length}`,
+      );
+
+      if (
+        setupCount >= config &&
+        entry.children.length === entry.completedChildren.size
+      ) {
+        try {
+          await supervisor.handleRequest({
+            signal: NodeSignal.CHAIN_START_PENDING,
+            id: chainId,
+          });
+          Logger.info(
+            `Chain ${chainId} readiness check completed, start signal sent`,
+          );
+        } catch (error) {
+          Logger.error(
+            `Failed to send start signal for chain ${chainId}: ${(error as Error).message}`,
+          );
+          throw error;
+        }
+      }
+    } catch (error) {
+      Logger.error(
+        `Error during chain readiness check for ${chainId}: ${(error as Error).message}`,
+      );
+      throw error;
+    }
   }
 }

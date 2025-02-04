@@ -94,7 +94,9 @@ export namespace ChainStatus {
     | 'node_failed'
     | 'node_paused'
     | 'node_setup_completed'
-    | 'chain_setup_completed';
+    | 'chain_setup_completed'
+    | 'child_chain_started'
+    | 'child_chain_completed';
   export const NODE_PAUSED: Type = 'node_paused';
   export const NODE_PENDING: Type = 'node_pending';
   export const NODE_IN_PROGRESS: Type = 'node_in_progress';
@@ -102,6 +104,8 @@ export namespace ChainStatus {
   export const NODE_FAILED: Type = 'node_failed';
   export const NODE_SETUP_COMPLETED: Type = 'node_setup_completed';
   export const CHAIN_SETUP_COMPLETED: Type = 'chain_setup_completed';
+  export const CHILD_CHAIN_STARTED = 'child_chain_started';
+  export const CHILD_CHAIN_COMPLETED = 'child_chain_completed';
 }
 
 // handler signal

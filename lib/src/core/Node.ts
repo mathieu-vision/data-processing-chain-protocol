@@ -176,11 +176,18 @@ export class Node {
         throw new Error('Failed to deploy chain: no chainId returned');
       }
       if (this.config.childMode === ChildMode.PARALLEL) {
-        supervisor.startChain(chainId, data).catch((error) => {
-          Logger.error(`Failed to start parallel child chain: ${error}`);
-        });
+        this.notify(ChainStatus.CHILD_CHAIN_STARTED, 'global-signal');
+        supervisor
+          .startChain(chainId, data)
+          .then(() =>
+            this.notify(ChainStatus.CHILD_CHAIN_COMPLETED, 'global-signal'),
+          )
+          .catch((error) => {
+            Logger.error(`Failed to start parallel child chain: ${error}`);
+          });
       } else {
         await supervisor.startChain(chainId, data);
+        this.notify(ChainStatus.CHILD_CHAIN_COMPLETED, 'global-signal');
       }
     }
   }
