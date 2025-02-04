@@ -43,6 +43,7 @@ export class MonitoringAgent extends Agent {
   // Todo: merge the following
   private status: Map<string, ChainStatus>;
   private setupCounts: Map<string, number>;
+  private childChains: Map<string, string[]>;
 
   /**
    * Creates a new MonitoringAgent instance
@@ -52,6 +53,8 @@ export class MonitoringAgent extends Agent {
     this.status = new Map();
     this.setupCounts = new Map();
     this.remoteMonitoringHost = new Map();
+    this.childChains = new Map();
+
     this.reportingCallback = DefaultCallback.REPORTING_CALLBACK;
     this.broadcastReportingCallback =
       DefaultCallback.BROADCAST_REPORTING_CALLBACK;
@@ -154,5 +157,11 @@ export class MonitoringAgent extends Agent {
 
   setChainSetupCount(chainId: string, count: number): void {
     this.setupCounts.set(chainId, count);
+  }
+  // tmp
+  trackChildChain(parentChainId: string, childChainId: string) {
+    const children = this.childChains.get(parentChainId) || [];
+    children.push(childChainId);
+    this.childChains.set(parentChainId, children);
   }
 }

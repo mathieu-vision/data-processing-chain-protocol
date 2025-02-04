@@ -33,6 +33,8 @@ export class NodeSupervisor {
   private nodes: Map<string, Node>;
   private chains: Map<string, ChainRelation>;
 
+  private childChains: Map<string, string[]>;
+
   private broadcastSetupCallback: SetupCallback;
   remoteServiceCallback: ServiceCallback;
 
@@ -45,6 +47,7 @@ export class NodeSupervisor {
     this.ctn = '@container:default';
     this.nodes = new Map();
     this.chains = new Map();
+    this.childChains = new Map();
     this.remoteServiceCallback = DefaultCallback.SERVICE_CALLBACK;
     this.broadcastSetupCallback = DefaultCallback.SETUP_CALLBACK;
   }
@@ -153,6 +156,7 @@ export class NodeSupervisor {
   private async deployChain(
     config: ChainConfig,
     data: PipelineData,
+    parentChainId?: string,
   ): Promise<string> {
     if (!config) {
       throw new Error(`${this.ctn}: Chain configuration is required`);
@@ -167,6 +171,11 @@ export class NodeSupervisor {
     Logger.info(
       `${this.ctn}: Deployment for chain ${chainId} has successfully started...`,
     );
+    if (parentChainId) {
+      const children = this.childChains.get(parentChainId) || [];
+      children.push(chainId);
+      this.childChains.set(parentChainId, children);
+    }
     return chainId;
   }
 

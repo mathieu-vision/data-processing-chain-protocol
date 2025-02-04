@@ -9,6 +9,8 @@ import {
   ChainType,
   PipelineMeta,
   ReportingSignalType,
+  SupervisorPayloadDeployChain,
+  ChildMode,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -162,6 +164,27 @@ export class Node {
     }
   }
 
+  private async processChildChain(data: PipelineData): Promise<void> {
+    if (this.config?.chainConfig) {
+      const supervisor = NodeSupervisor.retrieveService();
+      const chainId = await supervisor.handleRequest({
+        signal: NodeSignal.CHAIN_DEPLOY,
+        config: this.config.chainConfig,
+        data,
+      } as SupervisorPayloadDeployChain);
+      if (!chainId) {
+        throw new Error('Failed to deploy chain: no chainId returned');
+      }
+      if (this.config.childMode === ChildMode.PARALLEL) {
+        supervisor.startChain(chainId, data).catch((error) => {
+          Logger.error(`Failed to start parallel child chain: ${error}`);
+        });
+      } else {
+        await supervisor.startChain(chainId, data);
+      }
+    }
+  }
+
   /**
    * Executes node processing on input data
    * @param {PipelineData} data - Data to process
@@ -201,6 +224,9 @@ export class Node {
         }
 
         this.updateStatus(ChainStatus.NODE_COMPLETED);
+        if (this.config?.chainConfig) {
+          await this.processChildChain(data);
+        }
       } catch (error) {
         this.updateStatus(ChainStatus.NODE_FAILED, error as Error);
         Logger.error(`Node ${this.id} execution failed: ${error}`);

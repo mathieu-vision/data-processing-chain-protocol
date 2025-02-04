@@ -210,6 +210,11 @@ export interface ServiceConfig {
   meta?: PipelineMeta;
 }
 
+export enum ChildMode {
+  NORMAL = 'normal',
+  PARALLEL = 'parallel',
+}
+
 export type NodeConfig = {
   services: (string | ServiceConfig)[];
   chainId: string;
@@ -220,6 +225,8 @@ export type NodeConfig = {
   nextMeta?: PipelineMeta;
   chainType?: ChainType.Type;
   monitoringHost?: string;
+  childMode?: ChildMode;
+  chainConfig?: ChainConfig;
 };
 
 export type ChainConfig = NodeConfig[];
