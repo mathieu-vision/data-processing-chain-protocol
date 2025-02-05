@@ -1,5 +1,6 @@
 import { LiteConnector } from './LiteConnector';
 import { LiteConnector as LiteConnector0 } from './LiteConnector.0';
+import { LiteConnector as ParalleleNodesConnector } from './ParalleleNodesConnector';
 import dotenv from 'dotenv';
 import { Logger } from './libs/Logger';
 
@@ -19,10 +20,19 @@ const port = argPort
   : parseInt(process.env.PORT || '3000', 10);
 const connectorUid = argConnectorUid || process.env.CONNECTOR_UID || 'default';
 
-const connector =
-  argType !== undefined && parseInt(argType) === 0
-    ? new LiteConnector0(port, connectorUid)
-    : new LiteConnector(port, connectorUid);
+let connector;
+const caseSwitch = parseInt(argType || '0', 10);
+switch (caseSwitch) {
+  case 0:
+    connector = new LiteConnector0(port, connectorUid);
+    break;
+  case 1:
+    connector = new ParalleleNodesConnector(port, connectorUid);
+    break;
+  default:
+    connector = new LiteConnector(port, connectorUid);
+    break;
+}
 
 connector
   .startServer()
