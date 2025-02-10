@@ -8,7 +8,7 @@ import {
 import { Logger } from '../extra/Logger';
 import { Agent } from './Agent';
 import { ReportingAgentBase } from './ReportingAgent';
-import { NodeSupervisor } from 'core/NodeSupervisor';
+import { NodeSupervisor } from '../core/NodeSupervisor';
 /**
  * Class for a node monitoring and status reporting agent
  */

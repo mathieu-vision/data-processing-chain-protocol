@@ -74,7 +74,7 @@ declare namespace ChainType {
     const DEFAULT: Type;
 }
 declare namespace ChainStatus {
-    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_paused' | 'node_setup_completed' | 'chain_setup_completed';
+    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_paused' | 'node_setup_completed' | 'chain_setup_completed' | 'child_chain_started' | 'child_chain_completed';
     const NODE_PAUSED: Type;
     const NODE_PENDING: Type;
     const NODE_IN_PROGRESS: Type;
@@ -82,6 +82,8 @@ declare namespace ChainStatus {
     const NODE_FAILED: Type;
     const NODE_SETUP_COMPLETED: Type;
     const CHAIN_SETUP_COMPLETED: Type;
+    const CHILD_CHAIN_STARTED = "child_chain_started";
+    const CHILD_CHAIN_COMPLETED = "child_chain_completed";
 }
 declare namespace NodeSignal {
     type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_start_pending' | 'chain_deploy';
@@ -150,6 +152,10 @@ interface ServiceConfig {
     targetId: string;
     meta?: PipelineMeta;
 }
+declare enum ChildMode {
+    NORMAL = "normal",
+    PARALLEL = "parallel"
+}
 type NodeConfig = {
     services: (string | ServiceConfig)[];
     chainId: string;
@@ -160,6 +166,8 @@ type NodeConfig = {
     nextMeta?: PipelineMeta;
     chainType?: ChainType.Type;
     monitoringHost?: string;
+    childMode?: ChildMode;
+    chainConfig?: ChainConfig;
 };
 type ChainConfig = NodeConfig[];
 interface BrodcastSetupMessage {
@@ -253,6 +261,7 @@ declare class Node {
      * @param {ChainStatus.Type} notify - Node status to report
      */
     notify(notify: ChainStatus.Type, type?: ReportingSignalType): void;
+    private processChildChain;
     /**
      * Executes node processing on input data
      * @param {PipelineData} data - Data to process
@@ -355,6 +364,7 @@ declare class NodeSupervisor {
     private static instance;
     private nodes;
     private chains;
+    private childChains;
     private broadcastSetupCallback;
     remoteServiceCallback: ServiceCallback;
     /**
@@ -368,6 +378,7 @@ declare class NodeSupervisor {
      * @returns {NodeSupervisor} The NodeSupervisor instance
      */
     static retrieveService(refresh?: boolean): NodeSupervisor;
+    getChain(chainId: string): ChainRelation | undefined;
     /**
      * Sets the remote service callback function
      * @param {ServiceCallback} remoteServiceCallback - The callback to handle remote service calls

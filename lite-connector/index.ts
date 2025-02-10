@@ -1,6 +1,6 @@
 import { LiteConnector } from './LiteConnector';
 import { LiteConnector as LiteConnector0 } from './LiteConnector.0';
-import { LiteConnector as ParalleleNodesConnector } from './ParalleleNodesConnector';
+import { LiteConnector as ParalleleNodesConnector } from './LiteConnector.1';
 import dotenv from 'dotenv';
 import { Logger } from './libs/Logger';
 
@@ -21,7 +21,7 @@ const port = argPort
 const connectorUid = argConnectorUid || process.env.CONNECTOR_UID || 'default';
 
 let connector;
-const caseSwitch = parseInt(argType || '0', 10);
+const caseSwitch = parseInt(argType || '-1', 10);
 switch (caseSwitch) {
   case 0:
     connector = new LiteConnector0(port, connectorUid);

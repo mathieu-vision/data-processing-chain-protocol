@@ -122,26 +122,37 @@ export class NodeSupervisor {
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
     switch (payload.signal) {
       case NodeSignal.NODE_SETUP:
+        Logger.header(`handle NODE_SETUP`);
         return await this.setupNode(payload.config);
       case NodeSignal.NODE_CREATE:
+        Logger.header(`handle NODE_CREATE`);
         return await this.createNode(payload.params);
       case NodeSignal.NODE_DELETE:
+        Logger.header(`handle NODE_DELETE`);
         return await this.deleteNode(payload.id);
       case NodeSignal.NODE_PAUSE:
+        Logger.header(`handle NODE_PAUSE`);
         return await this.pauseNode(payload.id);
       case NodeSignal.NODE_DELAY:
+        Logger.header(`handle NODE_DELAY`);
         return await this.delayNode(payload.id, payload.delay);
       case NodeSignal.NODE_RUN:
+        Logger.header(`handle NODE_RUN`);
         return await this.runNode(payload.id, payload.data);
       case NodeSignal.NODE_SEND_DATA:
+        Logger.header(`handle NODE_SEND_DATA`);
         return await this.sendNodeData(payload.id);
       case NodeSignal.CHAIN_PREPARE:
+        Logger.header(`handle CHAIN_PREPARE`);
         return await this.prepareChainDistribution(payload.id);
       case NodeSignal.CHAIN_START:
+        Logger.header(`handle CHAIN_START`);
         return await this.startChain(payload.id, payload.data);
       case NodeSignal.CHAIN_START_PENDING:
+        Logger.header(`handle CHAIN_START_PENDING`);
         return await this.startPendingChain(payload.id);
       case NodeSignal.CHAIN_DEPLOY: {
+        Logger.header(`handle CHAIN_DEPLOY`);
         return await this.deployChain(payload.config, payload.data);
       }
       default:
@@ -162,25 +173,30 @@ export class NodeSupervisor {
     data: PipelineData,
     parentChainId?: string,
   ): Promise<string> {
-    if (!config) {
-      throw new Error(`${this.ctn}: Chain configuration is required`);
+    try {
+      if (!config) {
+        throw new Error(`${this.ctn}: Chain configuration is required`);
+      }
+      Logger.info(`${this.ctn}: Starting a new chain deployment...`);
+      const chainId = this.createChain(config);
+      await this.prepareChainDistribution(chainId);
+      const chain = this.chains.get(chainId);
+      if (chain) {
+        chain.dataRef = data;
+      }
+      Logger.info(
+        `${this.ctn}: Deployment for chain ${chainId} has successfully started...`,
+      );
+      if (parentChainId) {
+        const children = this.childChains.get(parentChainId) || [];
+        children.push(chainId);
+        this.childChains.set(parentChainId, children);
+      }
+      return chainId;
+    } catch (error) {
+      Logger.error(`${this.ctn}{deployChain}: ${(error as Error).message}`);
+      throw error;
     }
-    Logger.info(`${this.ctn}: Starting a new chain deployment...`);
-    const chainId = this.createChain(config);
-    await this.prepareChainDistribution(chainId);
-    const chain = this.chains.get(chainId);
-    if (chain) {
-      chain.dataRef = data;
-    }
-    Logger.info(
-      `${this.ctn}: Deployment for chain ${chainId} has successfully started...`,
-    );
-    if (parentChainId) {
-      const children = this.childChains.get(parentChainId) || [];
-      children.push(chainId);
-      this.childChains.set(parentChainId, children);
-    }
-    return chainId;
   }
 
   /**
@@ -363,33 +379,38 @@ export class NodeSupervisor {
    * @returns {string} The new chain identifier
    */
   createChain(config: ChainConfig): string {
-    if (!config || !Array.isArray(config)) {
-      throw new Error('Invalid chain configuration: config must be an array');
+    try {
+      if (!config || !Array.isArray(config)) {
+        throw new Error('Invalid chain configuration: config must be an array');
+      }
+      const timestamp = Date.now();
+      const chainId = `${this.uid}-${timestamp}-${randomUUID().slice(0, 8)}`;
+      const relation: ChainRelation = {
+        config,
+      };
+
+      this.chains.set(chainId, relation);
+      const monitoringHost = config[0]?.monitoringHost;
+      const count = Array.isArray(config) ? config.length : 0;
+
+      if (count > 0) {
+        config.forEach((value: NodeConfig, index: number) => {
+          if (value) {
+            value.index = index;
+            value.count = count;
+            value.monitoringHost = monitoringHost;
+          }
+        });
+      } else {
+        Logger.warn(`${this.ctn}: Chain configuration is empty`);
+      }
+
+      Logger.header(`${this.ctn}: Chain ${chainId} creation has started...`);
+      return chainId;
+    } catch (error) {
+      Logger.header(`${this.ctn}{createChain}: ${(error as Error).message}`);
+      throw error;
     }
-    const timestamp = Date.now();
-    const chainId = `${this.uid}-${timestamp}-${randomUUID().slice(0, 8)}`;
-    const relation: ChainRelation = {
-      config,
-    };
-
-    this.chains.set(chainId, relation);
-    const monitoringHost = config[0]?.monitoringHost;
-    const count = Array.isArray(config) ? config.length : 0;
-
-    if (count > 0) {
-      config.forEach((value: NodeConfig, index: number) => {
-        if (value) {
-          value.index = index;
-          value.count = count;
-          value.monitoringHost = monitoringHost;
-        }
-      });
-    } else {
-      Logger.warn(`${this.ctn}: Chain configuration is empty`);
-    }
-
-    Logger.header(`${this.ctn}: Chain ${chainId} creation has started...`);
-    return chainId;
   }
 
   /**
@@ -441,85 +462,106 @@ export class NodeSupervisor {
    * @param {string} chainId - The chain identifier
    */
   async prepareChainDistribution(chainId: string): Promise<void> {
-    Logger.header(
-      `${this.ctn}: Chain distribution for ${chainId} in progress...`,
-    );
-    const chain = this.chains.get(chainId);
-    if (!chain) {
-      throw new Error(`${this.ctn}: Chain ${chainId} not found`);
-    }
-    const chainConfig: ChainConfig = chain.config;
-    const localConfigs: NodeConfig[] = chainConfig.filter(
-      (config) => config.location === 'local',
-    );
-    const remoteConfigs: NodeConfig[] = chainConfig.filter(
-      (config) => config.location === 'remote',
-    );
-
-    if (localConfigs.length > 0) {
-      const rootNodeId = await this.setupNode(
-        { ...localConfigs[0], chainId },
-        true,
+    try {
+      Logger.header(
+        `${this.ctn}: Chain distribution for ${chainId} in progress...`,
       );
-      chain.rootNodeId = rootNodeId;
+      const chain = this.chains.get(chainId);
+      if (!chain) {
+        throw new Error(`${this.ctn}: Chain ${chainId} not found`);
+      }
+      const chainConfig: ChainConfig = chain.config;
+      const localConfigs: NodeConfig[] = chainConfig.filter(
+        (config) => config.location === 'local',
+      );
+      const remoteConfigs: NodeConfig[] = chainConfig.filter(
+        (config) => config.location === 'remote',
+      );
 
-      let prevNodeId = rootNodeId;
-      for (let i = 1; i < localConfigs.length; i++) {
-        const currentNodeId = await this.setupNode(
-          {
-            ...localConfigs[i],
-            chainId,
-          },
+      if (!localConfigs) {
+        throw new Error('Local config undefined');
+      }
+
+      if (localConfigs.length > 0) {
+        const rootNodeId = await this.setupNode(
+          { ...localConfigs[0], chainId },
           true,
         );
-        const prevNode = this.nodes.get(prevNodeId);
-        if (prevNode) {
-          prevNode.setNextNodeInfo(currentNodeId, NodeType.LOCAL);
-        }
-        prevNodeId = currentNodeId;
-      }
+        chain.rootNodeId = rootNodeId;
 
-      // Set the last local node to point to the first remote service
-      if (remoteConfigs.length > 0 && remoteConfigs[0].services.length > 0) {
-        const lastLocalNode = this.nodes.get(prevNodeId);
-        if (lastLocalNode) {
-          const nextService = remoteConfigs[0].services[0];
-          lastLocalNode.setNextNodeInfo(
-            typeof nextService === 'string'
-              ? nextService
-              : nextService.targetId,
-            NodeType.REMOTE,
-            typeof nextService === 'string' ? void 0 : nextService.meta,
+        let prevNodeId = rootNodeId;
+        for (let i = 1; i < localConfigs.length; i++) {
+          const currentNodeId = await this.setupNode(
+            {
+              ...localConfigs[i],
+              chainId,
+            },
+            true,
           );
+          const prevNode = this.nodes.get(prevNodeId);
+          if (prevNode) {
+            prevNode.setNextNodeInfo(currentNodeId, NodeType.LOCAL);
+          }
+          prevNodeId = currentNodeId;
         }
-      }
-    } else {
-      Logger.warn(
-        `${this.ctn}: No local config found for chain ${chainId}. Root node unavailable.`,
-      );
-    }
 
-    if (remoteConfigs.length > 0) {
-      const updatedRemoteConfigs: NodeConfig[] = remoteConfigs.map(
-        (config, index) => {
-          const nextConfig: string | ServiceConfig =
-            remoteConfigs[index + 1]?.services[0];
-          const nodeConfig: NodeConfig = {
-            ...config,
-            nextTargetId: nextConfig
-              ? typeof nextConfig === 'string'
-                ? nextConfig
-                : nextConfig.targetId
-              : undefined,
-            nextMeta:
-              nextConfig && typeof nextConfig !== 'string'
-                ? nextConfig.meta
-                : undefined,
-          };
-          return nodeConfig;
-        },
+        if (!remoteConfigs) {
+          throw new Error('Remote config undefined');
+        }
+
+        // Set the last local node to point to the first remote service
+        if (remoteConfigs.length > 0 && remoteConfigs[0].services.length > 0) {
+          const lastLocalNode = this.nodes.get(prevNodeId);
+          if (lastLocalNode) {
+            const nextService = remoteConfigs[0].services[0];
+            lastLocalNode.setNextNodeInfo(
+              typeof nextService === 'string'
+                ? nextService
+                : nextService.targetId,
+              NodeType.REMOTE,
+              typeof nextService === 'string' ? void 0 : nextService.meta,
+            );
+          }
+        }
+      } else {
+        Logger.warn(
+          `${this.ctn}: No local config found for chain ${chainId}. Root node unavailable.`,
+        );
+      }
+      try {
+        if (remoteConfigs.length > 0) {
+          const updatedRemoteConfigs: NodeConfig[] = remoteConfigs.map(
+            (config, index) => {
+              const nextConfig: string | ServiceConfig =
+                remoteConfigs[index + 1]?.services[0];
+              const nodeConfig: NodeConfig = {
+                ...config,
+                nextTargetId: nextConfig
+                  ? typeof nextConfig === 'string'
+                    ? nextConfig
+                    : nextConfig.targetId
+                  : undefined,
+                nextMeta:
+                  nextConfig && typeof nextConfig !== 'string'
+                    ? nextConfig.meta
+                    : undefined,
+              };
+              return nodeConfig;
+            },
+          );
+
+          await this.broadcastNodeSetupSignal(chainId, updatedRemoteConfigs);
+        }
+      } catch (error) {
+        Logger.error(
+          `${this.ctn}{prepareChainDistribution, broadcast}: ${(error as Error).message}`,
+        );
+      }
+    } catch (error) {
+      Logger.error(
+        `${this.ctn}{prepareChainDistribution}: ${(error as Error).message}`,
       );
-      await this.broadcastNodeSetupSignal(chainId, updatedRemoteConfigs);
+      throw error;
     }
   }
 

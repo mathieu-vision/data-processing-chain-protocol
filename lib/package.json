@@ -12,7 +12,8 @@
     "build": "tsup",
     "dev": "nodemon -- --development",
     "start": "node ./dist/index.js --production",
-    "test": "npx ts-mocha -p tsconfig.json ./src/tests/**/*.spec.ts --timeout 4000 --exit --test",
+    "test-legacy": "npx ts-mocha -p tsconfig.json ./src/tests/**/*.spec.ts --timeout 4000 --exit --test",
+    "test": "node run-tests.js",
     "doc": "typedoc"
   },
   "keywords": [],
