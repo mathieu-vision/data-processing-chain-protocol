@@ -117,7 +117,7 @@ export namespace Ext {
     const monitoringHost = await monitoringResolver(message.chainId);
     const url = new URL(path, monitoringHost);
     const data = JSON.stringify(message);
-    Logger.info(`DRC: Sending message to ${url}`);
+    Logger.info(`BroadcastReportingCallback: Sending message to ${url}`);
     await post(url, data);
   };
 
@@ -145,6 +145,12 @@ export namespace Ext {
       },
     );
 
+    if (reportSignalHandler) {
+      Logger.info('Monitoring Callback set with custom Signal Handler');
+    } else {
+      Logger.info('Monitoring Callback set with default Signal Handler');
+    }
+
     supervisor.setBroadcastReportingCallback(
       async (message: BroadcastReportingMessage): Promise<void> => {
         const payload: BRCPayload = {
@@ -155,5 +161,11 @@ export namespace Ext {
         await broadcastReportingCallback(payload);
       },
     );
+
+    if (monitoringResolver) {
+      Logger.info('Broadcast Reporting Callback set with custom Resolver');
+    } else {
+      Logger.info('Broadcast Reporting Callback set with default Resolver');
+    }
   };
 }

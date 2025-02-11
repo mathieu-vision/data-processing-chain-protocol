@@ -362,6 +362,7 @@ declare class NodeSupervisor {
     private uid;
     private ctn;
     private static instance;
+    private nsLogger;
     private nodes;
     private chains;
     private childChains;
@@ -378,6 +379,7 @@ declare class NodeSupervisor {
      * @returns {NodeSupervisor} The NodeSupervisor instance
      */
     static retrieveService(refresh?: boolean): NodeSupervisor;
+    log(type: string): void;
     getChain(chainId: string): ChainRelation | undefined;
     /**
      * Sets the remote service callback function

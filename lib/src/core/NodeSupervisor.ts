@@ -22,6 +22,7 @@ import { Logger } from '../utils/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
 import { MonitoringAgent } from '../agents/MonitoringAgent';
+import { NodeSupervisorLogger } from './NodeSupervisorLogger';
 
 /**
  * Manages the lifecycle and distribution of nodes within a processing chain
@@ -30,9 +31,13 @@ export class NodeSupervisor {
   private uid: string;
   private ctn: string;
   private static instance: NodeSupervisor;
-  private nodes: Map<string, Node>;
-  private chains: Map<string, ChainRelation>;
+  private nsLogger: NodeSupervisorLogger;
 
+  // local nodes
+  private nodes: Map<string, Node>;
+  // local chains
+  private chains: Map<string, ChainRelation>;
+  //
   private childChains: Map<string, string[]>;
 
   private broadcastSetupCallback: SetupCallback;
@@ -45,6 +50,7 @@ export class NodeSupervisor {
   private constructor() {
     this.uid = '@supervisor:default';
     this.ctn = '@container:default';
+    this.nsLogger = new NodeSupervisorLogger();
     this.nodes = new Map();
     this.chains = new Map();
     this.childChains = new Map();
@@ -63,6 +69,16 @@ export class NodeSupervisor {
       NodeSupervisor.instance = instance;
     }
     return NodeSupervisor.instance;
+  }
+
+  log(type: string) {
+    switch (type) {
+      case 'chains':
+        this.nsLogger.logChains(this.chains);
+        break;
+      default:
+        break;
+    }
   }
 
   getChain(chainId: string): ChainRelation | undefined {

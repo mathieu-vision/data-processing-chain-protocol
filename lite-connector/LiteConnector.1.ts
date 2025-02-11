@@ -83,8 +83,16 @@ class SupervisorContainer {
             .status(200)
             .json({ message: 'Data received and processed successfully' });
           break;
+        // Handle Notifications distant Monitorings
         case 'notify': {
           const { chainId, signal } = req.body;
+          Logger.header({ message: 'Connector - Notification:' });
+          Logger.info({ message: `Chain: ${chainId}, Signal: ${signal}\n` });
+
+          //
+          this.nodeSupervisor.log('chains');
+          //
+
           this.nodeSupervisor.handleNotification(chainId, signal);
           res.status(200).json({
             message: 'Notify the signal to the supervisor monitoring',
