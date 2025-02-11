@@ -1,4 +1,4 @@
-import { Logger } from '../extra/Logger';
+import { Logger } from '../utils/Logger';
 import { Agent } from './Agent';
 import { ChainStatus, ReportingSignalType } from '../types/types';
 

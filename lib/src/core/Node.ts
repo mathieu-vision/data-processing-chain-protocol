@@ -14,7 +14,7 @@ import {
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
-import { Logger } from '../extra/Logger';
+import { Logger } from '../utils/Logger';
 import { NodeSupervisor } from './NodeSupervisor';
 import { MonitoringAgent, ReportingAgent } from '../agents/MonitoringAgent';
 

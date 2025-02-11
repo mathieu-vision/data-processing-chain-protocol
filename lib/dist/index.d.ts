@@ -533,6 +533,135 @@ declare class NodeSupervisor {
     getNodesByServiceAndChain(serviceUid: string, chainId: string): Node[];
 }
 
+declare namespace Ext$3 {
+    /**
+     * Default class, responsible for handling monitoring signals.
+     * Processes reporting messages and triggers actions based on the message signal.
+     */
+    class MonitoringSignalHandler {
+        /**
+         * Handles a reporting message and triggers appropriate actions based on the signal type.
+         * This function serves as a flexible entry point for processing intercepted signals
+         * originating from the reporting agent, allowing adaptation to various system needs.
+         * Specifically, it processes node setup completion signals in a chain, but can be
+         * extended to handle other signal types.
+         *
+         * Note: This is a bridge between global messages and the rest of the system,
+         * enabling the dispatch of actions tailored to specific goals.
+         *
+         * @static
+         * @async
+         * @param {ReportingMessage} message - The message containing the signal and associated chain data.
+         * @returns {Promise<void>} - Resolves when the message is fully processed.
+         */
+        static handle(message: ReportingMessage): Promise<void>;
+    }
+}
+
+declare namespace Ext$2 {
+    /**
+     * Type defining a callback to handle reporting signals
+     * @param {ReportingMessage} message - The reporting message containing signal and metadata
+     * @returns {Promise<void>}
+     */
+    type ReportSignalHandlerCallback = (message: ReportingMessage) => Promise<void>;
+    /**
+     * Type defining a callback to resolve the monitoring host for a chain
+     * @param {string} chainId - The ID of the chain to find the monitoring host for
+     * @returns {Promise<string | undefined>}
+     */
+    type MonitoringResolverCallback = (chainId: string) => Promise<string | undefined>;
+    /**
+     * Interface for the monitoring payload
+     */
+    interface MCPayload {
+        message: ReportingMessage;
+        reportSignalHandler: ReportSignalHandlerCallback;
+    }
+    /**
+     * Interface for the broadcast reporting payload
+     */
+    interface BRCPayload {
+        message: BroadcastReportingMessage;
+        path: string;
+        monitoringResolver: MonitoringResolverCallback;
+    }
+    /**
+     * Default callback for reporting, to be set on the initial supervisor
+     * @param {MCPayload} payload - Contains the message and report signal handler callback
+     * @returns {Promise<void>}
+     */
+    const reportingCallback: (payload: MCPayload) => Promise<void>;
+    /**
+     * Interface to configure default reporting callbacks
+     */
+    interface DefaultReportingCallbackPayload {
+        paths: {
+            notify: string;
+        };
+        reportSignalHandler?: ReportSignalHandlerCallback;
+        monitoringResolver?: MonitoringResolverCallback;
+    }
+    /**
+     * Configures monitoring callbacks for the supervisor
+     * - Sets up the local reporting callback
+     * - Sets up the broadcast reporting callback
+     * @param {DefaultReportingCallbackPayload} dcPayload - Configuration for paths and handlers
+     * @returns {Promise<void>}
+     */
+    const setMonitoringCallbacks: (dcPayload: DefaultReportingCallbackPayload) => Promise<void>;
+}
+
+declare namespace Ext$1 {
+    /**
+     * Type defining a host resolution function to build a URL from target information
+     */
+    type HostResolverCallback = (targetId: string, meta?: PipelineMeta) => string | undefined;
+    /**
+     * Interface for the setup configuration broadcast payload
+     */
+    interface BSCPayload {
+        message: BrodcastSetupMessage;
+        hostResolver: HostResolverCallback;
+        path: string;
+    }
+    /**
+     * Manages broadcasting setup configurations to different remote nodes
+     * @param {BSCPayload} payload - Contains the message to broadcast, host resolution function, and path
+     */
+    const broadcastSetupCallback: (payload: BSCPayload) => Promise<void>;
+    /**
+     * Interface for the payload of remote service calls
+     */
+    interface RSCPayload {
+        cbPayload: CallbackPayload;
+        hostResolver: HostResolverCallback;
+        path: string;
+    }
+    /**
+     * Manages sending data to remote services
+     * @param {RSCPayload} payload - Contains data to send, host resolution function, and path
+     */
+    const remoteServiceCallback: (payload: RSCPayload) => Promise<void>;
+    /**
+     * Interface for configuring default callbacks
+     */
+    interface DefaultCallbackPayload {
+        paths: {
+            setup: string;
+            run: string;
+        };
+        hostResolver: HostResolverCallback;
+    }
+    /**
+     * Configures resolution callbacks for the node supervisor
+     * - Configures the setup broadcast callback
+     * - Configures the remote service callback
+     * @param {DefaultCallbackPayload} dcPayload - Configuration for paths and host resolver
+     */
+    const setResolverCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
+}
+
 declare class PipelineDataCombiner {
     private strategy;
     private customCombineFunction?;
@@ -544,91 +673,14 @@ declare class PipelineDataCombiner {
     setCustomCombineFunction(combineFunction: CombineFonction): void;
 }
 
-/**
- * Type defining a host resolution function to build a URL from target information
- */
-type HostResolverCallback = (targetId: string, meta?: PipelineMeta) => string | undefined;
-/**
- * Interface for the setup configuration broadcast payload
- */
-interface BSCPayload {
-    message: BrodcastSetupMessage;
-    hostResolver: HostResolverCallback;
-    path: string;
+declare namespace Ext {
+    type BRCPayload = Ext$2.BRCPayload;
+    type MCPayload = Ext$2.MCPayload;
+    type BSCPayload = Ext$1.BSCPayload;
+    type RSCPayload = Ext$1.RSCPayload;
+    const Monitoring: typeof Ext$3;
+    const Reporting: typeof Ext$2;
+    const Resolver: typeof Ext$1;
 }
-/**
- * Manages broadcasting setup configurations to different remote nodes
- * @param {BSCPayload} payload - Contains the message to broadcast, host resolution function, and path
- */
-declare const broadcastSetupCallback: (payload: BSCPayload) => Promise<void>;
-/**
- * Interface for the payload of remote service calls
- */
-interface RSCPayload {
-    cbPayload: CallbackPayload;
-    hostResolver: HostResolverCallback;
-    path: string;
-}
-/**
- * Manages sending data to remote services
- * @param {RSCPayload} payload - Contains data to send, host resolution function, and path
- */
-declare const remoteServiceCallback: (payload: RSCPayload) => Promise<void>;
-/**
- * Interface for configuring default callbacks
- */
-interface DefaultCallbackPayload {
-    paths: {
-        setup: string;
-        run: string;
-    };
-    hostResolver: HostResolverCallback;
-}
-/**
- * Configures resolution callbacks for the node supervisor
- * - Configures the setup broadcast callback
- * - Configures the remote service callback
- * @param {DefaultCallbackPayload} dcPayload - Configuration for paths and host resolver
- */
-declare const setResolverCallbacks: (dcPayload: DefaultCallbackPayload) => Promise<void>;
 
-/**
- * Type defining a callback to handle reporting signals
- * @param {ReportingMessage} message - The reporting message containing signal and metadata
- * @returns {Promise<void>}
- */
-type ReportSignalHandlerCallback = (message: ReportingMessage) => Promise<void>;
-/**
- * Type defining a callback to resolve the monitoring host for a chain
- * @param {string} chainId - The ID of the chain to find the monitoring host for
- * @returns {Promise<string | undefined>}
- */
-type MonitoringResolverCallback = (chainId: string) => Promise<string | undefined>;
-/**
- * Interface for the broadcast reporting payload
- */
-interface BRCPayload {
-    message: BroadcastReportingMessage;
-    path: string;
-    monitoringResolver: MonitoringResolverCallback;
-}
-/**
- * Interface to configure default reporting callbacks
- */
-interface DefaultReportingCallbackPayload {
-    paths: {
-        notify: string;
-    };
-    reportSignalHandler?: ReportSignalHandlerCallback;
-    monitoringResolver?: MonitoringResolverCallback;
-}
-/**
- * Configures monitoring callbacks for the supervisor
- * - Sets up the local reporting callback
- * - Sets up the broadcast reporting callback
- * @param {DefaultReportingCallbackPayload} dcPayload - Configuration for paths and handlers
- * @returns {Promise<void>}
- */
-declare const setMonitoringCallbacks: (dcPayload: DefaultReportingCallbackPayload) => Promise<void>;
-
-export { type BRCPayload, type BSCPayload, type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type RSCPayload, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, type SupervisorPayloadStartPendingChain, broadcastSetupCallback, remoteServiceCallback, setMonitoringCallbacks, setResolverCallbacks };
+export { type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, Ext, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, type SupervisorPayloadStartPendingChain };

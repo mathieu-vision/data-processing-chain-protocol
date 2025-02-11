@@ -5,12 +5,8 @@ import {
   PipelineProcessor,
   SupervisorPayloadDeployChain,
   SupervisorPayloadSetup,
-  setResolverCallbacks,
   PipelineMeta,
-  ReportingMessage,
-  setMonitoringCallbacks,
-  ChainStatus,
-  SupervisorPayloadStartPendingChain,
+  Ext,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -128,7 +124,7 @@ class SupervisorContainer {
       },
     );
 
-    await setResolverCallbacks({
+    await Ext.Resolver.setResolverCallbacks({
       paths: {
         setup: '/node/communicate/setup',
         run: '/node/communicate/run',
@@ -146,7 +142,7 @@ class SupervisorContainer {
       },
     });
 
-    await setMonitoringCallbacks({
+    await Ext.Reporting.setMonitoringCallbacks({
       paths: {
         notify: '/node/communicate/notify',
       },

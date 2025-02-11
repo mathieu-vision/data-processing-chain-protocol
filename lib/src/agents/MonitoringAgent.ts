@@ -5,7 +5,7 @@ import {
   ReportingMessage,
   ReportingPayload,
 } from '../types/types';
-import { Logger } from '../extra/Logger';
+import { Logger } from '../utils/Logger';
 import { Agent } from './Agent';
 import { ReportingAgentBase } from './ReportingAgent';
 import { NodeSupervisor } from '../core/NodeSupervisor';
@@ -129,17 +129,23 @@ export class MonitoringAgent extends Agent {
     const { chainId, nodeId, index } = payload;
     ReportingAgent.authorize(this);
     const reporting = new ReportingAgent(chainId, nodeId);
-    //
+    // Handle global-signal
+    // This is the main process for redirecting signals and communicating with the
+    // entire context. It is called after any global notification
+    // todo: add type for signals
     reporting.on('global-signal', async (signal) => {
       Logger.info(`Receive global-signal: ${signal} for node ${nodeId}`);
       const message: ReportingMessage = { ...payload, signal };
       if (index > 0) {
+        // Report message to distant monitoring host
         void this.broadcastReportingCallback(message);
       } else {
+        // Report message to monitoring
         await this.reportingCallback(message);
       }
     });
-    //
+
+    // handle local signal for a specific node on a specific chain
     reporting.on('local-signal', async (signal) => {
       Logger.info(`Receive local-signal: ${signal} for node ${nodeId}`);
       const message: ReportingMessage = { ...payload, signal };
@@ -170,6 +176,7 @@ export class MonitoringAgent extends Agent {
     this.setupCounts.set(chainId, count);
   }
 
+  //
   async handleChildChainCompletion(childChainId: string) {
     const childEntry = this.chainHierarchy.get(childChainId);
     if (!childEntry || !childEntry.parentId) return;

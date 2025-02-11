@@ -18,7 +18,7 @@ import {
   BroadcastReportingCallback,
   ReportingSignalType,
 } from '../types/types';
-import { Logger } from '../extra/Logger';
+import { Logger } from '../utils/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
 import { MonitoringAgent } from '../agents/MonitoringAgent';
@@ -258,6 +258,7 @@ export class NodeSupervisor {
         `${this.ctn}: Cannot set next node info: nextTargetId is undefined`,
       );
     }
+    //
     this.notify(nodeId, ChainStatus.NODE_SETUP_COMPLETED, 'global-signal');
     return nodeId;
   }

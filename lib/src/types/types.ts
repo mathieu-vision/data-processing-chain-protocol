@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { Logger } from '../extra/Logger';
+import { Logger } from '../utils/Logger';
 import { PipelineProcessor } from '../core/PipelineProcessor';
 
 export type ReportingSignalType = 'local-signal' | 'global-signal';

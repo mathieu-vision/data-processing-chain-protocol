@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import { Logger } from './libs/Logger';
 
 dotenv.config({ path: '.connector.env' });
-
 function getArgValue(argName: string): string | undefined {
   const index = process.argv.indexOf(argName);
   return index !== -1 ? process.argv[index + 1] : undefined;
@@ -21,7 +20,8 @@ const port = argPort
 const connectorUid = argConnectorUid || process.env.CONNECTOR_UID || 'default';
 
 let connector;
-const caseSwitch = parseInt(argType || '-1', 10);
+const caseSwitch = argType ? parseInt(argType, 10) : 0;
+
 switch (caseSwitch) {
   case 0:
     connector = new LiteConnector0(port, connectorUid);
@@ -33,31 +33,32 @@ switch (caseSwitch) {
     connector = new LiteConnector(port, connectorUid);
     break;
 }
+if (connector) {
+  connector
+    .startServer()
+    .then(() => {
+      Logger.info({
+        message: `LiteConnector server started on port ${port}`,
+      });
+      Logger.info({
+        message: `Connector UID: ${connectorUid}`,
+      });
+    })
+    .catch((error) => {
+      Logger.error({
+        message: `Failed to start LiteConnector server: ${error}`,
+      });
+      process.exit(1);
+    });
 
-connector
-  .startServer()
-  .then(() => {
+  process.on('SIGINT', async () => {
     Logger.info({
-      message: `LiteConnector server started on port ${port}`,
+      message: 'Shutting down LiteConnector server...',
     });
+    await connector.stopServer();
     Logger.info({
-      message: `Connector UID: ${connectorUid}`,
+      message: 'LiteConnector server stopped',
     });
-  })
-  .catch((error) => {
-    Logger.error({
-      message: `Failed to start LiteConnector server: ${error}`,
-    });
-    process.exit(1);
+    process.exit(0);
   });
-
-process.on('SIGINT', async () => {
-  Logger.info({
-    message: 'Shutting down LiteConnector server...',
-  });
-  await connector.stopServer();
-  Logger.info({
-    message: 'LiteConnector server stopped',
-  });
-  process.exit(0);
-});
+}

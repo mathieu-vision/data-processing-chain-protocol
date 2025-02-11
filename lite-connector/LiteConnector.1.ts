@@ -5,9 +5,8 @@ import {
   PipelineProcessor,
   SupervisorPayloadDeployChain,
   SupervisorPayloadSetup,
-  setResolverCallbacks,
   PipelineMeta,
-  setMonitoringCallbacks,
+  Ext,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -120,7 +119,8 @@ class SupervisorContainer {
       },
     );
 
-    await setResolverCallbacks({
+    await Ext.Resolver.setResolverCallbacks({
+      // automatically setup the following rest post methods
       paths: {
         setup: '/node/communicate/setup',
         run: '/node/communicate/run',
@@ -138,7 +138,7 @@ class SupervisorContainer {
       },
     });
 
-    await setMonitoringCallbacks({
+    await Ext.Reporting.setMonitoringCallbacks({
       paths: {
         notify: '/node/communicate/notify',
       },

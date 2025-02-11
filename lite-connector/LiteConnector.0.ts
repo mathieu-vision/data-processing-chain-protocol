@@ -6,10 +6,7 @@ import {
   NodeSupervisor,
   PipelineProcessor,
   SupervisorPayloadSetup,
-  broadcastSetupCallback,
-  BSCPayload,
-  RSCPayload,
-  remoteServiceCallback,
+  Ext,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -271,28 +268,28 @@ export class LiteConnector {
     // Example of the required broadcast setup callback, using the default broadcastSetupCallback from the dpcp library
     this.nodeSupervisor.setBroadcastSetupCallback(
       async (message: BrodcastSetupMessage): Promise<void> => {
-        const payload: BSCPayload = {
+        const payload: Ext.BSCPayload = {
           message,
           hostResolver: (targetId: string) => {
             return this.serviceConnectorMap.get(targetId);
           },
           path: '/node/setup',
         };
-        await broadcastSetupCallback(payload);
+        await Ext.Resolver.broadcastSetupCallback(payload);
       },
     );
 
     // Example of the required remote service callback, using the default remoteServiceCallback from the dpcp library
     this.nodeSupervisor.setRemoteServiceCallback(
       async (cbPayload: CallbackPayload): Promise<void> => {
-        const payload: RSCPayload = {
+        const payload: Ext.RSCPayload = {
           cbPayload,
           hostResolver: (targetId: string) => {
             return this.serviceConnectorMap.get(targetId);
           },
           path: '/node/run',
         };
-        await remoteServiceCallback(payload);
+        await Ext.Resolver.remoteServiceCallback(payload);
       },
     );
 
