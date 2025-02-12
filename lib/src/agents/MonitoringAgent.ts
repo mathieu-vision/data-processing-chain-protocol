@@ -28,17 +28,17 @@ export class ReportingAgent extends ReportingAgentBase {
   }
 }
 
-interface MonitoringChainStatus {
+export interface MonitoringChainStatus {
   [key: string]: {
     [key: string]: boolean;
   };
 }
-interface WorkflowNode {
-  status: MonitoringChainStatus;
-  setupCount: number;
+export interface WorkflowNode {
+  status?: MonitoringChainStatus;
+  setupCount?: number;
 }
 
-interface Workflow {
+export interface Workflow {
   [key: string]: WorkflowNode;
 }
 
@@ -73,6 +73,9 @@ export class MonitoringAgent extends Agent {
       DefaultCallback.BROADCAST_REPORTING_CALLBACK;
   }
 
+  getWorkflow(): Workflow {
+    return this.workflow;
+  }
   /**
    * Retrieves or creates a MonitoringAgent instance (Singleton pattern)
    * @param {boolean} refresh - Whether to force create a new instance
@@ -154,14 +157,13 @@ export class MonitoringAgent extends Agent {
       const update: MonitoringChainStatus = {
         [message.nodeId]: { [message.signal]: true },
       };
-      const workflowNode = this.workflow[message.chainId];
-      if (workflowNode) {
-        const prev = workflowNode.status;
-        const next = { ...prev, ...update };
-        workflowNode.status = next;
-      } else {
-        throw new Error(`No workflow found for chain ${message.chainId}`);
+      let workflowNode = this.workflow[message.chainId];
+      if (!workflowNode) {
+        workflowNode = {};
       }
+      const prev = workflowNode.status;
+      const next = { ...prev, ...update };
+      workflowNode.status = next;
     });
     return reporting;
   }
@@ -172,28 +174,18 @@ export class MonitoringAgent extends Agent {
    * @returns {ChainStatus|undefined} The chain status if exists
    */
   getChainStatus(chainId: string): MonitoringChainStatus | undefined {
-    const workflowNode = this.workflow[chainId];
-    if (workflowNode) {
-      return workflowNode.status;
-    }
-    throw new Error(`No Workflow Node found for chain ${chainId}`);
+    return this.workflow[chainId]?.status;
   }
 
   getChainSetupCount(chainId: string): number | undefined {
-    const workflowNode = this.workflow[chainId];
-    if (workflowNode) {
-      return workflowNode.setupCount;
-    }
-    throw new Error(`No Workflow Node found for chain ${chainId}`);
+    return this.workflow[chainId]?.setupCount;
   }
 
   setChainSetupCount(chainId: string, count: number): void {
-    const workflowNode = this.workflow[chainId];
-    if (workflowNode) {
-      workflowNode.setupCount = count;
-    } else {
-      throw new Error(`No Workflow Node found for chain ${chainId}`);
+    if (!this.workflow[chainId]) {
+      this.workflow[chainId] = {};
     }
+    this.workflow[chainId].setupCount = count;
   }
 
   //

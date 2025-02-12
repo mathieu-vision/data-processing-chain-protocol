@@ -1,5 +1,6 @@
 import { Logger } from 'utils/Logger';
 import { ChainRelation } from '../types/types';
+import { Workflow } from '../agents/MonitoringAgent';
 
 export class NodeSupervisorLogger {
   constructor() {}
@@ -23,6 +24,15 @@ export class NodeSupervisorLogger {
         Logger.info(`    Chain Type: ${nodeConfig.chainType}`);
         Logger.info(`    Monitoring Host: ${nodeConfig.monitoringHost}`);
         Logger.info(`    Child Mode: ${nodeConfig.childMode}`);
+      });
+    });
+  }
+
+  logWorkflow(workflow: Workflow) {
+    Object.entries(workflow).forEach(([workflowId, node]) => {
+      Logger.header(`Workflow Node: ${workflowId}`);
+      Object.entries(node).forEach(([key, value]) => {
+        Logger.info(`- ${key}: ${JSON.stringify(value)}`);
       });
     });
   }

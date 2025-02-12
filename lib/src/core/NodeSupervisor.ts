@@ -76,8 +76,15 @@ export class NodeSupervisor {
       case 'chains':
         this.nsLogger.logChains(this.chains);
         break;
-      default:
+      case 'monitoring-workflow': {
+        const monitoring = MonitoringAgent.retrieveService();
+        const workflow = monitoring.getWorkflow();
+        this.nsLogger.logWorkflow(workflow);
         break;
+      }
+      default: {
+        break;
+      }
     }
   }
 

@@ -91,6 +91,9 @@ class SupervisorContainer {
 
           //
           this.nodeSupervisor.log('chains');
+          Logger.header({ message: '====================================' });
+          this.nodeSupervisor.log('monitoring-workflow');
+          Logger.header({ message: '====================================' });
           //
 
           this.nodeSupervisor.handleNotification(chainId, signal);
