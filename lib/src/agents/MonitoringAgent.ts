@@ -144,6 +144,7 @@ export class MonitoringAgent extends Agent {
       if (index > 0) {
         // Report message to distant monitoring host
         signal.broadcasted = true;
+        console.log(JSON.stringify(message, null, 2));
         void this.broadcastReportingCallback(message);
       } else {
         // Report message to monitoring

@@ -319,10 +319,16 @@ export class Node {
     const isPersistant =
       (currentNode.config?.chainType ?? 0) & ChainType.PERSISTANT;
     if (!isPersistant) {
-      await supervisor.handleRequest({
-        id: nodeId,
-        signal: NodeSignal.NODE_DELETE,
-      });
+      const autoDelete =
+        (currentNode.config?.chainType ?? 0) & ChainType.AUTO_DELETE;
+      if (autoDelete) {
+        await supervisor.handleRequest({
+          id: nodeId,
+          signal: NodeSignal.NODE_DELETE,
+        });
+      } else {
+        currentNode.notify(ChainStatus.NODE_PENDING_DELETION, 'global-signal');
+      }
     } else {
       Logger.warn(`Node ${nodeId} kept for future calls.`);
     }

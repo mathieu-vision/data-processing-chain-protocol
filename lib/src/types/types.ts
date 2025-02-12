@@ -81,9 +81,10 @@ export interface ChainState {
 }
 
 export namespace ChainType {
-  export type Type = 0b0000010 | 0b00000001;
-  export const PERSISTANT: Type = 0b00000010;
-  export const DEFAULT: Type = 0b00000001;
+  export type Type = 512 | 256 | 128 | 64 | 32 | 16 | 8 | 4 | 2 | 1;
+  export const DEFAULT: Type = 1;
+  export const PERSISTANT: Type = 2;
+  export const AUTO_DELETE: Type = 4;
 }
 
 export namespace ChainStatus {
@@ -96,7 +97,8 @@ export namespace ChainStatus {
     | 'node_setup_completed'
     | 'chain_setup_completed'
     | 'child_chain_started'
-    | 'child_chain_completed';
+    | 'child_chain_completed'
+    | 'node_pending_deletion';
   export const NODE_PAUSED: Type = 'node_paused';
   export const NODE_PENDING: Type = 'node_pending';
   export const NODE_IN_PROGRESS: Type = 'node_in_progress';
@@ -104,8 +106,9 @@ export namespace ChainStatus {
   export const NODE_FAILED: Type = 'node_failed';
   export const NODE_SETUP_COMPLETED: Type = 'node_setup_completed';
   export const CHAIN_SETUP_COMPLETED: Type = 'chain_setup_completed';
-  export const CHILD_CHAIN_STARTED = 'child_chain_started';
-  export const CHILD_CHAIN_COMPLETED = 'child_chain_completed';
+  export const CHILD_CHAIN_STARTED: Type = 'child_chain_started';
+  export const CHILD_CHAIN_COMPLETED: Type = 'child_chain_completed';
+  export const NODE_PENDING_DELETION: Type = 'node_pending_deletion';
 }
 
 // handler signal
