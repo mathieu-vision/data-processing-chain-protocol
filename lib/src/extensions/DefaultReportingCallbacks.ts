@@ -1,10 +1,4 @@
-import {
-  ReportingMessage,
-  BroadcastReportingMessage,
-  ChainStatus,
-  SupervisorPayloadStartPendingChain,
-  NodeSignal,
-} from '../types/types';
+import { ReportingMessage, BroadcastReportingMessage } from '../types/types';
 import { NodeSupervisor } from '../core/NodeSupervisor';
 import { Logger } from '../utils/Logger';
 import { post } from '../utils/http';

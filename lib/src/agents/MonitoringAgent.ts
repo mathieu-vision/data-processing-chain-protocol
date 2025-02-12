@@ -28,10 +28,18 @@ export class ReportingAgent extends ReportingAgentBase {
   }
 }
 
-interface ChainStatus {
+interface MonitoringChainStatus {
   [key: string]: {
     [key: string]: boolean;
   };
+}
+interface WorkflowNode {
+  status: MonitoringChainStatus;
+  setupCount: number;
+}
+
+interface Workflow {
+  [key: string]: WorkflowNode;
 }
 
 /**
@@ -42,11 +50,7 @@ export class MonitoringAgent extends Agent {
   private reportingCallback: ReportingCallback;
   private broadcastReportingCallback: ReportingCallback;
   private remoteMonitoringHost: Map<string, string>;
-  // Todo: merge the following
-  private status: Map<string, ChainStatus>;
-  private setupCounts: Map<string, number>;
-
-  // private childChains: Map<string, string[]>;
+  private workflow: Workflow;
 
   private chainHierarchy: Map<
     string,
@@ -62,10 +66,8 @@ export class MonitoringAgent extends Agent {
    */
   constructor() {
     super();
-    this.status = new Map();
-    this.setupCounts = new Map();
+    this.workflow = {};
     this.remoteMonitoringHost = new Map();
-    //this.childChains = new Map();
     this.reportingCallback = DefaultCallback.REPORTING_CALLBACK;
     this.broadcastReportingCallback =
       DefaultCallback.BROADCAST_REPORTING_CALLBACK;
@@ -149,12 +151,17 @@ export class MonitoringAgent extends Agent {
     reporting.on('local-signal', async (signal) => {
       Logger.info(`Receive local-signal: ${signal} for node ${nodeId}`);
       const message: ReportingMessage = { ...payload, signal };
-      const update: ChainStatus = {
+      const update: MonitoringChainStatus = {
         [message.nodeId]: { [message.signal]: true },
       };
-      let prev = this.status.get(message.chainId) ?? {};
-      const next = { ...prev, ...update };
-      this.status.set(message.chainId, next);
+      const workflowNode = this.workflow[message.chainId];
+      if (workflowNode) {
+        const prev = workflowNode.status;
+        const next = { ...prev, ...update };
+        workflowNode.status = next;
+      } else {
+        throw new Error(`No workflow found for chain ${message.chainId}`);
+      }
     });
     return reporting;
   }
@@ -164,16 +171,29 @@ export class MonitoringAgent extends Agent {
    * @param {string} chainId - The chain identifier
    * @returns {ChainStatus|undefined} The chain status if exists
    */
-  getChainStatus(chainId: string): ChainStatus | undefined {
-    return this.status.get(chainId);
+  getChainStatus(chainId: string): MonitoringChainStatus | undefined {
+    const workflowNode = this.workflow[chainId];
+    if (workflowNode) {
+      return workflowNode.status;
+    }
+    throw new Error(`No Workflow Node found for chain ${chainId}`);
   }
 
   getChainSetupCount(chainId: string): number | undefined {
-    return this.setupCounts.get(chainId);
+    const workflowNode = this.workflow[chainId];
+    if (workflowNode) {
+      return workflowNode.setupCount;
+    }
+    throw new Error(`No Workflow Node found for chain ${chainId}`);
   }
 
   setChainSetupCount(chainId: string, count: number): void {
-    this.setupCounts.set(chainId, count);
+    const workflowNode = this.workflow[chainId];
+    if (workflowNode) {
+      workflowNode.setupCount = count;
+    } else {
+      throw new Error(`No Workflow Node found for chain ${chainId}`);
+    }
   }
 
   //
@@ -218,7 +238,11 @@ export class MonitoringAgent extends Agent {
         return;
       }
 
-      const setupCount = this.setupCounts.get(chainId) || 0;
+      const workflowNode = this.workflow[chainId];
+      if (!workflowNode) {
+        throw new Error(`No workflow found for chain ${chainId}`);
+      }
+      const setupCount = workflowNode.setupCount || 0;
       const config = chain.config.length || 0;
 
       Logger.info(
