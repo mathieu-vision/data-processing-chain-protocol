@@ -32,6 +32,19 @@ class SupervisorContainer {
     return SupervisorContainer.instance;
   }
 
+  private notify(data: any): void {
+    const { chainId, signal } = data;
+    Logger.header({ message: 'Connector - Notification:' });
+    Logger.info({ message: `Chain: ${chainId}, Signal: ${signal}\n` });
+    //
+    this.nodeSupervisor.log('chains');
+    Logger.header({ message: '====================================' });
+    this.nodeSupervisor.log('monitoring-workflow');
+    Logger.header({ message: '====================================' });
+    //
+    this.nodeSupervisor.handleNotification(chainId, signal);
+  }
+
   public async createAndStartChain(req: Request, res: Response): Promise<void> {
     try {
       const { chainConfig: config, data } = req.body;
@@ -85,18 +98,7 @@ class SupervisorContainer {
           break;
         // Handle Notifications distant Monitorings
         case 'notify': {
-          const { chainId, signal } = req.body;
-          Logger.header({ message: 'Connector - Notification:' });
-          Logger.info({ message: `Chain: ${chainId}, Signal: ${signal}\n` });
-
-          //
-          this.nodeSupervisor.log('chains');
-          Logger.header({ message: '====================================' });
-          this.nodeSupervisor.log('monitoring-workflow');
-          Logger.header({ message: '====================================' });
-          //
-
-          this.nodeSupervisor.handleNotification(chainId, signal);
+          this.notify(req.body);
           res.status(200).json({
             message: 'Notify the signal to the supervisor monitoring',
           });

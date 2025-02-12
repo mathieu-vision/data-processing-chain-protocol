@@ -6,7 +6,7 @@ import { format } from 'util';
  * Represents the log levels for the Logger.
  * @typedef {'info' | 'warn' | 'error' | 'header'} LogLevel
  */
-type LogLevel = 'info' | 'warn' | 'error' | 'header';
+type LogLevel = 'info' | 'warn' | 'error' | 'header' | 'debug';
 
 /**
  * Configuration options for the Logger.
@@ -30,6 +30,7 @@ const Colors = {
   warn: '\x1b[93m', // yellow
   error: '\x1b[31m', // red
   header: '\x1b[36m', // cyan
+  debug: '\x1b[90m', // gray
 } as const;
 
 /**
@@ -84,6 +85,15 @@ export class Logger {
     if (this.config.preserveLogs && this.config.externalCallback) {
       this.config.externalCallback(level, message, timestamp);
     }
+  }
+
+  /**
+   * Logs a debug message.
+   * @param {string | object} message - The message to log, can be a string or an object.
+   */
+  static debug(message: string | object) {
+    const msg = typeof message === 'string' ? message : format(message);
+    this.log('debug', msg);
   }
 
   /**

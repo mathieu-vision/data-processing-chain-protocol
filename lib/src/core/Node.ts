@@ -11,6 +11,7 @@ import {
   ReportingSignalType,
   SupervisorPayloadDeployChain,
   ChildMode,
+  NotificationStatus,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -150,12 +151,16 @@ export class Node {
    * @param {ChainStatus.Type} notify - Node status to report
    */
   notify(
-    notify: ChainStatus.Type,
+    status: ChainStatus.Type | NotificationStatus,
     type: ReportingSignalType = 'local-signal',
   ): void {
     try {
       if (this.reporting !== null) {
-        this.reporting.notify(notify, type);
+        if (typeof status === 'object' && 'status' in status) {
+          this.reporting.notify(status, type);
+        } else {
+          this.reporting.notify({ status }, type);
+        }
       } else {
         throw new Error('Reporter not set');
       }
@@ -387,7 +392,7 @@ export class Node {
       this.error = error;
     }
     if (this.reporting) {
-      this.reporting.notify(status);
+      this.reporting.notify({ status });
     }
   }
 

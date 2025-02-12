@@ -183,11 +183,21 @@ interface ReportingPayload {
     index: number;
     count: number;
 }
+interface NotificationStatus {
+    status: ChainStatus.Type;
+    broadcasted?: boolean;
+}
 interface ReportingMessage extends ReportingPayload {
-    signal: ChainStatus.Type;
+    signal: {
+        status: ChainStatus.Type;
+        broadcasted?: boolean;
+    };
 }
 interface BroadcastReportingMessage extends ReportingPayload {
-    signal: ChainStatus.Type;
+    signal: {
+        status: ChainStatus.Type;
+        broadcasted?: boolean;
+    };
 }
 interface ChainRelation {
     rootNodeId?: string;
@@ -260,7 +270,7 @@ declare class Node {
      * Notifies about node status changes through the reporting agent
      * @param {ChainStatus.Type} notify - Node status to report
      */
-    notify(notify: ChainStatus.Type, type?: ReportingSignalType): void;
+    notify(status: ChainStatus.Type | NotificationStatus, type?: ReportingSignalType): void;
     private processChildChain;
     /**
      * Executes node processing on input data
@@ -435,9 +445,9 @@ declare class NodeSupervisor {
     /**
      * Handles externals notifications about a chain status change
      * @param {string} chainId - The chain identifier
-     * @param {ChainStatus.Type} status - The new chain status
+     * @param {NotificationStatus} status - The new chain status
      */
-    handleNotification(chainId: string, status: ChainStatus.Type): void;
+    handleNotification(chainId: string, status: NotificationStatus): void;
     /**
      * Notifies a node about a chain status change
      * @param {string} nodeId - The node identifier to notify

@@ -17,6 +17,7 @@ import {
   ReportingCallback,
   BroadcastReportingCallback,
   ReportingSignalType,
+  NotificationStatus,
 } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
@@ -289,9 +290,9 @@ export class NodeSupervisor {
   /**
    * Handles externals notifications about a chain status change
    * @param {string} chainId - The chain identifier
-   * @param {ChainStatus.Type} status - The new chain status
+   * @param {NotificationStatus} status - The new chain status
    */
-  handleNotification(chainId: string, status: ChainStatus.Type): void {
+  handleNotification(chainId: string, status: NotificationStatus): void {
     try {
       const chain = this.chains.get(chainId);
       if (!chain) {

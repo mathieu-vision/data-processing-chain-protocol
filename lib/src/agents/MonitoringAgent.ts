@@ -143,6 +143,7 @@ export class MonitoringAgent extends Agent {
       const message: ReportingMessage = { ...payload, signal };
       if (index > 0) {
         // Report message to distant monitoring host
+        signal.broadcasted = true;
         void this.broadcastReportingCallback(message);
       } else {
         // Report message to monitoring
@@ -155,7 +156,7 @@ export class MonitoringAgent extends Agent {
       Logger.info(`Receive local-signal: ${signal} for node ${nodeId}`);
       const message: ReportingMessage = { ...payload, signal };
       const update: MonitoringChainStatus = {
-        [message.nodeId]: { [message.signal]: true },
+        [message.nodeId]: { [message.signal.status]: true },
       };
       let workflowNode = this.workflow[message.chainId];
       if (!workflowNode) {

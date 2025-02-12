@@ -31,7 +31,8 @@ export namespace Ext {
      */
     static async handle(message: ReportingMessage) {
       const monitoring = MonitoringAgent.retrieveService();
-      switch (message.signal) {
+      const status = message.signal?.status;
+      switch (status) {
         /*
          *
          */

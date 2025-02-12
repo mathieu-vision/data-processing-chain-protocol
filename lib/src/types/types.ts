@@ -249,12 +249,24 @@ export interface ReportingPayload {
   count: number;
 }
 
+// todo:
+export interface NotificationStatus {
+  status: ChainStatus.Type;
+  broadcasted?: boolean;
+}
+
 export interface ReportingMessage extends ReportingPayload {
-  signal: ChainStatus.Type;
+  signal: {
+    status: ChainStatus.Type;
+    broadcasted?: boolean;
+  };
 }
 
 export interface BroadcastReportingMessage extends ReportingPayload {
-  signal: ChainStatus.Type;
+  signal: {
+    status: ChainStatus.Type;
+    broadcasted?: boolean;
+  };
 }
 
 export interface ChainRelation {
