@@ -22,7 +22,7 @@ import {
 import { Logger } from '../utils/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
 import { randomUUID } from 'node:crypto';
-import { MonitoringAgent } from '../agents/MonitoringAgent';
+import { MonitoringAgent, ReportingAgent } from '../agents/MonitoringAgent';
 import { NodeSupervisorLogger } from './NodeSupervisorLogger';
 
 /**
@@ -44,6 +44,8 @@ export class NodeSupervisor {
   private broadcastSetupCallback: SetupCallback;
   remoteServiceCallback: ServiceCallback;
 
+  private reporting: ReportingAgent | null = null;
+
   /**
    * Creates a new NodeSupervisor instance
    * @private
@@ -57,6 +59,14 @@ export class NodeSupervisor {
     this.childChains = new Map();
     this.remoteServiceCallback = DefaultCallback.SERVICE_CALLBACK;
     this.broadcastSetupCallback = DefaultCallback.SETUP_CALLBACK;
+
+    const monitoring = MonitoringAgent.retrieveService();
+    this.reporting = monitoring.genReportingAgent({
+      chainId: '',
+      nodeId: '',
+      index: -1,
+      count: -1,
+    });
   }
 
   /**
@@ -146,37 +156,37 @@ export class NodeSupervisor {
   async handleRequest(payload: SupervisorPayload): Promise<void | string> {
     switch (payload.signal) {
       case NodeSignal.NODE_SETUP:
-        Logger.header(`handle NODE_SETUP`);
+        Logger.event(`handle NODE_SETUP`);
         return await this.setupNode(payload.config);
       case NodeSignal.NODE_CREATE:
-        Logger.header(`handle NODE_CREATE`);
+        Logger.event(`handle NODE_CREATE`);
         return await this.createNode(payload.params);
       case NodeSignal.NODE_DELETE:
-        Logger.header(`handle NODE_DELETE`);
+        Logger.event(`handle NODE_DELETE`);
         return await this.deleteNode(payload.id);
       case NodeSignal.NODE_PAUSE:
-        Logger.header(`handle NODE_PAUSE`);
+        Logger.event(`handle NODE_PAUSE`);
         return await this.pauseNode(payload.id);
       case NodeSignal.NODE_DELAY:
-        Logger.header(`handle NODE_DELAY`);
+        Logger.event(`handle NODE_DELAY`);
         return await this.delayNode(payload.id, payload.delay);
       case NodeSignal.NODE_RUN:
-        Logger.header(`handle NODE_RUN`);
+        Logger.event(`handle NODE_RUN`);
         return await this.runNode(payload.id, payload.data);
       case NodeSignal.NODE_SEND_DATA:
-        Logger.header(`handle NODE_SEND_DATA`);
+        Logger.event(`handle NODE_SEND_DATA`);
         return await this.sendNodeData(payload.id);
       case NodeSignal.CHAIN_PREPARE:
-        Logger.header(`handle CHAIN_PREPARE`);
+        Logger.event(`handle CHAIN_PREPARE`);
         return await this.prepareChainDistribution(payload.id);
       case NodeSignal.CHAIN_START:
-        Logger.header(`handle CHAIN_START`);
+        Logger.event(`handle CHAIN_START`);
         return await this.startChain(payload.id, payload.data);
-      case NodeSignal.CHAIN_START_PENDING:
-        Logger.header(`handle CHAIN_START_PENDING`);
+      case NodeSignal.CHAIN_START_PENDING_OCCURRENCE:
+        Logger.event(`handle CHAIN_START_PENDING_OCCURRENCE`);
         return await this.startPendingChain(payload.id);
       case NodeSignal.CHAIN_DEPLOY: {
-        Logger.header(`handle CHAIN_DEPLOY`);
+        Logger.event(`handle CHAIN_DEPLOY`);
         return await this.deployChain(payload.config, payload.data);
       }
       default:
@@ -216,6 +226,10 @@ export class NodeSupervisor {
         children.push(chainId);
         this.childChains.set(parentChainId, children);
       }
+      this.reporting?.notify(
+        { status: ChainStatus.CHAIN_DEPLOYED },
+        'local-signal',
+      );
       return chainId;
     } catch (error) {
       Logger.error(`${this.ctn}{deployChain}: ${(error as Error).message}`);
@@ -258,6 +272,7 @@ export class NodeSupervisor {
       return nodeId;
     }
 
+    Logger.header(`Setup node ${node?.getId()}...`);
     await this.setRemoteMonitoringHost(config);
 
     const processors = config.services.map(
@@ -430,10 +445,10 @@ export class NodeSupervisor {
         Logger.warn(`${this.ctn}: Chain configuration is empty`);
       }
 
-      Logger.header(`${this.ctn}: Chain ${chainId} creation has started...`);
+      Logger.header(`${this.ctn}:\n\tChain ${chainId} creation has started...`);
       return chainId;
     } catch (error) {
-      Logger.header(`${this.ctn}{createChain}: ${(error as Error).message}`);
+      Logger.header(`${this.ctn}{createChain}:\n\t${(error as Error).message}`);
       throw error;
     }
   }
@@ -489,7 +504,7 @@ export class NodeSupervisor {
   async prepareChainDistribution(chainId: string): Promise<void> {
     try {
       Logger.header(
-        `${this.ctn}: Chain distribution for ${chainId} in progress...`,
+        `${this.ctn}:\n\tChain distribution for ${chainId} in progress...`,
       );
       const chain = this.chains.get(chainId);
       if (!chain) {
@@ -504,7 +519,7 @@ export class NodeSupervisor {
       );
 
       if (!localConfigs) {
-        throw new Error('Local config undefined');
+        Logger.warn('Local config undefined');
       }
 
       if (localConfigs.length > 0) {
@@ -531,7 +546,7 @@ export class NodeSupervisor {
         }
 
         if (!remoteConfigs) {
-          throw new Error('Remote config undefined');
+          Logger.warn('Remote config undefined');
         }
 
         // Set the last local node to point to the first remote service
@@ -574,7 +589,6 @@ export class NodeSupervisor {
               return nodeConfig;
             },
           );
-
           await this.broadcastNodeSetupSignal(chainId, updatedRemoteConfigs);
         }
       } catch (error) {
@@ -629,8 +643,7 @@ export class NodeSupervisor {
     if (data) {
       await this.startChain(chainId, data);
     } else {
-      Logger.error(`${this.ctn}: Can't start chain ${chainId}`);
-      throw new Error('Something went wrong while starting pending chain');
+      Logger.warn(`${this.ctn}:\n\tNothing to process on chain ${chainId}`);
     }
   }
 
@@ -641,6 +654,7 @@ export class NodeSupervisor {
    */
   async startChain(chainId: string, data: PipelineData): Promise<void> {
     Logger.header(`Chain ${chainId} requested...`);
+    Logger.info(`Data: ${JSON.stringify(data, null, 2)}`);
     const chain = this.chains.get(chainId);
     if (!chain) {
       Logger.warn(`Chain ${chainId} not found.`);

@@ -95,6 +95,7 @@ export namespace ChainStatus {
     | 'node_failed'
     | 'node_paused'
     | 'node_setup_completed'
+    | 'chain_deployed'
     | 'chain_setup_completed'
     | 'child_chain_started'
     | 'child_chain_completed'
@@ -106,6 +107,7 @@ export namespace ChainStatus {
   export const NODE_COMPLETED: Type = 'node_completed';
   export const NODE_FAILED: Type = 'node_failed';
   export const NODE_SETUP_COMPLETED: Type = 'node_setup_completed';
+  export const CHAIN_DEPLOYED: Type = 'chain_deployed';
   export const CHAIN_SETUP_COMPLETED: Type = 'chain_setup_completed';
   export const CHILD_CHAIN_STARTED: Type = 'child_chain_started';
   export const CHILD_CHAIN_COMPLETED: Type = 'child_chain_completed';
@@ -125,7 +127,7 @@ export namespace NodeSignal {
     | 'node_send_data'
     | 'chain_prepare'
     | 'chain_start'
-    | 'chain_start_pending'
+    | 'chain_start_pending_occurrence'
     | 'chain_deploy';
 
   export const NODE_SETUP: 'node_setup' = 'node_setup';
@@ -137,8 +139,8 @@ export namespace NodeSignal {
   export const NODE_SEND_DATA: 'node_send_data' = 'node_send_data';
   export const CHAIN_PREPARE: 'chain_prepare' = 'chain_prepare';
   export const CHAIN_START: 'chain_start' = 'chain_start';
-  export const CHAIN_START_PENDING: 'chain_start_pending' =
-    'chain_start_pending';
+  export const CHAIN_START_PENDING_OCCURRENCE: 'chain_start_pending_occurrence' =
+    'chain_start_pending_occurrence';
   export const CHAIN_DEPLOY: 'chain_deploy' = 'chain_deploy';
 }
 
@@ -191,7 +193,7 @@ export type SupervisorPayloadStartChain = {
 };
 
 export type SupervisorPayloadStartPendingChain = {
-  signal: 'chain_start_pending';
+  signal: 'chain_start_pending_occurrence';
   id: string;
 };
 
@@ -258,20 +260,16 @@ export interface ReportingPayload {
 export interface NotificationStatus {
   status: ChainStatus.Type;
   broadcasted?: boolean;
+  chainDeployed?: boolean;
+  chainNodeSetupCompleted?: boolean;
 }
 
 export interface ReportingMessage extends ReportingPayload {
-  signal: {
-    status: ChainStatus.Type;
-    broadcasted?: boolean;
-  };
+  signal: NotificationStatus;
 }
 
 export interface BroadcastReportingMessage extends ReportingPayload {
-  signal: {
-    status: ChainStatus.Type;
-    broadcasted?: boolean;
-  };
+  signal: NotificationStatus;
 }
 
 export interface ChainRelation {

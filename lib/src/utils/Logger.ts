@@ -6,7 +6,15 @@ import { format } from 'util';
  * Represents the log levels for the Logger.
  * @typedef {'info' | 'warn' | 'error' | 'header'} LogLevel
  */
-type LogLevel = 'info' | 'warn' | 'error' | 'header' | 'debug' | 'special';
+type LogLevel =
+  | 'event'
+  | 'info'
+  | 'warn'
+  | 'error'
+  | 'header'
+  | 'debug'
+  | 'event'
+  | 'special';
 
 /**
  * Configuration options for the Logger.
@@ -31,6 +39,7 @@ const Colors = {
   error: '\x1b[31m', // red
   header: '\x1b[36m', // cyan
   debug: '\x1b[90m', // gray
+  event: '\x1b[35m', // magenta
   special: '\x1b[37m', // white
 } as const;
 
@@ -94,6 +103,11 @@ export class Logger {
   static special(message: string | object) {
     const msg = typeof message === 'string' ? message : format(message);
     this.log('special', msg);
+  }
+
+  static event(message: string | object) {
+    const msg = typeof message === 'string' ? message : format(message);
+    this.log('event', msg);
   }
 
   /**

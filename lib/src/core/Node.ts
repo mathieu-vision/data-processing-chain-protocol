@@ -237,6 +237,7 @@ export class Node {
 
         this.updateStatus(ChainStatus.NODE_COMPLETED);
         if (this.config?.chainConfig) {
+          Logger.info(`child chain found in node: ${this.id}`);
           await this.processChildChain(data);
         }
       } catch (error) {

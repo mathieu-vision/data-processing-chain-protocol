@@ -15,6 +15,25 @@ export namespace Ext {
    */
   export class MonitoringSignalHandler {
     /**
+     * Triggers the pending occurrence workflow by sending a signal to the supervisor
+     * @private
+     * @static
+     * @param {string} chainId - The ID of the chain
+     * @returns {Promise<void>}
+     */
+    private static async triggerPendingOccurrence(chainId: string) {
+      const supervisor = NodeSupervisor.retrieveService();
+      const payload: SupervisorPayloadStartPendingChain = {
+        signal: NodeSignal.CHAIN_START_PENDING_OCCURRENCE,
+        id: chainId,
+      };
+      await supervisor.handleRequest(payload);
+      Logger.event({
+        message: `MonitoringSignalHandler: Start Pending Occurrence...`,
+      });
+    }
+
+    /**
      * Handles a reporting message and triggers appropriate actions based on the signal type.
      * This function serves as a flexible entry point for processing intercepted signals
      * originating from the reporting agent, allowing adaptation to various system needs.
@@ -32,6 +51,7 @@ export namespace Ext {
     static async handle(message: ReportingMessage) {
       const monitoring = MonitoringAgent.retrieveService();
       const status = message.signal?.status;
+
       switch (status) {
         /*
          *
@@ -44,32 +64,43 @@ export namespace Ext {
             monitoring.setChainSetupCount(message.chainId, count + 1);
           }
           count = monitoring.getChainSetupCount(message.chainId);
+
           if (count && count >= message.count) {
-            const supervisor = NodeSupervisor.retrieveService();
-            const payload: SupervisorPayloadStartPendingChain = {
-              signal: NodeSignal.CHAIN_START_PENDING,
-              id: message.chainId,
-            };
-            await supervisor.handleRequest(payload);
-            Logger.info({
-              message: `MonitoringSignalHandler: Chain setup completed`,
+            message.signal.chainNodeSetupCompleted = true;
+            Logger.event({
+              message: `MonitoringSignalHandler: Chain Nodes setup completed`,
             });
+            if (message.signal?.chainDeployed) {
+              await this.triggerPendingOccurrence(message.chainId);
+            }
           }
           break;
         }
         /*
          *
          */
-        case ChainStatus.CHILD_CHAIN_COMPLETED:
-          await monitoring.handleChildChainCompletion(
-            '' /*message.childChainId!*/,
-          );
+        case ChainStatus.CHAIN_DEPLOYED: {
+          message.signal.chainDeployed = true;
+          Logger.event({
+            message: `MonitoringSignalHandler: Chain deployed`,
+          });
+          if (message.signal.chainNodeSetupCompleted) {
+            await this.triggerPendingOccurrence(message.chainId);
+          }
           break;
+        }
+        /*
+       case ChainStatus.CHILD_CHAIN_COMPLETED:
+         await monitoring.handleChildChainCompletion(
+           '', // message.childChainId!,
+         );
+         break;
+         */
         /*
          *
          */
         default:
-          Logger.info({
+          Logger.event({
             message: `MonitoringSignalHandler: Signal handler not found for ${JSON.stringify(message.signal, null, 2)}`,
           });
           break;

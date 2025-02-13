@@ -75,13 +75,14 @@ declare namespace ChainType {
     const AUTO_DELETE: Type;
 }
 declare namespace ChainStatus {
-    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_paused' | 'node_setup_completed' | 'chain_setup_completed' | 'child_chain_started' | 'child_chain_completed' | 'node_pending_deletion' | 'node_end_of_pipeline';
+    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_paused' | 'node_setup_completed' | 'chain_deployed' | 'chain_setup_completed' | 'child_chain_started' | 'child_chain_completed' | 'node_pending_deletion' | 'node_end_of_pipeline';
     const NODE_PAUSED: Type;
     const NODE_PENDING: Type;
     const NODE_IN_PROGRESS: Type;
     const NODE_COMPLETED: Type;
     const NODE_FAILED: Type;
     const NODE_SETUP_COMPLETED: Type;
+    const CHAIN_DEPLOYED: Type;
     const CHAIN_SETUP_COMPLETED: Type;
     const CHILD_CHAIN_STARTED: Type;
     const CHILD_CHAIN_COMPLETED: Type;
@@ -89,7 +90,7 @@ declare namespace ChainStatus {
     const NODE_END_OF_PIPELINE: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_start_pending' | 'chain_deploy';
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_start_pending_occurrence' | 'chain_deploy';
     const NODE_SETUP: 'node_setup';
     const NODE_CREATE: 'node_create';
     const NODE_DELETE: 'node_delete';
@@ -99,7 +100,7 @@ declare namespace NodeSignal {
     const NODE_SEND_DATA: 'node_send_data';
     const CHAIN_PREPARE: 'chain_prepare';
     const CHAIN_START: 'chain_start';
-    const CHAIN_START_PENDING: 'chain_start_pending';
+    const CHAIN_START_PENDING_OCCURRENCE: 'chain_start_pending_occurrence';
     const CHAIN_DEPLOY: 'chain_deploy';
 }
 type SupervisorPayloadSetup = {
@@ -142,7 +143,7 @@ type SupervisorPayloadStartChain = {
     data: PipelineData;
 };
 type SupervisorPayloadStartPendingChain = {
-    signal: 'chain_start_pending';
+    signal: 'chain_start_pending_occurrence';
     id: string;
 };
 type SupervisorPayloadDeployChain = {
@@ -189,18 +190,14 @@ interface ReportingPayload {
 interface NotificationStatus {
     status: ChainStatus.Type;
     broadcasted?: boolean;
+    chainDeployed?: boolean;
+    chainNodeSetupCompleted?: boolean;
 }
 interface ReportingMessage extends ReportingPayload {
-    signal: {
-        status: ChainStatus.Type;
-        broadcasted?: boolean;
-    };
+    signal: NotificationStatus;
 }
 interface BroadcastReportingMessage extends ReportingPayload {
-    signal: {
-        status: ChainStatus.Type;
-        broadcasted?: boolean;
-    };
+    signal: NotificationStatus;
 }
 interface ChainRelation {
     rootNodeId?: string;
@@ -381,6 +378,7 @@ declare class NodeSupervisor {
     private childChains;
     private broadcastSetupCallback;
     remoteServiceCallback: ServiceCallback;
+    private reporting;
     /**
      * Creates a new NodeSupervisor instance
      * @private
@@ -554,6 +552,14 @@ declare namespace Ext$3 {
      * Processes reporting messages and triggers actions based on the message signal.
      */
     class MonitoringSignalHandler {
+        /**
+         * Triggers the pending occurrence workflow by sending a signal to the supervisor
+         * @private
+         * @static
+         * @param {string} chainId - The ID of the chain
+         * @returns {Promise<void>}
+         */
+        private static triggerPendingOccurrence;
         /**
          * Handles a reporting message and triggers appropriate actions based on the signal type.
          * This function serves as a flexible entry point for processing intercepted signals

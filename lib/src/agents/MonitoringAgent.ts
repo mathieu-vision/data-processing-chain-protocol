@@ -52,6 +52,7 @@ export class MonitoringAgent extends Agent {
   private remoteMonitoringHost: Map<string, string>;
   private workflow: Workflow;
 
+  /*
   private chainHierarchy: Map<
     string,
     {
@@ -60,6 +61,7 @@ export class MonitoringAgent extends Agent {
       completedChildren: Set<string>;
     }
   > = new Map();
+  */
 
   /**
    * Creates a new MonitoringAgent instance
@@ -195,6 +197,7 @@ export class MonitoringAgent extends Agent {
   }
 
   //
+  /*
   async handleChildChainCompletion(childChainId: string) {
     const childEntry = this.chainHierarchy.get(childChainId);
     if (!childEntry || !childEntry.parentId) return;
@@ -276,4 +279,5 @@ export class MonitoringAgent extends Agent {
       throw error;
     }
   }
+  */
 }
