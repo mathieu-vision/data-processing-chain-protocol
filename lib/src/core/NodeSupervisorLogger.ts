@@ -1,4 +1,4 @@
-import { Logger } from 'utils/Logger';
+import { Logger } from '../utils/Logger';
 import { ChainRelation } from '../types/types';
 import { Workflow } from '../agents/MonitoringAgent';
 

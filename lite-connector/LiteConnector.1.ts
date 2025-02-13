@@ -35,7 +35,9 @@ class SupervisorContainer {
   private notify(data: any): void {
     const { chainId, signal } = data;
     Logger.header({ message: 'Connector - Notification:' });
-    Logger.info({ message: `Chain: ${chainId}, Signal: ${signal}\n` });
+    Logger.info({
+      message: `Chain: ${chainId}, Signal: ${JSON.stringify(signal, null, 2)}\n`,
+    });
     //
     this.nodeSupervisor.log('chains');
     Logger.header({ message: '====================================' });

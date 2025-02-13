@@ -70,7 +70,7 @@ export namespace Ext {
          */
         default:
           Logger.info({
-            message: `MonitoringSignalHandler: Signal handler not found for ${message.signal}`,
+            message: `MonitoringSignalHandler: Signal handler not found for ${JSON.stringify(message.signal, null, 2)}`,
           });
           break;
       }

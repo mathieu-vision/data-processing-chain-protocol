@@ -154,18 +154,21 @@ export class MonitoringAgent extends Agent {
 
     // handle local signal for a specific node on a specific chain
     reporting.on('local-signal', async (signal) => {
-      Logger.info(`Receive local-signal: ${signal} for node ${nodeId}`);
+      Logger.info(
+        'Receive local-signal:\n' +
+          `\t\t\t\t${JSON.stringify(signal)}\n` +
+          `\t\t\t\tfor node ${nodeId} in chain ${chainId}\n`,
+      );
       const message: ReportingMessage = { ...payload, signal };
       const update: MonitoringChainStatus = {
         [message.nodeId]: { [message.signal.status]: true },
       };
-      let workflowNode = this.workflow[message.chainId];
-      if (!workflowNode) {
-        workflowNode = {};
+      if (!this.workflow[message.chainId]) {
+        this.workflow[message.chainId] = {};
       }
-      const prev = workflowNode.status;
+      const prev = this.workflow[message.chainId].status || {};
       const next = { ...prev, ...update };
-      workflowNode.status = next;
+      this.workflow[message.chainId].status = next;
     });
     return reporting;
   }

@@ -111,6 +111,7 @@ export namespace Ext {
     const monitoringHost = await monitoringResolver(message.chainId);
     const url = new URL(path, monitoringHost);
     const data = JSON.stringify(message);
+    console.log('DATA:', data);
     Logger.info(`BroadcastReportingCallback: Sending message to ${url}`);
     await post(url, data);
   };
