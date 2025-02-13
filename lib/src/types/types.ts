@@ -260,8 +260,6 @@ export interface ReportingPayload {
 export interface NotificationStatus {
   status: ChainStatus.Type;
   broadcasted?: boolean;
-  chainDeployed?: boolean;
-  chainNodeSetupCompleted?: boolean;
 }
 
 export interface ReportingMessage extends ReportingPayload {

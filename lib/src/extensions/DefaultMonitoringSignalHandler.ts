@@ -28,9 +28,7 @@ export namespace Ext {
         id: chainId,
       };
       await supervisor.handleRequest(payload);
-      Logger.event({
-        message: `MonitoringSignalHandler: Start Pending Occurrence...`,
-      });
+      Logger.event(`MonitoringSignalHandler: Start Pending Occurrence...`);
     }
 
     /**
@@ -51,41 +49,41 @@ export namespace Ext {
     static async handle(message: ReportingMessage) {
       const monitoring = MonitoringAgent.retrieveService();
       const status = message.signal?.status;
-
+      const chainId = message.chainId;
       switch (status) {
         /*
-         *
+         * Handle ChainStatus.NODE_SETUP_COMPLETED
          */
         case ChainStatus.NODE_SETUP_COMPLETED: {
-          let count = monitoring.getChainSetupCount(message.chainId);
+          let count = monitoring.getChainSetupCount(chainId);
           if (!count) {
-            monitoring.setChainSetupCount(message.chainId, 1);
+            monitoring.setChainSetupCount(chainId, 1);
           } else {
-            monitoring.setChainSetupCount(message.chainId, count + 1);
+            monitoring.setChainSetupCount(chainId, count + 1);
           }
-          count = monitoring.getChainSetupCount(message.chainId);
-
+          count = monitoring.getChainSetupCount(chainId);
           if (count && count >= message.count) {
-            message.signal.chainNodeSetupCompleted = true;
-            Logger.event({
-              message: `MonitoringSignalHandler: Chain Nodes setup completed`,
-            });
-            if (message.signal?.chainDeployed) {
-              await this.triggerPendingOccurrence(message.chainId);
+            monitoring.setChainSetupCompleted(chainId);
+            Logger.event(
+              `MonitoringSignalHandler: Chain Nodes setup completed`,
+            );
+            let chainDeployed = monitoring.getChainDeployed(chainId);
+            if (chainDeployed) {
+              await this.triggerPendingOccurrence(chainId);
             }
           }
           break;
         }
         /*
-         *
+         * Handle ChainStatus.CHAIN_DEPLOYED
          */
         case ChainStatus.CHAIN_DEPLOYED: {
-          message.signal.chainDeployed = true;
-          Logger.event({
-            message: `MonitoringSignalHandler: Chain deployed`,
-          });
-          if (message.signal.chainNodeSetupCompleted) {
-            await this.triggerPendingOccurrence(message.chainId);
+          monitoring.setChainDeployed(chainId);
+          Logger.event(`MonitoringSignalHandler: Chain deployed`);
+          const chainSetupCompleted =
+            monitoring.getChainSetupCompleted(chainId);
+          if (chainSetupCompleted) {
+            await this.triggerPendingOccurrence(chainId);
           }
           break;
         }

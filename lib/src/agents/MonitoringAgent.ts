@@ -36,6 +36,8 @@ export interface MonitoringChainStatus {
 export interface WorkflowNode {
   status?: MonitoringChainStatus;
   setupCount?: number;
+  setupCompleted?: boolean;
+  deployed?: boolean;
 }
 
 export interface Workflow {
@@ -141,8 +143,10 @@ export class MonitoringAgent extends Agent {
     // entire context. It is called after any global notification
     // todo: add type for signals
     reporting.on('global-signal', async (signal) => {
-      Logger.info(
-        `Receive global-signal: ${JSON.stringify(signal)} for node ${nodeId}`,
+      Logger.event(
+        'Receive global-signal:\n' +
+          `\t\t\t\t${JSON.stringify(signal)}\n` +
+          `\t\t\t\tfor node ${nodeId}\n`,
       );
       const message: ReportingMessage = { ...payload, signal };
       if (index > 0) {
@@ -157,7 +161,7 @@ export class MonitoringAgent extends Agent {
 
     // handle local signal for a specific node on a specific chain
     reporting.on('local-signal', async (signal) => {
-      Logger.info(
+      Logger.event(
         'Receive local-signal:\n' +
           `\t\t\t\t${JSON.stringify(signal)}\n` +
           `\t\t\t\tfor node ${nodeId} in chain ${chainId}\n`,
@@ -172,6 +176,11 @@ export class MonitoringAgent extends Agent {
       const prev = this.workflow[message.chainId].status || {};
       const next = { ...prev, ...update };
       this.workflow[message.chainId].status = next;
+
+      if (nodeId === 'supervisor') {
+        // Report message to monitoring
+        await this.reportingCallback(message);
+      }
     });
     return reporting;
   }
@@ -185,15 +194,40 @@ export class MonitoringAgent extends Agent {
     return this.workflow[chainId]?.status;
   }
 
-  getChainSetupCount(chainId: string): number | undefined {
-    return this.workflow[chainId]?.setupCount;
-  }
-
+  //
   setChainSetupCount(chainId: string, count: number): void {
     if (!this.workflow[chainId]) {
       this.workflow[chainId] = {};
     }
     this.workflow[chainId].setupCount = count;
+  }
+
+  getChainSetupCount(chainId: string): number | undefined {
+    return this.workflow[chainId]?.setupCount;
+  }
+
+  //
+  setChainDeployed(chainId: string): void {
+    if (!this.workflow[chainId]) {
+      this.workflow[chainId] = {};
+    }
+    this.workflow[chainId].deployed = true;
+  }
+
+  getChainDeployed(chainId: string): boolean | undefined {
+    return this.workflow[chainId]?.deployed;
+  }
+
+  //
+  setChainSetupCompleted(chainId: string): void {
+    if (!this.workflow[chainId]) {
+      this.workflow[chainId] = {};
+    }
+    this.workflow[chainId].setupCompleted = true;
+  }
+
+  getChainSetupCompleted(chainId: string): boolean | undefined {
+    return this.workflow[chainId]?.setupCompleted;
   }
 
   //

@@ -190,8 +190,6 @@ interface ReportingPayload {
 interface NotificationStatus {
     status: ChainStatus.Type;
     broadcasted?: boolean;
-    chainDeployed?: boolean;
-    chainNodeSetupCompleted?: boolean;
 }
 interface ReportingMessage extends ReportingPayload {
     signal: NotificationStatus;
@@ -378,7 +376,6 @@ declare class NodeSupervisor {
     private childChains;
     private broadcastSetupCallback;
     remoteServiceCallback: ServiceCallback;
-    private reporting;
     /**
      * Creates a new NodeSupervisor instance
      * @private
@@ -423,6 +420,7 @@ declare class NodeSupervisor {
      * @returns {Promise<void|string>} Promise resolving to a string if applicable
      */
     handleRequest(payload: SupervisorPayload): Promise<void | string>;
+    private localReport;
     /**
      * Deploys a new processing chain
      * @param {ChainConfig} config - Configuration for the new chain

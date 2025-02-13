@@ -44,7 +44,7 @@ export class NodeSupervisor {
   private broadcastSetupCallback: SetupCallback;
   remoteServiceCallback: ServiceCallback;
 
-  private reporting: ReportingAgent | null = null;
+  // private reporting: ReportingAgent | null = null;
 
   /**
    * Creates a new NodeSupervisor instance
@@ -59,14 +59,6 @@ export class NodeSupervisor {
     this.childChains = new Map();
     this.remoteServiceCallback = DefaultCallback.SERVICE_CALLBACK;
     this.broadcastSetupCallback = DefaultCallback.SETUP_CALLBACK;
-
-    const monitoring = MonitoringAgent.retrieveService();
-    this.reporting = monitoring.genReportingAgent({
-      chainId: '',
-      nodeId: '',
-      index: -1,
-      count: -1,
-    });
   }
 
   /**
@@ -196,6 +188,17 @@ export class NodeSupervisor {
     }
   }
 
+  private localReport(status: ChainStatus.Type, chainId: string) {
+    const monitoring = MonitoringAgent.retrieveService();
+    const reporting = monitoring.genReportingAgent({
+      chainId,
+      nodeId: 'supervisor',
+      index: -1,
+      count: -1,
+    });
+    reporting.notify({ status }, 'local-signal');
+  }
+
   /**
    * Deploys a new processing chain
    * @param {ChainConfig} config - Configuration for the new chain
@@ -226,10 +229,7 @@ export class NodeSupervisor {
         children.push(chainId);
         this.childChains.set(parentChainId, children);
       }
-      this.reporting?.notify(
-        { status: ChainStatus.CHAIN_DEPLOYED },
-        'local-signal',
-      );
+      this.localReport(ChainStatus.CHAIN_DEPLOYED, chainId);
       return chainId;
     } catch (error) {
       Logger.error(`${this.ctn}{deployChain}: ${(error as Error).message}`);
@@ -326,7 +326,8 @@ export class NodeSupervisor {
       }
       node.notify(status, 'global-signal');
       Logger.info(
-        `${this.ctn}: Notification sent to node ${rootNodeId} with status ${JSON.stringify(status)}.`,
+        `${this.ctn}:\n\t\tNotification sent to node\n` +
+          `${rootNodeId}\n\t\twith status ${JSON.stringify(status)}.`,
       );
     } catch (error) {
       Logger.error(
