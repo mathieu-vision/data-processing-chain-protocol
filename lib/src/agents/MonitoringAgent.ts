@@ -139,12 +139,13 @@ export class MonitoringAgent extends Agent {
     // entire context. It is called after any global notification
     // todo: add type for signals
     reporting.on('global-signal', async (signal) => {
-      Logger.info(`Receive global-signal: ${signal} for node ${nodeId}`);
+      Logger.info(
+        `Receive global-signal: ${JSON.stringify(signal)} for node ${nodeId}`,
+      );
       const message: ReportingMessage = { ...payload, signal };
       if (index > 0) {
         // Report message to distant monitoring host
         signal.broadcasted = true;
-        console.log(JSON.stringify(message, null, 2));
         void this.broadcastReportingCallback(message);
       } else {
         // Report message to monitoring

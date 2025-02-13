@@ -6,7 +6,7 @@ import { format } from 'util';
  * Represents the log levels for the Logger.
  * @typedef {'info' | 'warn' | 'error' | 'header'} LogLevel
  */
-type LogLevel = 'info' | 'warn' | 'error' | 'header' | 'debug';
+type LogLevel = 'info' | 'warn' | 'error' | 'header' | 'debug' | 'special';
 
 /**
  * Configuration options for the Logger.
@@ -31,6 +31,7 @@ const Colors = {
   error: '\x1b[31m', // red
   header: '\x1b[36m', // cyan
   debug: '\x1b[90m', // gray
+  special: '\x1b[37m', // white
 } as const;
 
 /**
@@ -66,6 +67,9 @@ export class Logger {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     const timestamp = `${year}-${month}-${day}:${hours}.${minutes}.${seconds}`;
+    if (level === 'special') {
+      return `${Colors.reset}${Colors.special}${timestamp} [${level.toUpperCase()}]: \x1b[31m[${message}\x1b[31m]${Colors.reset}\n`;
+    }
     return `${Colors.reset}${Colors[level]}${timestamp} [${level.toUpperCase()}]: ${message}${Colors.reset}\n`;
   }
 
@@ -85,6 +89,11 @@ export class Logger {
     if (this.config.preserveLogs && this.config.externalCallback) {
       this.config.externalCallback(level, message, timestamp);
     }
+  }
+
+  static special(message: string | object) {
+    const msg = typeof message === 'string' ? message : format(message);
+    this.log('special', msg);
   }
 
   /**

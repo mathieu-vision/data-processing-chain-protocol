@@ -75,7 +75,7 @@ declare namespace ChainType {
     const AUTO_DELETE: Type;
 }
 declare namespace ChainStatus {
-    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_paused' | 'node_setup_completed' | 'chain_setup_completed' | 'child_chain_started' | 'child_chain_completed' | 'node_pending_deletion';
+    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_paused' | 'node_setup_completed' | 'chain_setup_completed' | 'child_chain_started' | 'child_chain_completed' | 'node_pending_deletion' | 'node_end_of_pipeline';
     const NODE_PAUSED: Type;
     const NODE_PENDING: Type;
     const NODE_IN_PROGRESS: Type;
@@ -86,6 +86,7 @@ declare namespace ChainStatus {
     const CHILD_CHAIN_STARTED: Type;
     const CHILD_CHAIN_COMPLETED: Type;
     const NODE_PENDING_DELETION: Type;
+    const NODE_END_OF_PIPELINE: Type;
 }
 declare namespace NodeSignal {
     type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_start_pending' | 'chain_deploy';

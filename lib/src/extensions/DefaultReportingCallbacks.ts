@@ -73,7 +73,7 @@ export namespace Ext {
   const defaultReportSignalHandler = async (
     message: ReportingMessage,
   ): Promise<void> => {
-    Logger.info({ message: `${JSON.stringify(message, null, 2)}` });
+    Logger.debug({ message: `${JSON.stringify(message, null, 2)}` });
     await ExtDMSH.MonitoringSignalHandler.handle(message);
   };
 
@@ -111,7 +111,6 @@ export namespace Ext {
     const monitoringHost = await monitoringResolver(message.chainId);
     const url = new URL(path, monitoringHost);
     const data = JSON.stringify(message);
-    console.log('DATA:', data);
     Logger.info(`BroadcastReportingCallback: Sending message to ${url}`);
     await post(url, data);
   };

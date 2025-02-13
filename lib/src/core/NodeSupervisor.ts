@@ -311,7 +311,7 @@ export class NodeSupervisor {
       }
       node.notify(status, 'global-signal');
       Logger.info(
-        `${this.ctn}: Notification sent to node ${rootNodeId} with status ${status}.`,
+        `${this.ctn}: Notification sent to node ${rootNodeId} with status ${JSON.stringify(status)}.`,
       );
     } catch (error) {
       Logger.error(

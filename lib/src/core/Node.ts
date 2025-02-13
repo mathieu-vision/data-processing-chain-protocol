@@ -313,8 +313,8 @@ export class Node {
         });
       }
     } else {
-      Logger.info(`End of pipeline reached by node ${nodeId}.`);
-      // currentNode.reporting.notify();
+      Logger.special(`End of pipeline reached by node ${nodeId}.`);
+      currentNode.notify(ChainStatus.NODE_END_OF_PIPELINE, 'global-signal');
     }
     const isPersistant =
       (currentNode.config?.chainType ?? 0) & ChainType.PERSISTANT;

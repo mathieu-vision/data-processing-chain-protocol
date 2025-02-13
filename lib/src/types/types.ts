@@ -98,7 +98,8 @@ export namespace ChainStatus {
     | 'chain_setup_completed'
     | 'child_chain_started'
     | 'child_chain_completed'
-    | 'node_pending_deletion';
+    | 'node_pending_deletion'
+    | 'node_end_of_pipeline';
   export const NODE_PAUSED: Type = 'node_paused';
   export const NODE_PENDING: Type = 'node_pending';
   export const NODE_IN_PROGRESS: Type = 'node_in_progress';
@@ -109,6 +110,7 @@ export namespace ChainStatus {
   export const CHILD_CHAIN_STARTED: Type = 'child_chain_started';
   export const CHILD_CHAIN_COMPLETED: Type = 'child_chain_completed';
   export const NODE_PENDING_DELETION: Type = 'node_pending_deletion';
+  export const NODE_END_OF_PIPELINE: Type = 'node_end_of_pipeline';
 }
 
 // handler signal
