@@ -238,6 +238,7 @@ export type NodeConfig = {
   monitoringHost?: string;
   childMode?: ChildMode;
   chainConfig?: ChainConfig;
+  rootConfig?: NodeConfig;
 };
 
 export type ChainConfig = NodeConfig[];

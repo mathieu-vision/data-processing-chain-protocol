@@ -172,6 +172,7 @@ type NodeConfig = {
     monitoringHost?: string;
     childMode?: ChildMode;
     chainConfig?: ChainConfig;
+    rootConfig?: NodeConfig;
 };
 type ChainConfig = NodeConfig[];
 interface BrodcastSetupMessage {

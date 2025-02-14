@@ -431,7 +431,11 @@ export class NodeSupervisor {
       };
 
       this.chains.set(chainId, relation);
-      const monitoringHost = config[0]?.monitoringHost;
+
+      let monitoringHost = config[0].rootConfig
+        ? config[0].rootConfig.monitoringHost
+        : config[0]?.monitoringHost;
+
       const count = Array.isArray(config) ? config.length : 0;
 
       if (count > 0) {

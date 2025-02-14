@@ -98,9 +98,9 @@ export namespace Ext {
          *
          */
         default:
-          Logger.event({
-            message: `MonitoringSignalHandler: Signal handler not found for ${JSON.stringify(message.signal, null, 2)}`,
-          });
+          Logger.event(
+            `MonitoringSignalHandler:\n\t\tSignal handler not found for ${JSON.stringify(message.signal)}`,
+          );
           break;
       }
     }

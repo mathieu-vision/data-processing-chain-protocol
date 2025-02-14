@@ -4,6 +4,7 @@ import {
   ProcessorCallback,
   ServiceConfig,
 } from 'types/types';
+import { Logger } from '../utils/Logger';
 
 /**
  * Represents a processor that encapsulate external services within a pipeline
@@ -42,6 +43,9 @@ export class PipelineProcessor {
    */
   async digest(data: PipelineData): Promise<PipelineData> {
     if (PipelineProcessor.callbackService) {
+      Logger.info(
+        `[PipelineProcessor]: Digesting data using "${this.targetId}"`,
+      );
       return await PipelineProcessor.callbackService({
         targetId: this.targetId,
         meta: this.meta,

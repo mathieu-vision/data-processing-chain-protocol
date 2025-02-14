@@ -39,7 +39,7 @@ class SupervisorContainer {
         signal: NodeSignal.CHAIN_DEPLOY,
         config,
         data,
-      } as SupervisorPayloadDeployChain);
+      });
       res.status(201).json({
         chainId,
         message: 'Chain created and started successfully',

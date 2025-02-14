@@ -170,17 +170,22 @@ export class Node {
   }
 
   private async processChildChain(data: PipelineData): Promise<void> {
-    if (this.config?.chainConfig) {
+    const childConfig = this.config?.chainConfig;
+
+    if (childConfig && Array.isArray(childConfig) && childConfig.length > 0) {
+      childConfig[0].rootConfig = this.config
+        ? JSON.parse(JSON.stringify(this.config))
+        : undefined;
       const supervisor = NodeSupervisor.retrieveService();
       const chainId = await supervisor.handleRequest({
         signal: NodeSignal.CHAIN_DEPLOY,
-        config: this.config.chainConfig,
+        config: childConfig,
         data,
-      } as SupervisorPayloadDeployChain);
+      });
       if (!chainId) {
         throw new Error('Failed to deploy chain: no chainId returned');
       }
-      if (this.config.childMode === ChildMode.PARALLEL) {
+      if (this.config?.childMode === ChildMode.PARALLEL) {
         this.notify(ChainStatus.CHILD_CHAIN_STARTED, 'global-signal');
         supervisor
           .startChain(chainId, data)
