@@ -182,22 +182,9 @@ export class Node {
         config: childConfig,
         data,
       });
+
       if (!chainId) {
         throw new Error('Failed to deploy chain: no chainId returned');
-      }
-      if (this.config?.childMode === ChildMode.PARALLEL) {
-        this.notify(ChainStatus.CHILD_CHAIN_STARTED, 'global-signal');
-        supervisor
-          .startChain(chainId, data)
-          .then(() =>
-            this.notify(ChainStatus.CHILD_CHAIN_COMPLETED, 'global-signal'),
-          )
-          .catch((error) => {
-            Logger.error(`Failed to start parallel child chain: ${error}`);
-          });
-      } else {
-        await supervisor.startChain(chainId, data);
-        this.notify(ChainStatus.CHILD_CHAIN_COMPLETED, 'global-signal');
       }
     }
   }
@@ -208,6 +195,12 @@ export class Node {
    * @returns {Promise<void>}
    */
   async execute(data: PipelineData): Promise<void> {
+    const childMode =
+      this.config?.rootConfig?.childMode === 'parallel'
+        ? 'in parallel'
+        : 'in serial';
+
+    Logger.info(`Node ${this.id} execution started ${childMode}...`);
     this.executionQueue = this.executionQueue.then(async () => {
       try {
         this.updateStatus(ChainStatus.NODE_IN_PROGRESS);
@@ -252,6 +245,7 @@ export class Node {
     });
 
     const supervisor = NodeSupervisor.retrieveService();
+    //
     await supervisor.handleRequest({
       signal: NodeSignal.NODE_SEND_DATA,
       id: this.id,
@@ -277,8 +271,8 @@ export class Node {
    * @static
    */
   private static async terminate(nodeId: string, pipelineData: PipelineData[]) {
-    // todo: format data
-    const data = pipelineData[0]; // tmp
+    Logger.special(`Terminate: Node ${nodeId} execution completed.`);
+    const data = pipelineData[0];
     await Node.moveToNextNode(nodeId, data);
   }
 
@@ -297,6 +291,7 @@ export class Node {
     const supervisor = NodeSupervisor.retrieveService();
     const nodes = supervisor.getNodes();
     const currentNode = nodes.get(nodeId);
+    const chainId = currentNode?.getConfig()?.chainId;
     if (!currentNode) {
       Logger.warn(`Node ${nodeId} not found for moving to next node.`);
       return;
@@ -312,14 +307,16 @@ export class Node {
       } else if (nextNodeInfo.type === NodeType.REMOTE) {
         supervisor.remoteServiceCallback({
           // targetId and meta are related to the next remote target service uid
-          chainId: currentNode.getConfig()?.chainId,
+          chainId,
           targetId: nextNodeInfo.id,
           data: pipelineData,
           meta: nextNodeInfo.meta,
         });
       }
     } else {
-      Logger.special(`End of pipeline reached by node ${nodeId}.`);
+      Logger.special(
+        `End of pipeline reached by node ${nodeId} in chain ${chainId}.`,
+      );
       currentNode.notify(ChainStatus.NODE_END_OF_PIPELINE, 'global-signal');
     }
     const isPersistant =

@@ -18,6 +18,7 @@ import {
   BroadcastReportingCallback,
   ReportingSignalType,
   NotificationStatus,
+  ChildMode,
 } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
@@ -471,6 +472,7 @@ export class NodeSupervisor {
     let relation = this.chains.get(chainId);
 
     if (relation) {
+      // todo: to be reviewed /!\
       relation.config = relation.config.concat(config);
       Logger.info(
         `${this.ctn}: Chain ${chainId} updated with ${config.length} new configurations`,
@@ -645,8 +647,53 @@ export class NodeSupervisor {
   async startPendingChain(chainId: string) {
     const chain = this.chains.get(chainId);
     const data = chain?.dataRef;
+
     if (data) {
-      await this.startChain(chainId, data);
+      const rootConfig = chain?.config[0]?.rootConfig;
+      if (rootConfig) {
+        const rootNodeId = chain?.rootNodeId;
+        if (!rootNodeId) {
+          Logger.error(
+            `${this.ctn}: Root node ID for chain ${chainId} not found.`,
+          );
+          throw new Error('Root node ID not found');
+        }
+        const chainMode =
+          chain?.config[0]?.rootConfig?.childMode === 'parallel'
+            ? 'parallel'
+            : 'serial';
+
+        if (chainMode === ChildMode.PARALLEL) {
+          Logger.warn(`// Starting parallel child chain: ${chainId}`);
+          this.notify(
+            rootNodeId,
+            ChainStatus.CHILD_CHAIN_STARTED,
+            'global-signal',
+          );
+
+          this.startChain(chainId, data)
+            .then(() =>
+              this.notify(
+                rootNodeId,
+                ChainStatus.CHILD_CHAIN_COMPLETED,
+                'global-signal',
+              ),
+            )
+            .catch((error) => {
+              Logger.error(`Failed to start parallel child chain: ${error}`);
+            });
+        } else {
+          Logger.warn(`__ Starting serial child chain: ${chainId}`);
+          await this.startChain(chainId, data);
+          this.notify(
+            rootNodeId,
+            ChainStatus.CHILD_CHAIN_COMPLETED,
+            'global-signal',
+          );
+        }
+      } else {
+        await this.startChain(chainId, data);
+      }
     } else {
       Logger.warn(`${this.ctn}:\n\tNothing to process on chain ${chainId}`);
     }
@@ -658,7 +705,7 @@ export class NodeSupervisor {
    * @param {PipelineData} data - The initial data to process
    */
   async startChain(chainId: string, data: PipelineData): Promise<void> {
-    Logger.header(`Chain ${chainId} requested...`);
+    Logger.header(`<<Start Chain>>: Chain ${chainId} requested...`);
     Logger.info(`Data: ${JSON.stringify(data, null, 2)}`);
     const chain = this.chains.get(chainId);
     if (!chain) {

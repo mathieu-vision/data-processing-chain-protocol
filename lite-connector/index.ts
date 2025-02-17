@@ -1,6 +1,6 @@
 import { LiteConnector } from './LiteConnector';
 import { LiteConnector as LiteConnector0 } from './LiteConnector.0';
-import { LiteConnector as ParalleleNodesConnector } from './LiteConnector.1';
+import { LiteConnector as ParallelNodesConnector } from './LiteConnector.1';
 import dotenv from 'dotenv';
 import { Logger } from './libs/Logger';
 
@@ -27,7 +27,7 @@ switch (caseSwitch) {
     connector = new LiteConnector0(port, connectorUid);
     break;
   case 1:
-    connector = new ParalleleNodesConnector(port, connectorUid);
+    connector = new ParallelNodesConnector(port, connectorUid);
     break;
   default:
     connector = new LiteConnector(port, connectorUid);
