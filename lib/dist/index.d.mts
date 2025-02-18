@@ -90,7 +90,7 @@ declare namespace ChainStatus {
     const NODE_END_OF_PIPELINE: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'chain_prepare' | 'chain_start' | 'chain_start_pending_occurrence' | 'chain_deploy';
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'node_error' | 'node_resume' | 'node_stop' | 'chain_prepare' | 'chain_start' | 'chain_start_pending_occurrence' | 'chain_deploy';
     const NODE_SETUP: 'node_setup';
     const NODE_CREATE: 'node_create';
     const NODE_DELETE: 'node_delete';
@@ -98,6 +98,9 @@ declare namespace NodeSignal {
     const NODE_DELAY: 'node_delay';
     const NODE_RUN: 'node_run';
     const NODE_SEND_DATA: 'node_send_data';
+    const NODE_ERROR: 'node_error';
+    const NODE_RESUME: 'node_resume';
+    const NODE_STOP: 'node_stop';
     const CHAIN_PREPARE: 'chain_prepare';
     const CHAIN_START: 'chain_start';
     const CHAIN_START_PENDING_OCCURRENCE: 'chain_start_pending_occurrence';
@@ -221,6 +224,7 @@ declare class Node {
     private nextNodeInfo;
     private config;
     private reporting;
+    private statusManager;
     /**
      * Creates a new Node instance
      * @param {string[]} dependencies - Array of node dependency IDs

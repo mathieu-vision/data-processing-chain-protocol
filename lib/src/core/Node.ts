@@ -9,8 +9,6 @@ import {
   ChainType,
   PipelineMeta,
   ReportingSignalType,
-  SupervisorPayloadDeployChain,
-  ChildMode,
   NotificationStatus,
 } from '../types/types';
 import { setTimeout, setImmediate } from 'timers';
@@ -18,6 +16,7 @@ import { randomUUID } from 'node:crypto';
 import { Logger } from '../utils/Logger';
 import { NodeSupervisor } from './NodeSupervisor';
 import { MonitoringAgent, ReportingAgent } from '../agents/MonitoringAgent';
+import { NodeStatusManager } from './NodeStatusManager';
 
 /**
  * Represents a single executable node within a chain
@@ -40,6 +39,7 @@ export class Node {
   } | null;
   private config: NodeConfig | null;
   private reporting: ReportingAgent | null = null;
+  private statusManager: NodeStatusManager;
 
   /**
    * Creates a new Node instance
@@ -57,6 +57,7 @@ export class Node {
     this.executionQueue = Promise.resolve();
     this.nextNodeInfo = null;
     this.config = null;
+    this.statusManager = new NodeStatusManager(this.id);
   }
 
   /**
@@ -212,6 +213,8 @@ export class Node {
         const generator = this.getPipelineGenerator(this.pipelines, 3);
 
         for (const pipelineBatch of generator) {
+          await this.statusManager.process();
+
           await new Promise<void>((resolve, reject) => {
             setImmediate(async () => {
               try {

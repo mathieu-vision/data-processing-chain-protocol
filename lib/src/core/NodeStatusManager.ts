@@ -5,16 +5,39 @@ export class NodeStatusManager {
   private signalQueue: NodeSignal.Type[] = [];
   private currentCursor: number = 0;
 
+  private isPaused: boolean = false;
+  private pausePromise: Promise<void> | null = null;
+  private resumeCallback: (() => void) | null = null;
+
+  // eslint-disable-next-line no-unused-vars
+  constructor(private nodeId: string) {}
+
   private handleStopSignal(): void {
     Logger.info('NodeStatusManager: Processing STOP signal');
   }
 
   private handlePauseSignal(): void {
     Logger.info('NodeStatusManager: Processing PAUSE signal');
+    if (!this.isPaused) {
+      this.isPaused = true;
+      this.pausePromise = new Promise((resolve) => {
+        this.resumeCallback = resolve;
+      });
+      Logger.info(`Node ${this.nodeId} paused.`);
+    }
   }
 
   private handleResumeSignal(): void {
     Logger.info('NodeStatusManager: Processing RESUME signal');
+    if (this.isPaused) {
+      this.isPaused = false;
+      if (this.resumeCallback) {
+        this.resumeCallback();
+      }
+      this.pausePromise = null;
+      this.resumeCallback = null;
+      Logger.info(`Node ${this.nodeId} resumed.`);
+    }
   }
 
   private handleErrorSignal(): void {
@@ -54,12 +77,8 @@ export class NodeStatusManager {
     this.signalQueue.push(...signals);
   }
 
-  public processNextSignal(): void {
+  private processNextSignal(): void {
     try {
-      if (this.currentCursor >= this.signalQueue.length) {
-        return;
-      }
-
       const currentSignal = this.signalQueue[this.currentCursor];
 
       switch (currentSignal) {
@@ -96,8 +115,6 @@ export class NodeStatusManager {
         default:
           Logger.warn(`Unknown signal type: ${currentSignal}`);
       }
-
-      this.currentCursor++;
     } catch (error) {
       Logger.error(`Error processing signal: ${(error as Error).message}`);
       throw error;
@@ -109,5 +126,18 @@ export class NodeStatusManager {
       queue: [...this.signalQueue],
       cursor: this.currentCursor,
     };
+  }
+
+  private async processState(): Promise<void> {
+    if (this.isPaused && this.pausePromise) {
+      await this.pausePromise;
+    }
+  }
+
+  async process(): Promise<void> {
+    for (; this.currentCursor < this.signalQueue.length; this.currentCursor++) {
+      this.processNextSignal();
+      await this.processState();
+    }
   }
 }
