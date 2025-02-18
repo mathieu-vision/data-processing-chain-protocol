@@ -118,6 +118,7 @@ export namespace ChainStatus {
 // handler signal
 export namespace NodeSignal {
   export type Type =
+    // node signals
     | 'node_setup'
     | 'node_create'
     | 'node_delete'
@@ -125,11 +126,15 @@ export namespace NodeSignal {
     | 'node_delay'
     | 'node_run'
     | 'node_send_data'
+    | 'node_error'
+    | 'node_resume'
+    | 'node_stop'
+    // chain signals
     | 'chain_prepare'
     | 'chain_start'
     | 'chain_start_pending_occurrence'
     | 'chain_deploy';
-
+  // node signals
   export const NODE_SETUP: 'node_setup' = 'node_setup';
   export const NODE_CREATE: 'node_create' = 'node_create';
   export const NODE_DELETE: 'node_delete' = 'node_delete';
@@ -137,6 +142,10 @@ export namespace NodeSignal {
   export const NODE_DELAY: 'node_delay' = 'node_delay';
   export const NODE_RUN: 'node_run' = 'node_run';
   export const NODE_SEND_DATA: 'node_send_data' = 'node_send_data';
+  export const NODE_ERROR: 'node_error' = 'node_error';
+  export const NODE_RESUME: 'node_resume' = 'node_resume';
+  export const NODE_STOP: 'node_stop' = 'node_stop';
+  // chain signals
   export const CHAIN_PREPARE: 'chain_prepare' = 'chain_prepare';
   export const CHAIN_START: 'chain_start' = 'chain_start';
   export const CHAIN_START_PENDING_OCCURRENCE: 'chain_start_pending_occurrence' =
