@@ -93,7 +93,8 @@ export namespace ChainStatus {
     | 'node_in_progress' // running
     | 'node_completed'
     | 'node_failed'
-    | 'node_paused'
+    // | 'node_paused'
+    | 'node_suspended'
     | 'node_setup_completed'
     | 'chain_deployed'
     | 'chain_setup_completed'
@@ -101,7 +102,7 @@ export namespace ChainStatus {
     | 'child_chain_completed'
     | 'node_pending_deletion'
     | 'node_end_of_pipeline';
-  export const NODE_PAUSED: Type = 'node_paused';
+  // export const NODE_PAUSED: Type = 'node_paused';
   export const NODE_PENDING: Type = 'node_pending';
   export const NODE_IN_PROGRESS: Type = 'node_in_progress';
   export const NODE_COMPLETED: Type = 'node_completed';
@@ -113,6 +114,7 @@ export namespace ChainStatus {
   export const CHILD_CHAIN_COMPLETED: Type = 'child_chain_completed';
   export const NODE_PENDING_DELETION: Type = 'node_pending_deletion';
   export const NODE_END_OF_PIPELINE: Type = 'node_end_of_pipeline';
+  export const NODE_SUSPENDED: Type = 'node_suspended';
 }
 
 // handler signal
@@ -122,7 +124,8 @@ export namespace NodeSignal {
     | 'node_setup'
     | 'node_create'
     | 'node_delete'
-    | 'node_pause'
+    // | 'node_pause'
+    | 'node_suspend'
     | 'node_delay'
     | 'node_run'
     | 'node_send_data'
@@ -138,13 +141,14 @@ export namespace NodeSignal {
   export const NODE_SETUP: 'node_setup' = 'node_setup';
   export const NODE_CREATE: 'node_create' = 'node_create';
   export const NODE_DELETE: 'node_delete' = 'node_delete';
-  export const NODE_PAUSE: 'node_pause' = 'node_pause';
+  // export const NODE_PAUSE: 'node_pause' = 'node_pause';
   export const NODE_DELAY: 'node_delay' = 'node_delay';
   export const NODE_RUN: 'node_run' = 'node_run';
   export const NODE_SEND_DATA: 'node_send_data' = 'node_send_data';
   export const NODE_ERROR: 'node_error' = 'node_error';
   export const NODE_RESUME: 'node_resume' = 'node_resume';
   export const NODE_STOP: 'node_stop' = 'node_stop';
+  export const NODE_SUSPEND: 'node_suspend' = 'node_suspend';
   // chain signals
   export const CHAIN_PREPARE: 'chain_prepare' = 'chain_prepare';
   export const CHAIN_START: 'chain_start' = 'chain_start';

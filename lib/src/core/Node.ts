@@ -200,7 +200,6 @@ export class Node {
       this.config?.rootConfig?.childMode === 'parallel'
         ? 'in parallel'
         : 'in serial';
-
     const suspendedState = this.statusManager.getSuspendedState();
     const isResuming = !!suspendedState;
 
@@ -211,7 +210,6 @@ export class Node {
     this.executionQueue = this.executionQueue.then(async () => {
       try {
         this.updateStatus(ChainStatus.NODE_IN_PROGRESS);
-
         let generator: Generator<ProcessorPipeline[], void, unknown>;
         let processingData = data;
 
@@ -222,22 +220,16 @@ export class Node {
             unknown
           >;
           processingData = suspendedState.data;
-
           await this.processBatch(suspendedState.currentBatch, processingData);
-
-          const postBatchStatus = await this.statusManager.process();
-          if (postBatchStatus.shouldSuspend) {
-            return;
-          }
         } else {
           generator = this.getPipelineGenerator(this.pipelines, 3);
         }
 
-        let nextResult = generator.next();
+        let nextResult = isResuming ? generator.next() : generator.next();
 
         while (!nextResult.done) {
-          const preProcessStatus = await this.statusManager.process();
-          if (preProcessStatus.shouldSuspend) {
+          const status = await this.statusManager.process();
+          if (status.includes(ChainStatus.NODE_SUSPENDED)) {
             this.statusManager.suspendExecution(
               generator,
               nextResult.value,
@@ -248,16 +240,6 @@ export class Node {
 
           await this.processBatch(nextResult.value, processingData);
           nextResult = generator.next();
-
-          const postProcessStatus = await this.statusManager.process();
-          if (postProcessStatus.shouldSuspend && !nextResult.done) {
-            this.statusManager.suspendExecution(
-              generator,
-              nextResult.value,
-              processingData,
-            );
-            return;
-          }
         }
 
         this.statusManager.clearSuspendedState();

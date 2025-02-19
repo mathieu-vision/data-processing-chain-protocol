@@ -157,9 +157,11 @@ export class NodeSupervisor {
       case NodeSignal.NODE_DELETE:
         Logger.event(`handle NODE_DELETE`);
         return await this.deleteNode(payload.id);
+      /*
       case NodeSignal.NODE_PAUSE:
         Logger.event(`handle NODE_PAUSE`);
         return await this.pauseNode(payload.id);
+      */
       case NodeSignal.NODE_DELAY:
         Logger.event(`handle NODE_DELAY`);
         return await this.delayNode(payload.id, payload.delay);
@@ -390,6 +392,7 @@ export class NodeSupervisor {
    * Pauses a node
    * @param {string} nodeId - The node identifier to pause
    */
+  /*
   private async pauseNode(nodeId: string): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
@@ -399,6 +402,7 @@ export class NodeSupervisor {
       Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
     }
   }
+  */
 
   /**
    * Delays the execution of a node

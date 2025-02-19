@@ -75,8 +75,7 @@ declare namespace ChainType {
     const AUTO_DELETE: Type;
 }
 declare namespace ChainStatus {
-    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_paused' | 'node_setup_completed' | 'chain_deployed' | 'chain_setup_completed' | 'child_chain_started' | 'child_chain_completed' | 'node_pending_deletion' | 'node_end_of_pipeline';
-    const NODE_PAUSED: Type;
+    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_suspended' | 'node_setup_completed' | 'chain_deployed' | 'chain_setup_completed' | 'child_chain_started' | 'child_chain_completed' | 'node_pending_deletion' | 'node_end_of_pipeline';
     const NODE_PENDING: Type;
     const NODE_IN_PROGRESS: Type;
     const NODE_COMPLETED: Type;
@@ -88,19 +87,20 @@ declare namespace ChainStatus {
     const CHILD_CHAIN_COMPLETED: Type;
     const NODE_PENDING_DELETION: Type;
     const NODE_END_OF_PIPELINE: Type;
+    const NODE_SUSPENDED: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_pause' | 'node_delay' | 'node_run' | 'node_send_data' | 'node_error' | 'node_resume' | 'node_stop' | 'chain_prepare' | 'chain_start' | 'chain_start_pending_occurrence' | 'chain_deploy';
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_suspend' | 'node_delay' | 'node_run' | 'node_send_data' | 'node_error' | 'node_resume' | 'node_stop' | 'chain_prepare' | 'chain_start' | 'chain_start_pending_occurrence' | 'chain_deploy';
     const NODE_SETUP: 'node_setup';
     const NODE_CREATE: 'node_create';
     const NODE_DELETE: 'node_delete';
-    const NODE_PAUSE: 'node_pause';
     const NODE_DELAY: 'node_delay';
     const NODE_RUN: 'node_run';
     const NODE_SEND_DATA: 'node_send_data';
     const NODE_ERROR: 'node_error';
     const NODE_RESUME: 'node_resume';
     const NODE_STOP: 'node_stop';
+    const NODE_SUSPEND: 'node_suspend';
     const CHAIN_PREPARE: 'chain_prepare';
     const CHAIN_START: 'chain_start';
     const CHAIN_START_PENDING_OCCURRENCE: 'chain_start_pending_occurrence';
@@ -473,7 +473,6 @@ declare class NodeSupervisor {
      * Pauses a node
      * @param {string} nodeId - The node identifier to pause
      */
-    private pauseNode;
     /**
      * Delays the execution of a node
      * @param {string} nodeId - The node identifier

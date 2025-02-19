@@ -1,4 +1,4 @@
-import { NodeSignal, PipelineData } from '../types/types';
+import { NodeSignal, PipelineData, ChainStatus } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { Node } from './Node';
 
@@ -11,51 +11,46 @@ interface SuspendedState {
 export class NodeStatusManager {
   private signalQueue: NodeSignal.Type[] = [];
   private currentCursor: number = 0;
-  private executionState: 'running' | 'suspended' = 'running';
+  private status: ChainStatus.Type[] = [];
 
   private suspendedState: SuspendedState | null = null;
 
   // eslint-disable-next-line no-unused-vars
   constructor(private node: Node) {}
 
-  private handleStopSignal(): void {
+  private async handleStopSignal(): Promise<void> {
     Logger.info('NodeStatusManager: Processing STOP signal');
   }
 
-  private handlePauseSignal(): void {
+  private async handleSuspendSignal(): Promise<void> {
     Logger.info('NodeStatusManager: Processing PAUSE signal');
-    if (this.executionState !== 'suspended') {
-      this.executionState = 'suspended';
+    if (!this.status.includes(ChainStatus.NODE_SUSPENDED)) {
+      this.status.push(ChainStatus.NODE_SUSPENDED);
       Logger.info(`Node ${this.node.getId()} paused.`);
     }
   }
 
-  private handleResumeSignal(): void {
+  private async handleResumeSignal(): Promise<void> {
     Logger.info('NodeStatusManager: Processing RESUME signal');
-    if (this.executionState === 'suspended') {
-      this.executionState = 'running';
-      Logger.info(`Node ${this.node.getId()} resumed.`);
-    }
-  }
-
-  async resume(): Promise<void> {
-    if (!this.isSuspended()) {
+    const index = this.status.indexOf(ChainStatus.NODE_SUSPENDED);
+    if (index > -1) {
+      this.status.splice(index, 1);
+      if (!this.suspendedState) {
+        Logger.warn(
+          `Cannot resume Node ${this.node.getId()}: no suspended state found`,
+        );
+        return;
+      }
+      Logger.info(`Resuming node ${this.node.getId()}...`);
+      return this.node.execute(this.suspendedState.data);
+    } else {
       Logger.warn(
         `Cannot resume Node ${this.node.getId()}: not in suspended state`,
       );
-      return;
     }
-    this.pushSignals([NodeSignal.NODE_RESUME]);
-    await this.process();
-    const suspendedState = this.getSuspendedState();
-    if (!suspendedState) {
-      Logger.warn(
-        `Cannot resume Node ${this.node.getId()}: no suspended state found`,
-      );
-      return;
-    }
-    return this.node.execute(suspendedState.data);
   }
+
+  //    this.pushSignals([NodeSignal.NODE_RESUME]);
 
   suspendExecution<T>(
     generator: Generator<T, void, unknown>,
@@ -78,34 +73,34 @@ export class NodeStatusManager {
   }
 
   isSuspended(): boolean {
-    return this.executionState === 'suspended';
+    return this.status.includes(ChainStatus.NODE_SUSPENDED);
   }
 
-  private handleErrorSignal(): void {
+  private async handleErrorSignal(): Promise<void> {
     Logger.error('NodeStatusManager: Processing ERROR signal');
   }
 
-  private handleNodeSetup(): void {
+  private async handleNodeSetup(): Promise<void> {
     Logger.info('NodeStatusManager: Processing NODE_SETUP signal');
   }
 
-  private handleNodeCreate(): void {
+  private async handleNodeCreate(): Promise<void> {
     Logger.info('NodeStatusManager: Processing NODE_CREATE signal');
   }
 
-  private handleNodeDelete(): void {
+  private async handleNodeDelete(): Promise<void> {
     Logger.info('NodeStatusManager: Processing NODE_DELETE signal');
   }
 
-  private handleNodeDelay(): void {
+  private async handleNodeDelay(): Promise<void> {
     Logger.info('NodeStatusManager: Processing NODE_DELAY signal');
   }
 
-  private handleNodeRun(): void {
+  private async handleNodeRun(): Promise<void> {
     Logger.info('NodeStatusManager: Processing NODE_RUN signal');
   }
 
-  private handleNodeSendData(): void {
+  private async handleNodeSendData(): Promise<void> {
     Logger.info('NodeStatusManager: Processing NODE_SEND_DATA signal');
   }
 
@@ -118,41 +113,34 @@ export class NodeStatusManager {
     this.signalQueue.push(...signals);
   }
 
-  private processNextSignal(): void {
+  private async processNextSignal(): Promise<void> {
     try {
       const currentSignal = this.signalQueue[this.currentCursor];
-
       switch (currentSignal) {
         case NodeSignal.NODE_STOP:
-          this.handleStopSignal();
-          break;
+          return this.handleStopSignal();
+        /*
         case NodeSignal.NODE_PAUSE:
-          this.handlePauseSignal();
-          break;
+          return this.handlePauseSignal();
+        */
+        case NodeSignal.NODE_SUSPEND:
+          return this.handleSuspendSignal();
         case NodeSignal.NODE_RESUME:
-          this.handleResumeSignal();
-          break;
+          return this.handleResumeSignal();
         case NodeSignal.NODE_ERROR:
-          this.handleErrorSignal();
-          break;
+          return this.handleErrorSignal();
         case NodeSignal.NODE_SETUP:
-          this.handleNodeSetup();
-          break;
+          return this.handleNodeSetup();
         case NodeSignal.NODE_CREATE:
-          this.handleNodeCreate();
-          break;
+          return this.handleNodeCreate();
         case NodeSignal.NODE_DELETE:
-          this.handleNodeDelete();
-          break;
+          return this.handleNodeDelete();
         case NodeSignal.NODE_DELAY:
-          this.handleNodeDelay();
-          break;
+          return this.handleNodeDelay();
         case NodeSignal.NODE_RUN:
-          this.handleNodeRun();
-          break;
+          return this.handleNodeRun();
         case NodeSignal.NODE_SEND_DATA:
-          this.handleNodeSendData();
-          break;
+          return this.handleNodeSendData();
         default:
           Logger.warn(`Unknown signal type: ${currentSignal}`);
       }
@@ -169,10 +157,10 @@ export class NodeStatusManager {
     };
   }
 
-  async process(): Promise<{ shouldSuspend: boolean }> {
+  async process(): Promise<ChainStatus.Type[]> {
     for (; this.currentCursor < this.signalQueue.length; this.currentCursor++) {
-      this.processNextSignal();
+      await this.processNextSignal();
     }
-    return { shouldSuspend: this.executionState === 'suspended' };
+    return this.status;
   }
 }
