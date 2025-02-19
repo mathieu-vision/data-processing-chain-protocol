@@ -19,33 +19,33 @@ export class NodeStatusManager {
   constructor(private node: Node) {}
 
   private async handleStopSignal(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing STOP signal');
+    Logger.info('~ NodeStatusManager: Processing STOP signal');
   }
 
   private async handleSuspendSignal(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing PAUSE signal');
+    Logger.info('~ NodeStatusManager: Processing Suspend signal');
     if (!this.status.includes(ChainStatus.NODE_SUSPENDED)) {
       this.status.push(ChainStatus.NODE_SUSPENDED);
-      Logger.info(`Node ${this.node.getId()} paused.`);
+      Logger.info(`Node ${this.node.getId()} suspended.`);
     }
   }
 
   private async handleResumeSignal(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing RESUME signal');
+    Logger.info('~ NodeStatusManager: Processing RESUME signal');
     const index = this.status.indexOf(ChainStatus.NODE_SUSPENDED);
     if (index > -1) {
       this.status.splice(index, 1);
       if (!this.suspendedState) {
         Logger.warn(
-          `Cannot resume Node ${this.node.getId()}: no suspended state found`,
+          `~ NodeStatusManager: Node ${this.node.getId()} may have resumed prematurely.`,
         );
         return;
       }
-      Logger.info(`Resuming node ${this.node.getId()}...`);
+      Logger.info(`~ NodeStatusManager: Resuming node ${this.node.getId()}...`);
       return this.node.execute(this.suspendedState.data);
     } else {
       Logger.warn(
-        `Cannot resume Node ${this.node.getId()}: not in suspended state`,
+        `~ NodeStatusManager: Cannot resume Node ${this.node.getId()}, not in suspended state.`,
       );
     }
   }
@@ -77,31 +77,31 @@ export class NodeStatusManager {
   }
 
   private async handleErrorSignal(): Promise<void> {
-    Logger.error('NodeStatusManager: Processing ERROR signal');
+    Logger.error('~ NodeStatusManager: Processing ERROR signal');
   }
 
   private async handleNodeSetup(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing NODE_SETUP signal');
+    Logger.info('~ NodeStatusManager: Processing NODE_SETUP signal');
   }
 
   private async handleNodeCreate(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing NODE_CREATE signal');
+    Logger.info('~ NodeStatusManager: Processing NODE_CREATE signal');
   }
 
   private async handleNodeDelete(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing NODE_DELETE signal');
+    Logger.info('~ NodeStatusManager: Processing NODE_DELETE signal');
   }
 
-  private async handleNodeDelay(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing NODE_DELAY signal');
-  }
+  // private async handleNodeDelay(): Promise<void> {
+  //   Logger.info('~ NodeStatusManager: Processing NODE_DELAY signal');
+  // }
 
   private async handleNodeRun(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing NODE_RUN signal');
+    Logger.info('~ NodeStatusManager: Processing NODE_RUN signal');
   }
 
   private async handleNodeSendData(): Promise<void> {
-    Logger.info('NodeStatusManager: Processing NODE_SEND_DATA signal');
+    Logger.info('~ NodeStatusManager: Processing NODE_SEND_DATA signal');
   }
 
   public updateQueue(newSignals: NodeSignal.Type[]): void {
@@ -109,7 +109,7 @@ export class NodeStatusManager {
     this.currentCursor = 0;
   }
 
-  public pushSignals(signals: NodeSignal.Type[]): void {
+  public enqueueSignals(signals: NodeSignal.Type[]): void {
     this.signalQueue.push(...signals);
   }
 
@@ -119,10 +119,8 @@ export class NodeStatusManager {
       switch (currentSignal) {
         case NodeSignal.NODE_STOP:
           return this.handleStopSignal();
-        /*
-        case NodeSignal.NODE_PAUSE:
-          return this.handlePauseSignal();
-        */
+        // case NodeSignal.NODE_PAUSE:
+        //   return this.handlePauseSignal();
         case NodeSignal.NODE_SUSPEND:
           return this.handleSuspendSignal();
         case NodeSignal.NODE_RESUME:
@@ -135,17 +133,21 @@ export class NodeStatusManager {
           return this.handleNodeCreate();
         case NodeSignal.NODE_DELETE:
           return this.handleNodeDelete();
-        case NodeSignal.NODE_DELAY:
-          return this.handleNodeDelay();
+        // case NodeSignal.NODE_DELAY:
+        //   return this.handleNodeDelay();
         case NodeSignal.NODE_RUN:
           return this.handleNodeRun();
         case NodeSignal.NODE_SEND_DATA:
           return this.handleNodeSendData();
         default:
-          Logger.warn(`Unknown signal type: ${currentSignal}`);
+          Logger.warn(
+            `~ NodeStatusManager: Unknown signal type: ${currentSignal}`,
+          );
       }
     } catch (error) {
-      Logger.error(`Error processing signal: ${(error as Error).message}`);
+      Logger.error(
+        `~ NodeStatusManager: Error processing signal: ${(error as Error).message}`,
+      );
       throw error;
     }
   }

@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import {
   NodeSupervisor,
   PipelineProcessor,
-  SupervisorPayloadDeployChain,
   SupervisorPayloadSetup,
   PipelineMeta,
   Ext,

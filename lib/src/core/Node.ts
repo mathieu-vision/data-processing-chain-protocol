@@ -11,7 +11,7 @@ import {
   ReportingSignalType,
   NotificationStatus,
 } from '../types/types';
-import { setTimeout, setImmediate } from 'timers';
+import { setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
 import { Logger } from '../utils/Logger';
 import { NodeSupervisor } from './NodeSupervisor';
@@ -27,7 +27,7 @@ export class Node {
   private dependencies: string[]; // Todo
   private status: ChainStatus.Type;
   private error?: Error;
-  private delay: number;
+  // private delay: number;
   private progress: number;
   private dataType: DataType.Type;
   private executionQueue: Promise<void>;
@@ -51,7 +51,7 @@ export class Node {
     this.pipelines = [];
     this.dependencies = dependencies;
     this.status = ChainStatus.NODE_PENDING;
-    this.delay = 0;
+    // this.delay = 0;
     this.progress = 0;
     this.dataType = DataType.RAW;
     this.executionQueue = Promise.resolve();
@@ -86,6 +86,11 @@ export class Node {
       Logger.warn('Node index is not defined, configuration failed');
     }
     this.config = config;
+    if (config.signalQueue) {
+      Logger.info(`Node ${this.id} enqueuing signals...`);
+      Logger.debug(`${config.signalQueue}`);
+      this.statusManager.enqueueSignals(config.signalQueue);
+    }
   }
 
   /**
@@ -395,9 +400,9 @@ export class Node {
    * Sets execution delay in milliseconds
    * @param {number} delay - Delay amount
    */
-  setDelay(delay: number): void {
-    this.delay = delay;
-  }
+  // setDelay(delay: number): void {
+  //   this.delay = delay;
+  // }
 
   /**
    * Gets current data type (RAW/COMPRESSED)

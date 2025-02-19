@@ -90,11 +90,10 @@ declare namespace ChainStatus {
     const NODE_SUSPENDED: Type;
 }
 declare namespace NodeSignal {
-    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_suspend' | 'node_delay' | 'node_run' | 'node_send_data' | 'node_error' | 'node_resume' | 'node_stop' | 'chain_prepare' | 'chain_start' | 'chain_start_pending_occurrence' | 'chain_deploy';
+    type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_suspend' | 'node_run' | 'node_send_data' | 'node_error' | 'node_resume' | 'node_stop' | 'chain_prepare' | 'chain_start' | 'chain_start_pending_occurrence' | 'chain_deploy';
     const NODE_SETUP: 'node_setup';
     const NODE_CREATE: 'node_create';
     const NODE_DELETE: 'node_delete';
-    const NODE_DELAY: 'node_delay';
     const NODE_RUN: 'node_run';
     const NODE_SEND_DATA: 'node_send_data';
     const NODE_ERROR: 'node_error';
@@ -117,15 +116,6 @@ type SupervisorPayloadCreate = {
 type SupervisorPayloadDelete = {
     signal: 'node_delete';
     id: string;
-};
-type SupervisorPayloadPause = {
-    signal: 'node_pause';
-    id: string;
-};
-type SupervisorPayloadDelay = {
-    signal: 'node_delay';
-    id: string;
-    delay: number;
 };
 type SupervisorPayloadRun = {
     signal: 'node_run';
@@ -154,7 +144,7 @@ type SupervisorPayloadDeployChain = {
     config: ChainConfig;
     data: PipelineData;
 };
-type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | SupervisorPayloadDelete | SupervisorPayloadPause | SupervisorPayloadDelay | SupervisorPayloadRun | SupervisorPayloadSendData | SupervisorPayloadPrepareChain | SupervisorPayloadStartChain | SupervisorPayloadStartPendingChain | SupervisorPayloadDeployChain;
+type SupervisorPayload = SupervisorPayloadSetup | SupervisorPayloadCreate | SupervisorPayloadDelete | SupervisorPayloadRun | SupervisorPayloadSendData | SupervisorPayloadPrepareChain | SupervisorPayloadStartChain | SupervisorPayloadStartPendingChain | SupervisorPayloadDeployChain;
 interface ServiceConfig {
     targetId: string;
     meta?: PipelineMeta;
@@ -176,6 +166,7 @@ type NodeConfig = {
     childMode?: ChildMode;
     chainConfig?: ChainConfig;
     rootConfig?: NodeConfig;
+    signalQueue?: NodeSignal.Type[];
 };
 type ChainConfig = NodeConfig[];
 interface BrodcastSetupMessage {
@@ -216,7 +207,6 @@ declare class Node {
     private dependencies;
     private status;
     private error?;
-    private delay;
     private progress;
     private dataType;
     private executionQueue;
@@ -318,7 +308,6 @@ declare class Node {
      * Sets execution delay in milliseconds
      * @param {number} delay - Delay amount
      */
-    setDelay(delay: number): void;
     /**
      * Gets current data type (RAW/COMPRESSED)
      * @returns {DataType.Type} Current data type
@@ -478,7 +467,6 @@ declare class NodeSupervisor {
      * @param {string} nodeId - The node identifier
      * @param {number} delay - The delay in milliseconds
      */
-    private delayNode;
     /**
      * Creates a new chain with the given configuration
      * @param {ChainConfig} config - The chain configuration
@@ -706,4 +694,4 @@ declare namespace Ext {
     const Resolver: typeof Ext$1;
 }
 
-export { type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, Ext, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelay, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPause, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, type SupervisorPayloadStartPendingChain };
+export { type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, Ext, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, type SupervisorPayloadStartPendingChain };

@@ -126,7 +126,7 @@ export namespace NodeSignal {
     | 'node_delete'
     // | 'node_pause'
     | 'node_suspend'
-    | 'node_delay'
+    // | 'node_delay'
     | 'node_run'
     | 'node_send_data'
     | 'node_error'
@@ -142,7 +142,7 @@ export namespace NodeSignal {
   export const NODE_CREATE: 'node_create' = 'node_create';
   export const NODE_DELETE: 'node_delete' = 'node_delete';
   // export const NODE_PAUSE: 'node_pause' = 'node_pause';
-  export const NODE_DELAY: 'node_delay' = 'node_delay';
+  // export const NODE_DELAY: 'node_delay' = 'node_delay';
   export const NODE_RUN: 'node_run' = 'node_run';
   export const NODE_SEND_DATA: 'node_send_data' = 'node_send_data';
   export const NODE_ERROR: 'node_error' = 'node_error';
@@ -171,18 +171,19 @@ export type SupervisorPayloadDelete = {
   signal: 'node_delete';
   id: string;
 };
-
+/*
 export type SupervisorPayloadPause = {
   signal: 'node_pause';
   id: string;
 };
-
+*/
+/*
 export type SupervisorPayloadDelay = {
   signal: 'node_delay';
   id: string;
   delay: number;
 };
-
+*/
 export type SupervisorPayloadRun = {
   signal: 'node_run';
   id: string;
@@ -220,8 +221,8 @@ export type SupervisorPayload =
   | SupervisorPayloadSetup
   | SupervisorPayloadCreate
   | SupervisorPayloadDelete
-  | SupervisorPayloadPause
-  | SupervisorPayloadDelay
+  //  | SupervisorPayloadPause
+  //  | SupervisorPayloadDelay
   | SupervisorPayloadRun
   | SupervisorPayloadSendData
   | SupervisorPayloadPrepareChain
@@ -252,6 +253,7 @@ export type NodeConfig = {
   childMode?: ChildMode;
   chainConfig?: ChainConfig;
   rootConfig?: NodeConfig;
+  signalQueue?: NodeSignal.Type[];
 };
 
 export type ChainConfig = NodeConfig[];

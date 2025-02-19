@@ -153,6 +153,45 @@
 }
 ```
 
+**Payload example 5 with default signal queue**:
+
+**Start the connectors**
+
+```
+./launch-connectors.sh --type 1
+```
+
+**POST**: `http://localhost:8887/chain/create-and-start`
+
+```json
+{
+  "chainConfig": [
+    {
+      "services": [],
+      "location": "local",
+      "monitoringHost": "http://localhost:8887/"
+    },
+    {
+      "services": ["http://localhost:8888/service1"],
+      "signalQueue": ["node_suspend"],
+      "location": "remote"
+    }
+  ],
+  "data": {
+      "hello": "here the data"
+   }
+}
+```
+
+**POST**: `http://localhost:8887/chain/resume-node`
+
+```json
+{
+  "chainId": "chain-id-returned-by-previous-request",
+  "services": ["http://localhost:8888/service1"]
+}
+```
+
 ---
 
 # LiteConnector.0 Example Usage in 3 Steps
