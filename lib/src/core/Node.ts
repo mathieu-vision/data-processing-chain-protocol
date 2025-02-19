@@ -57,7 +57,7 @@ export class Node {
     this.executionQueue = Promise.resolve();
     this.nextNodeInfo = null;
     this.config = null;
-    this.statusManager = new NodeStatusManager(this.id);
+    this.statusManager = new NodeStatusManager(this);
   }
 
   /**
@@ -201,57 +201,109 @@ export class Node {
         ? 'in parallel'
         : 'in serial';
 
-    Logger.info(`Node ${this.id} execution started ${childMode}...`);
+    const suspendedState = this.statusManager.getSuspendedState();
+    const isResuming = !!suspendedState;
+
+    Logger.info(
+      `Node ${this.id} execution ${isResuming ? 'resumed' : 'started'} ${childMode}...`,
+    );
+
     this.executionQueue = this.executionQueue.then(async () => {
       try {
         this.updateStatus(ChainStatus.NODE_IN_PROGRESS);
-        // todo: monitor this step
-        if (this.delay > 0) {
-          await this.sleep(this.delay);
+
+        let generator: Generator<ProcessorPipeline[], void, unknown>;
+        let processingData = data;
+
+        if (isResuming && suspendedState) {
+          generator = suspendedState.generator as Generator<
+            ProcessorPipeline[],
+            void,
+            unknown
+          >;
+          processingData = suspendedState.data;
+
+          await this.processBatch(suspendedState.currentBatch, processingData);
+
+          const postBatchStatus = await this.statusManager.process();
+          if (postBatchStatus.shouldSuspend) {
+            return;
+          }
+        } else {
+          generator = this.getPipelineGenerator(this.pipelines, 3);
         }
 
-        const generator = this.getPipelineGenerator(this.pipelines, 3);
+        let nextResult = generator.next();
 
-        for (const pipelineBatch of generator) {
-          await this.statusManager.process();
+        while (!nextResult.done) {
+          const preProcessStatus = await this.statusManager.process();
+          if (preProcessStatus.shouldSuspend) {
+            this.statusManager.suspendExecution(
+              generator,
+              nextResult.value,
+              processingData,
+            );
+            return;
+          }
 
-          await new Promise<void>((resolve, reject) => {
-            setImmediate(async () => {
-              try {
-                const batchPromises = pipelineBatch.map((pipeline) =>
-                  this.processPipeline(pipeline, data).then(
-                    (pipelineData: PipelineData) => {
-                      this.output.push(pipelineData);
-                      this.updateProgress();
-                      // todo: monitor this step
-                    },
-                  ),
-                );
-                await Promise.all(batchPromises);
-                resolve();
-              } catch (error) {
-                reject(error);
-              }
-            });
-          });
+          await this.processBatch(nextResult.value, processingData);
+          nextResult = generator.next();
+
+          const postProcessStatus = await this.statusManager.process();
+          if (postProcessStatus.shouldSuspend && !nextResult.done) {
+            this.statusManager.suspendExecution(
+              generator,
+              nextResult.value,
+              processingData,
+            );
+            return;
+          }
         }
 
+        this.statusManager.clearSuspendedState();
         this.updateStatus(ChainStatus.NODE_COMPLETED);
+
         if (this.config?.chainConfig) {
           Logger.info(`child chain found in node: ${this.id}`);
-          await this.processChildChain(data);
+          await this.processChildChain(processingData);
         }
       } catch (error) {
-        this.updateStatus(ChainStatus.NODE_FAILED, error as Error);
-        Logger.error(`Node ${this.id} execution failed: ${error}`);
+        if (!this.statusManager.isSuspended()) {
+          this.statusManager.clearSuspendedState();
+          this.updateStatus(ChainStatus.NODE_FAILED, error as Error);
+          Logger.error(`Node ${this.id} execution failed: ${error}`);
+        }
       }
     });
 
     const supervisor = NodeSupervisor.retrieveService();
-    //
     await supervisor.handleRequest({
       signal: NodeSignal.NODE_SEND_DATA,
       id: this.id,
+    });
+  }
+
+  private async processBatch(
+    pipelineBatch: ProcessorPipeline[],
+    data: PipelineData,
+  ): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      setImmediate(async () => {
+        try {
+          const batchPromises = pipelineBatch.map((pipeline) =>
+            this.processPipeline(pipeline, data).then(
+              (pipelineData: PipelineData) => {
+                this.output.push(pipelineData);
+                this.updateProgress();
+              },
+            ),
+          );
+          await Promise.all(batchPromises);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
   }
 
@@ -363,10 +415,6 @@ export class Node {
    */
   setDelay(delay: number): void {
     this.delay = delay;
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

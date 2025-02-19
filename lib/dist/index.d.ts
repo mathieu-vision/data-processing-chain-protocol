@@ -281,6 +281,7 @@ declare class Node {
      * @returns {Promise<void>}
      */
     execute(data: PipelineData): Promise<void>;
+    private processBatch;
     /**
      * Sends processed data to the next node after execution completion
      * @returns {Promise<void>}
@@ -318,7 +319,6 @@ declare class Node {
      * @param {number} delay - Delay amount
      */
     setDelay(delay: number): void;
-    private sleep;
     /**
      * Gets current data type (RAW/COMPRESSED)
      * @returns {DataType.Type} Current data type

@@ -1,16 +1,22 @@
-import { NodeSignal } from '../types/types';
+import { NodeSignal, PipelineData } from '../types/types';
 import { Logger } from '../utils/Logger';
+import { Node } from './Node';
+
+interface SuspendedState {
+  generator: Generator<any, void, unknown>;
+  currentBatch: any;
+  data: PipelineData;
+}
 
 export class NodeStatusManager {
   private signalQueue: NodeSignal.Type[] = [];
   private currentCursor: number = 0;
+  private executionState: 'running' | 'suspended' = 'running';
 
-  private isPaused: boolean = false;
-  private pausePromise: Promise<void> | null = null;
-  private resumeCallback: (() => void) | null = null;
+  private suspendedState: SuspendedState | null = null;
 
   // eslint-disable-next-line no-unused-vars
-  constructor(private nodeId: string) {}
+  constructor(private node: Node) {}
 
   private handleStopSignal(): void {
     Logger.info('NodeStatusManager: Processing STOP signal');
@@ -18,26 +24,61 @@ export class NodeStatusManager {
 
   private handlePauseSignal(): void {
     Logger.info('NodeStatusManager: Processing PAUSE signal');
-    if (!this.isPaused) {
-      this.isPaused = true;
-      this.pausePromise = new Promise((resolve) => {
-        this.resumeCallback = resolve;
-      });
-      Logger.info(`Node ${this.nodeId} paused.`);
+    if (this.executionState !== 'suspended') {
+      this.executionState = 'suspended';
+      Logger.info(`Node ${this.node.getId()} paused.`);
     }
   }
 
   private handleResumeSignal(): void {
     Logger.info('NodeStatusManager: Processing RESUME signal');
-    if (this.isPaused) {
-      this.isPaused = false;
-      if (this.resumeCallback) {
-        this.resumeCallback();
-      }
-      this.pausePromise = null;
-      this.resumeCallback = null;
-      Logger.info(`Node ${this.nodeId} resumed.`);
+    if (this.executionState === 'suspended') {
+      this.executionState = 'running';
+      Logger.info(`Node ${this.node.getId()} resumed.`);
     }
+  }
+
+  async resume(): Promise<void> {
+    if (!this.isSuspended()) {
+      Logger.warn(
+        `Cannot resume Node ${this.node.getId()}: not in suspended state`,
+      );
+      return;
+    }
+    this.pushSignals([NodeSignal.NODE_RESUME]);
+    await this.process();
+    const suspendedState = this.getSuspendedState();
+    if (!suspendedState) {
+      Logger.warn(
+        `Cannot resume Node ${this.node.getId()}: no suspended state found`,
+      );
+      return;
+    }
+    return this.node.execute(suspendedState.data);
+  }
+
+  suspendExecution<T>(
+    generator: Generator<T, void, unknown>,
+    currentBatch: T,
+    data: PipelineData,
+  ): void {
+    this.suspendedState = {
+      generator,
+      currentBatch,
+      data,
+    };
+  }
+
+  getSuspendedState(): SuspendedState | null {
+    return this.suspendedState;
+  }
+
+  clearSuspendedState(): void {
+    this.suspendedState = null;
+  }
+
+  isSuspended(): boolean {
+    return this.executionState === 'suspended';
   }
 
   private handleErrorSignal(): void {
@@ -128,16 +169,10 @@ export class NodeStatusManager {
     };
   }
 
-  private async processState(): Promise<void> {
-    if (this.isPaused && this.pausePromise) {
-      await this.pausePromise;
-    }
-  }
-
-  async process(): Promise<void> {
+  async process(): Promise<{ shouldSuspend: boolean }> {
     for (; this.currentCursor < this.signalQueue.length; this.currentCursor++) {
       this.processNextSignal();
-      await this.processState();
     }
+    return { shouldSuspend: this.executionState === 'suspended' };
   }
 }
