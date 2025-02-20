@@ -41,6 +41,7 @@ interface CallbackPayload {
     data: PipelineData;
     meta?: PipelineMeta;
 }
+type NodeStatusCallback = (payload: any) => void;
 type ServiceCallback = (payload: CallbackPayload) => void;
 type SetupCallback = (message: BrodcastSetupMessage) => Promise<void>;
 type ReportingCallback = (message: ReportingMessage) => Promise<void>;
@@ -369,6 +370,7 @@ declare class NodeSupervisor {
     private chains;
     private childChains;
     private broadcastSetupCallback;
+    nodeStatusCallback: NodeStatusCallback;
     remoteServiceCallback: ServiceCallback;
     /**
      * Creates a new NodeSupervisor instance
@@ -383,6 +385,7 @@ declare class NodeSupervisor {
     static retrieveService(refresh?: boolean): NodeSupervisor;
     log(type: string): void;
     getChain(chainId: string): ChainRelation | undefined;
+    setNodeStatusCallback(nodeStatusCallback: NodeStatusCallback): void;
     /**
      * Sets the remote service callback function
      * @param {ServiceCallback} remoteServiceCallback - The callback to handle remote service calls

@@ -19,6 +19,7 @@ import {
   ReportingSignalType,
   NotificationStatus,
   ChildMode,
+  NodeStatusCallback,
 } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
@@ -43,6 +44,8 @@ export class NodeSupervisor {
   private childChains: Map<string, string[]>;
 
   private broadcastSetupCallback: SetupCallback;
+
+  nodeStatusCallback: NodeStatusCallback;
   remoteServiceCallback: ServiceCallback;
 
   // private reporting: ReportingAgent | null = null;
@@ -60,6 +63,7 @@ export class NodeSupervisor {
     this.childChains = new Map();
     this.remoteServiceCallback = DefaultCallback.SERVICE_CALLBACK;
     this.broadcastSetupCallback = DefaultCallback.SETUP_CALLBACK;
+    this.nodeStatusCallback = DefaultCallback.NODE_STATUS_CALLBACK;
   }
 
   /**
@@ -94,6 +98,10 @@ export class NodeSupervisor {
 
   getChain(chainId: string): ChainRelation | undefined {
     return this.chains.get(chainId);
+  }
+
+  setNodeStatusCallback(nodeStatusCallback: NodeStatusCallback): void {
+    this.nodeStatusCallback = nodeStatusCallback;
   }
 
   /**

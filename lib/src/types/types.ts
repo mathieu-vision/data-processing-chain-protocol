@@ -17,6 +17,7 @@ export interface CallbackPayload {
   data: PipelineData;
   meta?: PipelineMeta;
 }
+export type NodeStatusCallback = (payload: any) => void;
 export type ServiceCallback = (payload: CallbackPayload) => void;
 export type SetupCallback = (message: BrodcastSetupMessage) => Promise<void>;
 export type ReportingCallback = (message: ReportingMessage) => Promise<void>;
@@ -46,6 +47,11 @@ export namespace DefaultCallback {
     message: BroadcastReportingMessage,
   ) => {
     Logger.warn('BROADCAST_REPORTING_CALLBACK not set');
+  };
+  export const NODE_STATUS_CALLBACK: NodeStatusCallback = async (
+    message: NodeStatusMessage,
+  ) => {
+    Logger.warn('NODE_STATUS_CALLBACK not set');
   };
 }
 
@@ -263,6 +269,10 @@ export interface BrodcastSetupMessage {
     id: string;
     config: ChainConfig;
   };
+}
+
+export interface NodeStatusMessage {
+  signal: NodeSignal.Type;
 }
 
 export interface ReportingPayload {
