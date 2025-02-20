@@ -93,6 +93,10 @@ export class Node {
     }
   }
 
+  enqueueSignals(statusQueue: NodeSignal.Type[]): void {
+    this.statusManager.enqueueSignals(statusQueue);
+  }
+
   /**
    * Gets the node's current execution queue promise
    * @returns {Promise<void>} Current execution queue

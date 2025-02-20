@@ -97,12 +97,28 @@ class SupervisorContainer {
             .status(200)
             .json({ message: 'Data received and processed successfully' });
           break;
-        // Handle Notifications distant Monitorings
         case 'notify': {
+          // Handle Notifications distant Monitorings
           this.notify(req.body);
           res.status(200).json({
             message: 'Notify the signal to the supervisor monitoring',
           });
+          break;
+        }
+        case 'enqueue-status': {
+          const { status, nodeId, target } = req.body;
+          const { targetId, targetType } = target;
+          if (targetType == 'local') {
+            this.nodeSupervisor.enqueueSignals(nodeId, status);
+            res.status(200).json({
+              message: 'Enqueue status array',
+            });
+          } else {
+            this.nodeSupervisor.fallbackSignalsQueue({ nodeId, status });
+            res.status(200).json({
+              message: 'Enqueue status array',
+            });
+          }
           break;
         }
         default:
@@ -156,6 +172,10 @@ class SupervisorContainer {
       paths: {
         notify: '/node/communicate/notify',
       },
+    });
+
+    await Ext.NodeStatus.setNodeStatusResolverCallbacks({
+      paths: { enqueue: '/node/communicate/enqueue-status' },
     });
 
     try {

@@ -271,10 +271,6 @@ export interface BrodcastSetupMessage {
   };
 }
 
-export interface NodeStatusMessage {
-  signal: NodeSignal.Type;
-}
-
 export interface ReportingPayload {
   chainId: string;
   nodeId: string;
@@ -294,6 +290,10 @@ export interface ReportingMessage extends ReportingPayload {
 
 export interface BroadcastReportingMessage extends ReportingPayload {
   signal: NotificationStatus;
+}
+
+export interface NodeStatusMessage extends ReportingPayload {
+  signal: NodeSignal.Type;
 }
 
 export interface ChainRelation {

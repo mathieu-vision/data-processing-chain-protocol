@@ -82,7 +82,7 @@ export namespace Ext {
    * @param {string} chainId - The ID of the chain to locate the monitoring host
    * @returns {Promise<string | undefined>}
    */
-  const defaultMonitoringResolver = async (
+  export const defaultMonitoringResolver = async (
     chainId: string,
   ): Promise<string | undefined> => {
     try {
