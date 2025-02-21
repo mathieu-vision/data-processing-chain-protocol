@@ -17,9 +17,10 @@ import {
   ReportingCallback,
   BroadcastReportingCallback,
   ReportingSignalType,
-  NotificationStatus,
+  Notification,
   ChildMode,
   NodeStatusCallback,
+  NodeStatusMessage,
 } from '../types/types';
 import { Logger } from '../utils/Logger';
 import { PipelineProcessor } from './PipelineProcessor';
@@ -40,7 +41,7 @@ export class NodeSupervisor {
   private nodes: Map<string, Node>;
   // local chains
   private chains: Map<string, ChainRelation>;
-  //
+  // map children to parents
   private childChains: Map<string, string[]>;
 
   private broadcastSetupCallback: SetupCallback;
@@ -153,7 +154,9 @@ export class NodeSupervisor {
     this.nodes.get(nodeId)?.enqueueSignals(status);
   }
 
-  fallbackSignalsQueue(message: any) {}
+  fallbackSignalsQueue(message: any) {
+    //
+  }
 
   /**
    * Handles supervisor requests (node setup, creation, deletion, etc.)
@@ -203,6 +206,20 @@ export class NodeSupervisor {
           `${this.ctn}: Unknown signal received: ${JSON.stringify(payload, null, 2)}`,
         );
     }
+  }
+
+  remoteReport(
+    notification: Notification & Partial<NodeStatusMessage>,
+    chainId: string,
+  ) {
+    const monitoring = MonitoringAgent.retrieveService();
+    const reporting = monitoring.genReportingAgent({
+      chainId,
+      nodeId: 'supervisor-remote',
+      index: 1,
+      count: -1,
+    });
+    reporting.notify(notification, 'global-signal');
   }
 
   private localReport(status: ChainStatus.Type, chainId: string) {
@@ -322,9 +339,9 @@ export class NodeSupervisor {
   /**
    * Handles externals notifications about a chain status change
    * @param {string} chainId - The chain identifier
-   * @param {NotificationStatus} status - The new chain status
+   * @param {Notification} notification - The new chain status notification
    */
-  handleNotification(chainId: string, status: NotificationStatus): void {
+  handleNotification(chainId: string, notification: Notification): void {
     try {
       const chain = this.chains.get(chainId);
       if (!chain) {
@@ -341,11 +358,11 @@ export class NodeSupervisor {
         Logger.warn(`${this.ctn}: Node with ID ${rootNodeId} not found.`);
         return;
       }
-      node.notify(status, 'global-signal');
       Logger.info(
-        `${this.ctn}:\n\t\tNotification sent to node\n` +
-          `${rootNodeId}\n\t\twith status ${JSON.stringify(status)}.`,
+        `${this.ctn}:\n\t\tSending notification to node ${rootNodeId}` +
+          `\n\t\twith status ${JSON.stringify(notification)}.`,
       );
+      node.notify(notification, 'global-signal');
     } catch (error) {
       Logger.error(
         `${this.ctn}: Failed to handle notification for chain ${chainId}: ${(error as Error).message}`,

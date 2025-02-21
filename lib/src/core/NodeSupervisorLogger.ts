@@ -5,7 +5,7 @@ import { Workflow } from '../agents/MonitoringAgent';
 export class NodeSupervisorLogger {
   constructor() {}
   logChains(chains: Map<string, ChainRelation>) {
-    Logger.debug('Logging chains content:');
+    Logger.debug('--Logging chains content:');
     chains.forEach((relation, chainId) => {
       Logger.debug(`Chain ID: ${chainId}`);
       Logger.debug(`Root Node ID: ${relation.rootNodeId || 'None'}`);
@@ -29,6 +29,7 @@ export class NodeSupervisorLogger {
   }
 
   logWorkflow(workflow: Workflow) {
+    Logger.debug('--Logging chains content:');
     Object.entries(workflow).forEach(([workflowId, node]) => {
       Logger.header(`Workflow Node: ${workflowId}`);
       Object.entries(node).forEach(([key, value]) => {

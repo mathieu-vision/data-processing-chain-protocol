@@ -93,7 +93,10 @@ export namespace Ext {
           message: `DRC: Resolving host for monitoring: ${monitoringHost}`,
         });
         return monitoringHost;
-      } else throw new Error('Monitoring host not found');
+      } else
+        throw new Error(
+          'Monitoring host not found, selected chain may not exist.',
+        );
     } catch (error) {
       Logger.error({ message: (error as Error).message });
     }
@@ -107,12 +110,17 @@ export namespace Ext {
   const broadcastReportingCallback = async (
     payload: BRCPayload,
   ): Promise<void> => {
-    const { message, path, monitoringResolver } = payload;
-    const monitoringHost = await monitoringResolver(message.chainId);
-    const url = new URL(path, monitoringHost);
-    const data = JSON.stringify(message);
-    Logger.info(`BroadcastReportingCallback: Sending message to ${url}`);
-    await post(url, data);
+    try {
+      const { message, path, monitoringResolver } = payload;
+      const monitoringHost = await monitoringResolver(message.chainId);
+      const url = new URL(path, monitoringHost);
+      const data = JSON.stringify(message);
+      Logger.info(`BroadcastReportingCallback: Sending message to ${url}`);
+      Logger.debug(`- message:\n\t${JSON.stringify(message, null, 2)}`);
+      await post(url, data);
+    } catch (error) {
+      Logger.error({ message: (error as Error).message });
+    }
   };
 
   /**

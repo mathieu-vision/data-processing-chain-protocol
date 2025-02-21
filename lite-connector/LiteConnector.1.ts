@@ -6,6 +6,7 @@ import {
   SupervisorPayloadSetup,
   PipelineMeta,
   Ext,
+  ChainStatus,
 } from 'dpcp-library';
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
@@ -32,10 +33,12 @@ class SupervisorContainer {
   }
 
   private notify(data: any): void {
-    const { chainId, signal } = data;
+    const { chainId, signal: notification } = data;
+    // Object.assign(notification, { payload });
+
     Logger.header({ message: 'Connector - Notification:' });
     Logger.info({
-      message: `Chain: ${chainId}, Signal: ${JSON.stringify(signal)}\n`,
+      message: `Chain: ${chainId}, Signal: ${JSON.stringify(notification)}\n`,
     });
     //
     this.nodeSupervisor.log('chains');
@@ -43,7 +46,7 @@ class SupervisorContainer {
     this.nodeSupervisor.log('monitoring-workflow');
     Logger.header({ message: '====================================' });
     //
-    this.nodeSupervisor.handleNotification(chainId, signal);
+    this.nodeSupervisor.handleNotification(chainId, notification);
   }
 
   public async createAndStartChain(req: Request, res: Response): Promise<void> {
@@ -65,6 +68,16 @@ class SupervisorContainer {
       });
       res.status(500).json({ error: 'Internal server error' });
     }
+  }
+
+  public async resumeNode(req: Request, res: Response): Promise<void> {
+    const { chainId, targetId } = req.body;
+    const signal = NodeSignal.NODE_RESUME;
+    this.nodeSupervisor.remoteReport(
+      { status: ChainStatus.CHAIN_NOTIFIED, signal, payload: { targetId } },
+      chainId,
+    );
+    res.status(201).json({ message: 'success' });
   }
 
   public async communicateNode(req: Request, res: Response): Promise<void> {
@@ -108,6 +121,9 @@ class SupervisorContainer {
         case 'enqueue-status': {
           const { status, nodeId, target } = req.body;
           const { targetId, targetType } = target;
+          Logger.info({
+            message: `${JSON.stringify(req.body, null, 2)}`,
+          });
           if (targetType == 'local') {
             this.nodeSupervisor.enqueueSignals(nodeId, status);
             res.status(200).json({
@@ -217,6 +233,10 @@ export class LiteConnector {
       this.app.post(
         '/node/communicate/:type',
         this.container.communicateNode.bind(this.container),
+      );
+      this.app.post(
+        '/chain/resume-node',
+        this.container.resumeNode.bind(this.container),
       );
     }
   }

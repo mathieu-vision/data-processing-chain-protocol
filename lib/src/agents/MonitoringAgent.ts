@@ -54,17 +54,6 @@ export class MonitoringAgent extends Agent {
   private remoteMonitoringHost: Map<string, string>;
   private workflow: Workflow;
 
-  /*
-  private chainHierarchy: Map<
-    string,
-    {
-      parentId?: string;
-      children: string[];
-      completedChildren: Set<string>;
-    }
-  > = new Map();
-  */
-
   /**
    * Creates a new MonitoringAgent instance
    */
@@ -229,89 +218,4 @@ export class MonitoringAgent extends Agent {
   getChainSetupCompleted(chainId: string): boolean | undefined {
     return this.workflow[chainId]?.setupCompleted;
   }
-
-  //
-  /*
-  async handleChildChainCompletion(childChainId: string) {
-    const childEntry = this.chainHierarchy.get(childChainId);
-    if (!childEntry || !childEntry.parentId) return;
-
-    const parentEntry = this.chainHierarchy.get(childEntry.parentId);
-    if (parentEntry) {
-      parentEntry.completedChildren.add(childChainId);
-      await this.checkChainReadiness(childEntry.parentId);
-    }
-  }
-
-  trackChildChain(parentChainId: string, childChainId: string) {
-    const parentEntry = this.chainHierarchy.get(parentChainId) || {
-      children: [],
-      completedChildren: new Set(),
-    };
-    parentEntry.children.push(childChainId);
-    this.chainHierarchy.set(parentChainId, parentEntry);
-
-    this.chainHierarchy.set(childChainId, {
-      parentId: parentChainId,
-      children: [],
-      completedChildren: new Set(),
-    });
-  }
-
-  private async checkChainReadiness(chainId: string) {
-    try {
-      const entry = this.chainHierarchy.get(chainId);
-      if (!entry) {
-        Logger.error(`No hierarchy entry found for chain ${chainId}`);
-        return;
-      }
-
-      const supervisor = NodeSupervisor.retrieveService();
-      const chain = supervisor.getChain(chainId);
-      if (!chain) {
-        Logger.error(`No chain found for id ${chainId}`);
-        return;
-      }
-
-      const workflowNode = this.workflow[chainId];
-      if (!workflowNode) {
-        throw new Error(`No workflow found for chain ${chainId}`);
-      }
-      const setupCount = workflowNode.setupCount || 0;
-      const config = chain.config.length || 0;
-
-      Logger.info(
-        `Chain ${chainId} setup status: ${setupCount}/${config} configs ready`,
-      );
-      Logger.info(
-        `Children completed: ${entry.completedChildren.size}/${entry.children.length}`,
-      );
-
-      if (
-        setupCount >= config &&
-        entry.children.length === entry.completedChildren.size
-      ) {
-        try {
-          await supervisor.handleRequest({
-            signal: NodeSignal.CHAIN_START_PENDING,
-            id: chainId,
-          });
-          Logger.info(
-            `Chain ${chainId} readiness check completed, start signal sent`,
-          );
-        } catch (error) {
-          Logger.error(
-            `Failed to send start signal for chain ${chainId}: ${(error as Error).message}`,
-          );
-          throw error;
-        }
-      }
-    } catch (error) {
-      Logger.error(
-        `Error during chain readiness check for ${chainId}: ${(error as Error).message}`,
-      );
-      throw error;
-    }
-  }
-  */
 }

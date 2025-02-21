@@ -95,32 +95,36 @@ export namespace ChainType {
 
 export namespace ChainStatus {
   export type Type =
+    | 'chain_notified'
+    | 'chain_deployed'
+    | 'chain_setup_completed'
     | 'node_pending'
     | 'node_in_progress' // running
     | 'node_completed'
     | 'node_failed'
     // | 'node_paused'
+    | 'node_resumed'
     | 'node_suspended'
     | 'node_setup_completed'
-    | 'chain_deployed'
-    | 'chain_setup_completed'
     | 'child_chain_started'
     | 'child_chain_completed'
     | 'node_pending_deletion'
     | 'node_end_of_pipeline';
   // export const NODE_PAUSED: Type = 'node_paused';
+  export const CHAIN_NOTIFIED: Type = 'chain_notified';
+  export const CHAIN_DEPLOYED: Type = 'chain_deployed';
+  export const CHAIN_SETUP_COMPLETED: Type = 'chain_setup_completed';
   export const NODE_PENDING: Type = 'node_pending';
   export const NODE_IN_PROGRESS: Type = 'node_in_progress';
   export const NODE_COMPLETED: Type = 'node_completed';
   export const NODE_FAILED: Type = 'node_failed';
   export const NODE_SETUP_COMPLETED: Type = 'node_setup_completed';
-  export const CHAIN_DEPLOYED: Type = 'chain_deployed';
-  export const CHAIN_SETUP_COMPLETED: Type = 'chain_setup_completed';
   export const CHILD_CHAIN_STARTED: Type = 'child_chain_started';
   export const CHILD_CHAIN_COMPLETED: Type = 'child_chain_completed';
   export const NODE_PENDING_DELETION: Type = 'node_pending_deletion';
   export const NODE_END_OF_PIPELINE: Type = 'node_end_of_pipeline';
   export const NODE_SUSPENDED: Type = 'node_suspended';
+  export const NODE_RESUMED: Type = 'node_resumed';
 }
 
 // handler signal
@@ -279,17 +283,19 @@ export interface ReportingPayload {
 }
 
 // todo:
-export interface NotificationStatus {
+export interface Notification {
   status: ChainStatus.Type;
+  signal?: NodeSignal.Type;
   broadcasted?: boolean;
+  payload?: unknown;
 }
 
 export interface ReportingMessage extends ReportingPayload {
-  signal: NotificationStatus;
+  signal: Notification & Partial<NodeStatusMessage>;
 }
 
 export interface BroadcastReportingMessage extends ReportingPayload {
-  signal: NotificationStatus;
+  signal: Notification;
 }
 
 export interface NodeStatusMessage extends ReportingPayload {

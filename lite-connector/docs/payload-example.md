@@ -192,6 +192,19 @@
 }
 ```
 
+**POST**: `http://localhost:8887/communicate/enqueue`
+
+```json
+{
+  "status": ["node_resume"],
+  "nodeId": "",
+  "target": {
+    "targetId": ""
+    // "targetType": "local" // "local", undefined
+  }
+}
+```
+
 ---
 
 # LiteConnector.0 Example Usage in 3 Steps

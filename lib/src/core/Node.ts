@@ -9,7 +9,7 @@ import {
   ChainType,
   PipelineMeta,
   ReportingSignalType,
-  NotificationStatus,
+  Notification,
 } from '../types/types';
 import { setImmediate } from 'timers';
 import { randomUUID } from 'node:crypto';
@@ -161,15 +161,15 @@ export class Node {
    * @param {ChainStatus.Type} notify - Node status to report
    */
   notify(
-    status: ChainStatus.Type | NotificationStatus,
+    notification: ChainStatus.Type | Notification,
     type: ReportingSignalType = 'local-signal',
   ): void {
     try {
       if (this.reporting !== null) {
-        if (typeof status === 'object' && 'status' in status) {
-          this.reporting.notify(status, type);
+        if (typeof notification === 'object' && 'status' in notification) {
+          this.reporting.notify(notification, type);
         } else {
-          this.reporting.notify({ status }, type);
+          this.reporting.notify({ status: notification }, type);
         }
       } else {
         throw new Error('Reporter not set');

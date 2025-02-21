@@ -57,19 +57,21 @@ declare namespace ChainType {
     const AUTO_DELETE: Type;
 }
 declare namespace ChainStatus {
-    type Type = 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_suspended' | 'node_setup_completed' | 'chain_deployed' | 'chain_setup_completed' | 'child_chain_started' | 'child_chain_completed' | 'node_pending_deletion' | 'node_end_of_pipeline';
+    type Type = 'chain_notified' | 'chain_deployed' | 'chain_setup_completed' | 'node_pending' | 'node_in_progress' | 'node_completed' | 'node_failed' | 'node_resumed' | 'node_suspended' | 'node_setup_completed' | 'child_chain_started' | 'child_chain_completed' | 'node_pending_deletion' | 'node_end_of_pipeline';
+    const CHAIN_NOTIFIED: Type;
+    const CHAIN_DEPLOYED: Type;
+    const CHAIN_SETUP_COMPLETED: Type;
     const NODE_PENDING: Type;
     const NODE_IN_PROGRESS: Type;
     const NODE_COMPLETED: Type;
     const NODE_FAILED: Type;
     const NODE_SETUP_COMPLETED: Type;
-    const CHAIN_DEPLOYED: Type;
-    const CHAIN_SETUP_COMPLETED: Type;
     const CHILD_CHAIN_STARTED: Type;
     const CHILD_CHAIN_COMPLETED: Type;
     const NODE_PENDING_DELETION: Type;
     const NODE_END_OF_PIPELINE: Type;
     const NODE_SUSPENDED: Type;
+    const NODE_RESUMED: Type;
 }
 declare namespace NodeSignal {
     type Type = 'node_setup' | 'node_create' | 'node_delete' | 'node_suspend' | 'node_run' | 'node_send_data' | 'node_error' | 'node_resume' | 'node_stop' | 'chain_prepare' | 'chain_start' | 'chain_start_pending_occurrence' | 'chain_deploy';
@@ -164,15 +166,17 @@ interface ReportingPayload {
     index: number;
     count: number;
 }
-interface NotificationStatus {
+interface Notification {
     status: ChainStatus.Type;
+    signal?: NodeSignal.Type;
     broadcasted?: boolean;
+    payload?: unknown;
 }
 interface ReportingMessage extends ReportingPayload {
-    signal: NotificationStatus;
+    signal: Notification & Partial<NodeStatusMessage>;
 }
 interface BroadcastReportingMessage extends ReportingPayload {
-    signal: NotificationStatus;
+    signal: Notification;
 }
 interface NodeStatusMessage extends ReportingPayload {
     signal: NodeSignal.Type;
@@ -207,7 +211,7 @@ declare class Node {
     addPipeline(pipeline: ProcessorPipeline): void;
     private processPipeline;
     private getPipelineGenerator;
-    notify(status: ChainStatus.Type | NotificationStatus, type?: ReportingSignalType): void;
+    notify(notification: ChainStatus.Type | Notification, type?: ReportingSignalType): void;
     private processChildChain;
     execute(data: PipelineData): Promise<void>;
     private processBatch;
@@ -254,11 +258,12 @@ declare class NodeSupervisor {
     enqueueSignals(nodeId: string, status: NodeSignal.Type[]): void;
     fallbackSignalsQueue(message: any): void;
     handleRequest(payload: SupervisorPayload): Promise<void | string>;
+    remoteReport(notification: Notification & Partial<NodeStatusMessage>, chainId: string): void;
     private localReport;
     private deployChain;
     private createNode;
     private setupNode;
-    handleNotification(chainId: string, status: NotificationStatus): void;
+    handleNotification(chainId: string, notification: Notification): void;
     private notify;
     addProcessors(nodeId: string, processors: PipelineProcessor[]): Promise<void>;
     private deleteNode;

@@ -87,13 +87,14 @@ export namespace Ext {
           }
           break;
         }
-        /*
-       case ChainStatus.CHILD_CHAIN_COMPLETED:
-         await monitoring.handleChildChainCompletion(
-           '', // message.childChainId!,
-         );
-         break;
-         */
+
+        case ChainStatus.CHAIN_NOTIFIED: {
+          const { signal } = message.signal;
+          Logger.debug(`signal: ${signal} from ${chainId}`);
+          // todo
+          break;
+        }
+
         /*
          *
          */
