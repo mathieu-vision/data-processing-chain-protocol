@@ -11,6 +11,8 @@ import {
 import { CallbackPayload, NodeSignal, PipelineData } from 'dpcp-library';
 import { Logger } from './libs/Logger';
 import http from 'http';
+import { URL } from 'url';
+import { compareURLs } from './libs/utils';
 
 dotenv.config({ path: '.connector.env' });
 
@@ -70,16 +72,6 @@ class SupervisorContainer {
     }
   }
 
-  public async resumeNode(req: Request, res: Response): Promise<void> {
-    const { chainId, targetId } = req.body;
-    const signal = NodeSignal.NODE_RESUME;
-    this.nodeSupervisor.remoteReport(
-      { status: ChainStatus.CHAIN_NOTIFIED, signal, payload: { targetId } },
-      chainId,
-    );
-    res.status(201).json({ message: 'success' });
-  }
-
   public async communicateNode(req: Request, res: Response): Promise<void> {
     const communicationType = req.params.type;
     try {
@@ -119,18 +111,33 @@ class SupervisorContainer {
           break;
         }
         case 'enqueue-status': {
-          const { status, nodeId, target } = req.body;
-          const { targetId, targetType } = target;
+          const { hostURI, signal, nodeId, chainId, targetId } = req.body;
           Logger.info({
             message: `${JSON.stringify(req.body, null, 2)}`,
           });
+          let targetType = req.body?.targetType;
+          if (targetType === undefined) {
+            const baseURI = process.env.BASE_URI;
+            if (baseURI && compareURLs(hostURI, baseURI)) {
+              targetType = 'local';
+            }
+          }
           if (targetType == 'local') {
-            this.nodeSupervisor.enqueueSignals(nodeId, status);
+            // find the node and enqueue the signal
+            // todo
+            this.nodeSupervisor.enqueueSignals(nodeId, [signal]);
             res.status(200).json({
               message: 'Enqueue status array',
             });
           } else {
-            this.nodeSupervisor.fallbackSignalsQueue({ nodeId, status });
+            this.nodeSupervisor.remoteReport(
+              {
+                status: ChainStatus.CHAIN_NOTIFIED,
+                signal,
+                payload: { targetId },
+              },
+              chainId,
+            );
             res.status(200).json({
               message: 'Enqueue status array',
             });
@@ -233,10 +240,6 @@ export class LiteConnector {
       this.app.post(
         '/node/communicate/:type',
         this.container.communicateNode.bind(this.container),
-      );
-      this.app.post(
-        '/chain/resume-node',
-        this.container.resumeNode.bind(this.container),
       );
     }
   }

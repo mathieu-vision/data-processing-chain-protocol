@@ -13,11 +13,17 @@ function getArgValue(argName: string): string | undefined {
 const argPort = getArgValue('--port');
 const argType = getArgValue('--type');
 const argConnectorUid = getArgValue('--connector_uid');
+const argBaseHost = getArgValue('--base_host') || 'localhost';
 
 const port = argPort
   ? parseInt(argPort, 10)
   : parseInt(process.env.PORT || '3000', 10);
 const connectorUid = argConnectorUid || process.env.CONNECTOR_UID || 'default';
+
+process.env.BASE_URI = `http://${argBaseHost}:${port}`;
+Logger.info({
+  message: `Setting BASE_URI to: ${process.env.BASE_URI}`,
+});
 
 let connector;
 const caseSwitch = argType ? parseInt(argType, 10) : 0;

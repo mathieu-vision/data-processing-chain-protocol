@@ -256,7 +256,6 @@ declare class NodeSupervisor {
     setMonitoringCallback(reportingCallback: ReportingCallback): void;
     setUid(uid: string): void;
     enqueueSignals(nodeId: string, status: NodeSignal.Type[]): void;
-    fallbackSignalsQueue(message: any): void;
     handleRequest(payload: SupervisorPayload): Promise<void | string>;
     remoteReport(notification: Notification & Partial<NodeStatusMessage>, chainId: string): void;
     private localReport;

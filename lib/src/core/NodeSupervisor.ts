@@ -154,10 +154,6 @@ export class NodeSupervisor {
     this.nodes.get(nodeId)?.enqueueSignals(status);
   }
 
-  fallbackSignalsQueue(message: any) {
-    //
-  }
-
   /**
    * Handles supervisor requests (node setup, creation, deletion, etc.)
    * @param {SupervisorPayload} payload - The request payload
