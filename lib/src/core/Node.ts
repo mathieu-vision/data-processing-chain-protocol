@@ -89,12 +89,12 @@ export class Node {
     if (config.signalQueue) {
       Logger.info(`Node ${this.id} enqueuing signals...`);
       Logger.debug(`${config.signalQueue}`);
-      this.statusManager.enqueueSignals(config.signalQueue);
+      void this.statusManager.enqueueSignals(config.signalQueue);
     }
   }
 
-  enqueueSignals(statusQueue: NodeSignal.Type[]): void {
-    this.statusManager.enqueueSignals(statusQueue);
+  async enqueueSignals(statusQueue: NodeSignal.Type[]): Promise<void> {
+    await this.statusManager.enqueueSignals(statusQueue);
   }
 
   /**

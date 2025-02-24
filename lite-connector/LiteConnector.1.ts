@@ -36,8 +36,6 @@ class SupervisorContainer {
 
   private notify(data: any): void {
     const { chainId, signal: notification } = data;
-    // Object.assign(notification, { payload });
-
     Logger.header({ message: 'Connector - Notification:' });
     Logger.info({
       message: `Chain: ${chainId}, Signal: ${JSON.stringify(notification)}\n`,
@@ -111,11 +109,11 @@ class SupervisorContainer {
           break;
         }
         case 'enqueue-status': {
-          const { hostURI, signal, nodeId, chainId, targetId } = req.body;
+          const { hostURI, signal, chainId, targetId } = req.body;
           Logger.info({
             message: `${JSON.stringify(req.body, null, 2)}`,
           });
-          let targetType = req.body?.targetType;
+          let { targetType } = req.body;
           if (targetType === undefined) {
             const baseURI = process.env.BASE_URI;
             if (baseURI && compareURLs(hostURI, baseURI)) {
@@ -123,11 +121,18 @@ class SupervisorContainer {
             }
           }
           if (targetType == 'local') {
+            let { nodeId } = req.body;
             // find the node and enqueue the signal
-            // todo
+            if (!nodeId) {
+              const nodes = this.nodeSupervisor.getNodesByServiceAndChain(
+                targetId,
+                chainId,
+              );
+              nodeId = nodes[0];
+            }
             this.nodeSupervisor.enqueueSignals(nodeId, [signal]);
             res.status(200).json({
-              message: 'Enqueue status array',
+              message: 'Enqueue local status array',
             });
           } else {
             this.nodeSupervisor.remoteReport(
@@ -139,7 +144,7 @@ class SupervisorContainer {
               chainId,
             );
             res.status(200).json({
-              message: 'Enqueue status array',
+              message: 'Enqueue remote status array',
             });
           }
           break;

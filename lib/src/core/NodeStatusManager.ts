@@ -109,8 +109,11 @@ export class NodeStatusManager {
     this.currentCursor = 0;
   }
 
-  public enqueueSignals(signals: NodeSignal.Type[]): void {
+  public async enqueueSignals(signals: NodeSignal.Type[]): Promise<void> {
     this.signalQueue.push(...signals);
+    if (signals.length > 0 && signals[0] === NodeSignal.NODE_RESUME) {
+      await this.process();
+    }
   }
 
   private async processNextSignal(): Promise<void> {

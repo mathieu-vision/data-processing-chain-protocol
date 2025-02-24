@@ -204,7 +204,7 @@ declare class Node {
     constructor(dependencies?: string[]);
     private updateProgress;
     setConfig(config: NodeConfig): void;
-    enqueueSignals(statusQueue: NodeSignal.Type[]): void;
+    enqueueSignals(statusQueue: NodeSignal.Type[]): Promise<void>;
     getExecutionQueue(): Promise<void>;
     getConfig(): NodeConfig | null;
     getId(): string;
@@ -255,7 +255,7 @@ declare class NodeSupervisor {
     setBroadcastReportingCallback(broadcastReportingCallback: BroadcastReportingCallback): void;
     setMonitoringCallback(reportingCallback: ReportingCallback): void;
     setUid(uid: string): void;
-    enqueueSignals(nodeId: string, status: NodeSignal.Type[]): void;
+    enqueueSignals(nodeId: string, status: NodeSignal.Type[]): Promise<void>;
     handleRequest(payload: SupervisorPayload): Promise<void | string>;
     remoteReport(notification: Notification & Partial<NodeStatusMessage>, chainId: string): void;
     private localReport;

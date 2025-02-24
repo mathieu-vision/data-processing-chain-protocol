@@ -150,8 +150,11 @@ export class NodeSupervisor {
     this.uid = `@supervisor:${uid}`;
   }
 
-  enqueueSignals(nodeId: string, status: NodeSignal.Type[]) {
-    this.nodes.get(nodeId)?.enqueueSignals(status);
+  async enqueueSignals(
+    nodeId: string,
+    status: NodeSignal.Type[],
+  ): Promise<void> {
+    return this.nodes.get(nodeId)?.enqueueSignals(status);
   }
 
   /**
