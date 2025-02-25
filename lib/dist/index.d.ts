@@ -180,6 +180,7 @@ interface BroadcastReportingMessage extends ReportingPayload {
 }
 interface NodeStatusMessage extends ReportingPayload {
     signal: NodeSignal.Type;
+    payload?: unknown;
 }
 interface ChainRelation {
     rootNodeId?: string;
@@ -336,18 +337,19 @@ declare namespace Ext$2 {
 }
 
 declare namespace Ext$1 {
-    type NodeStatusHandlerCallback = (targetId: string) => Promise<string | undefined>;
+    type NodeStatusHandlerCallback = (message: any) => Promise<string | undefined>;
     interface DefaultNodeStatusCallbackPayload {
         paths: {
             enqueue: string;
         };
-        monitoringResolver?: NodeStatusHandlerCallback;
+        hostResolver?: NodeStatusHandlerCallback;
     }
     interface NSCPayload {
         message: NodeStatusMessage;
-        monitoringResolver: NodeStatusHandlerCallback;
+        hostResolver: NodeStatusHandlerCallback;
         path: string;
     }
+    const defaultHostResolver: (message: any) => Promise<string | undefined>;
     const setNodeStatusResolverCallbacks: (dcPayload: DefaultNodeStatusCallbackPayload) => Promise<void>;
 }
 

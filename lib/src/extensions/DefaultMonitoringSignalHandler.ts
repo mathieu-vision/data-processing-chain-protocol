@@ -90,16 +90,19 @@ export namespace Ext {
         }
 
         case ChainStatus.CHAIN_NOTIFIED: {
-          const { signal } = message.signal;
+          const { signal, payload } = message.signal;
           Logger.debug(`signal: ${signal} from ${chainId}`);
           Logger.debug(`message: ${JSON.stringify(message, null, 2)}`);
           const supervisor = NodeSupervisor.retrieveService();
-          const nodeMessage: NodeStatusMessage = {
-            nodeId,
+          const nodeStatusMessage: NodeStatusMessage = {
+            payload,
             chainId,
             signal: signal ?? NodeSignal.NODE_ERROR,
+            nodeId: '',
+            index: 0,
+            count: 0,
           };
-          supervisor.nodeStatusCallback(nodeMessage);
+          supervisor.nodeStatusCallback(nodeStatusMessage);
           break;
         }
 

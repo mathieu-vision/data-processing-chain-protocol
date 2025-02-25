@@ -282,7 +282,6 @@ export interface ReportingPayload {
   count: number;
 }
 
-// todo:
 export interface Notification {
   status: ChainStatus.Type;
   signal?: NodeSignal.Type;
@@ -300,6 +299,7 @@ export interface BroadcastReportingMessage extends ReportingPayload {
 
 export interface NodeStatusMessage extends ReportingPayload {
   signal: NodeSignal.Type;
+  payload?: unknown;
 }
 
 export interface ChainRelation {
