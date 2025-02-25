@@ -70,60 +70,56 @@ class SupervisorContainer {
     }
   }
 
-  public async resumeNode(req: Request, res: Response): Promise<void> {
+  private async processNodeSignal(
+    req: Request,
+    res: Response,
+    signal: NodeSignal.Type,
+    localMessage: string,
+    remoteMessage: string,
+  ): Promise<void> {
     const { hostURI, targetId, chainId } = req.body;
+
     if (!hostURI || hostURI === 'local') {
       const nodes = this.nodeSupervisor.getNodesByServiceAndChain(
         targetId,
         chainId,
       );
       const nodeId = nodes[0]?.getId();
-      await this.nodeSupervisor.enqueueSignals(nodeId, [
-        NodeSignal.NODE_RESUME,
-      ]);
-      res.status(200).json({
-        message: 'Enqueue local resume status',
-      });
+      await this.nodeSupervisor.enqueueSignals(nodeId, [signal]);
+      res.status(200).json({ message: localMessage });
     } else if (hostURI && hostURI !== 'local') {
       this.nodeSupervisor.remoteReport(
         {
           status: ChainStatus.CHAIN_NOTIFIED,
-          signal: NodeSignal.NODE_RESUME,
+          signal: signal,
           payload: { targetId, hostURI },
         },
         chainId,
       );
-      res.status(200).json({
-        message: 'Enqueue remote resume status',
-      });
+      res.status(200).json({ message: remoteMessage });
+    } else {
+      res.status(400).json({ error: 'Invalid hostURI' });
     }
   }
 
-  public async stopNode(req: Request, res: Response): Promise<void> {
-    const { hostURI, targetId, chainId } = req.body;
-    if (!hostURI || hostURI === 'local') {
-      const nodes = this.nodeSupervisor.getNodesByServiceAndChain(
-        targetId,
-        chainId,
-      );
-      const nodeId = nodes[0]?.getId();
-      await this.nodeSupervisor.enqueueSignals(nodeId, [NodeSignal.NODE_STOP]);
-      res.status(200).json({
-        message: 'Enqueue local stop status',
-      });
-    } else if (hostURI && hostURI !== 'local') {
-      this.nodeSupervisor.remoteReport(
-        {
-          status: ChainStatus.CHAIN_NOTIFIED,
-          signal: NodeSignal.NODE_STOP,
-          payload: { targetId, hostURI },
-        },
-        chainId,
-      );
-      res.status(200).json({
-        message: 'Enqueue remote stop status',
-      });
-    }
+  public async resumeNode(req: Request, res: Response): Promise<void> {
+    await this.processNodeSignal(
+      req,
+      res,
+      NodeSignal.NODE_RESUME,
+      `Enqueue local 'resume' status`,
+      `'Enqueue remote 'resume' status`,
+    );
+  }
+
+  public async suspendNode(req: Request, res: Response): Promise<void> {
+    await this.processNodeSignal(
+      req,
+      res,
+      NodeSignal.NODE_SUSPEND,
+      `Enqueue local 'suspend' status`,
+      `Enqueue remote 'suspend' status`,
+    );
   }
 
   public async communicateNode(req: Request, res: Response): Promise<void> {
@@ -165,44 +161,9 @@ class SupervisorContainer {
           break;
         }
         case 'enqueue-status': {
-          const { hostURI, signal, chainId, targetId } = req.body;
           Logger.info({
-            message: `${JSON.stringify(req.body, null, 2)}`,
+            message: `Enqueue status: ${JSON.stringify(req.body)}`,
           });
-          let { targetType } = req.body;
-          if (targetType === undefined) {
-            const baseURI = process.env.BASE_URI;
-            if (baseURI && compareURLs(hostURI, baseURI)) {
-              targetType = 'local';
-            }
-          }
-          if (targetType == 'local') {
-            let { nodeId } = req.body;
-            // find the node and enqueue the signal
-            if (!nodeId) {
-              const nodes = this.nodeSupervisor.getNodesByServiceAndChain(
-                targetId,
-                chainId,
-              );
-              nodeId = nodes[0];
-            }
-            await this.nodeSupervisor.enqueueSignals(nodeId, [signal]);
-            res.status(200).json({
-              message: 'Enqueue local status array',
-            });
-          } else {
-            this.nodeSupervisor.remoteReport(
-              {
-                status: ChainStatus.CHAIN_NOTIFIED,
-                signal,
-                payload: { targetId },
-              },
-              chainId,
-            );
-            res.status(200).json({
-              message: 'Enqueue remote status array',
-            });
-          }
           break;
         }
         default:
@@ -306,7 +267,10 @@ export class LiteConnector {
         '/node/resume',
         this.container.resumeNode.bind(this.container),
       );
-      this.app.post('/node/stop', this.container.stopNode.bind(this.container));
+      this.app.post(
+        '/node/suspend',
+        this.container.suspendNode.bind(this.container),
+      );
     }
   }
 

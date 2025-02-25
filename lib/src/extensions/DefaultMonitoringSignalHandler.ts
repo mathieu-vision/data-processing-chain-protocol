@@ -1,6 +1,7 @@
 import {
   ChainStatus,
   NodeSignal,
+  NodeStatusMessage,
   ReportingMessage,
   SupervisorPayloadStartPendingChain,
 } from '../types/types';
@@ -91,7 +92,14 @@ export namespace Ext {
         case ChainStatus.CHAIN_NOTIFIED: {
           const { signal } = message.signal;
           Logger.debug(`signal: ${signal} from ${chainId}`);
-          // todo
+          Logger.debug(`message: ${JSON.stringify(message, null, 2)}`);
+          const supervisor = NodeSupervisor.retrieveService();
+          const nodeMessage: NodeStatusMessage = {
+            nodeId,
+            chainId,
+            signal: signal ?? NodeSignal.NODE_ERROR,
+          };
+          supervisor.nodeStatusCallback(nodeMessage);
           break;
         }
 
