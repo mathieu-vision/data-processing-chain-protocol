@@ -70,6 +70,62 @@ class SupervisorContainer {
     }
   }
 
+  public async resumeNode(req: Request, res: Response): Promise<void> {
+    const { hostURI, targetId, chainId } = req.body;
+    if (!hostURI || hostURI === 'local') {
+      const nodes = this.nodeSupervisor.getNodesByServiceAndChain(
+        targetId,
+        chainId,
+      );
+      const nodeId = nodes[0]?.getId();
+      await this.nodeSupervisor.enqueueSignals(nodeId, [
+        NodeSignal.NODE_RESUME,
+      ]);
+      res.status(200).json({
+        message: 'Enqueue local resume status',
+      });
+    } else if (hostURI && hostURI !== 'local') {
+      this.nodeSupervisor.remoteReport(
+        {
+          status: ChainStatus.CHAIN_NOTIFIED,
+          signal: NodeSignal.NODE_RESUME,
+          payload: { targetId, hostURI },
+        },
+        chainId,
+      );
+      res.status(200).json({
+        message: 'Enqueue remote resume status',
+      });
+    }
+  }
+
+  public async stopNode(req: Request, res: Response): Promise<void> {
+    const { hostURI, targetId, chainId } = req.body;
+    if (!hostURI || hostURI === 'local') {
+      const nodes = this.nodeSupervisor.getNodesByServiceAndChain(
+        targetId,
+        chainId,
+      );
+      const nodeId = nodes[0]?.getId();
+      await this.nodeSupervisor.enqueueSignals(nodeId, [NodeSignal.NODE_STOP]);
+      res.status(200).json({
+        message: 'Enqueue local stop status',
+      });
+    } else if (hostURI && hostURI !== 'local') {
+      this.nodeSupervisor.remoteReport(
+        {
+          status: ChainStatus.CHAIN_NOTIFIED,
+          signal: NodeSignal.NODE_STOP,
+          payload: { targetId, hostURI },
+        },
+        chainId,
+      );
+      res.status(200).json({
+        message: 'Enqueue remote stop status',
+      });
+    }
+  }
+
   public async communicateNode(req: Request, res: Response): Promise<void> {
     const communicationType = req.params.type;
     try {
@@ -130,7 +186,7 @@ class SupervisorContainer {
               );
               nodeId = nodes[0];
             }
-            this.nodeSupervisor.enqueueSignals(nodeId, [signal]);
+            await this.nodeSupervisor.enqueueSignals(nodeId, [signal]);
             res.status(200).json({
               message: 'Enqueue local status array',
             });
@@ -246,6 +302,11 @@ export class LiteConnector {
         '/node/communicate/:type',
         this.container.communicateNode.bind(this.container),
       );
+      this.app.post(
+        '/node/resume',
+        this.container.resumeNode.bind(this.container),
+      );
+      this.app.post('/node/stop', this.container.stopNode.bind(this.container));
     }
   }
 
