@@ -25,7 +25,6 @@ export {
   NodeConfig,
   NodeType,
   ProcessorCallback,
-  CombineStrategy,
   CombineFonction,
   SupervisorPayloadSetup,
   SupervisorPayloadCreate,
@@ -45,8 +44,6 @@ export {
   SetupCallback,
   ServiceConfig,
 } from './types/types';
-
-export { PipelineDataCombiner } from './core/PipelineDataCombiner';
 
 export namespace Ext {
   export type BRCPayload = ReportingModule.Ext.BRCPayload;

@@ -71,13 +71,6 @@ export namespace DataType {
   export const COMPRESSED: Type = 'compressed';
 }
 
-export namespace CombineStrategy {
-  export type Type = 'merge' | 'union' | 'custom';
-  export const MERGE: Type = 'merge';
-  export const UNION: Type = 'union';
-  export const CUSTOM: Type = 'custom';
-}
-
 export type CombineFonction = (dataSets: PipelineData[]) => unknown[];
 
 export interface ChainState {

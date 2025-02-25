@@ -38,12 +38,6 @@ declare namespace DataType {
     const RAW: Type;
     const COMPRESSED: Type;
 }
-declare namespace CombineStrategy {
-    type Type = 'merge' | 'union' | 'custom';
-    const MERGE: Type;
-    const UNION: Type;
-    const CUSTOM: Type;
-}
 type CombineFonction = (dataSets: PipelineData[]) => unknown[];
 interface ChainState {
     completed: string[];
@@ -353,17 +347,6 @@ declare namespace Ext$1 {
     const setNodeStatusResolverCallbacks: (dcPayload: DefaultNodeStatusCallbackPayload) => Promise<void>;
 }
 
-declare class PipelineDataCombiner {
-    private strategy;
-    private customCombineFunction?;
-    constructor(strategy?: CombineStrategy.Type, customCombineFunction?: CombineFonction);
-    private merge;
-    private union;
-    applyStrategy(dataSets: PipelineData[]): PipelineData;
-    setStrategy(strategy: CombineStrategy.Type): void;
-    setCustomCombineFunction(combineFunction: CombineFonction): void;
-}
-
 declare namespace Ext {
     type BRCPayload = Ext$3.BRCPayload;
     type MCPayload = Ext$3.MCPayload;
@@ -376,4 +359,4 @@ declare namespace Ext {
     const NodeStatus: typeof Ext$1;
 }
 
-export { type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, CombineStrategy, DataType, Ext, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, PipelineDataCombiner, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, type SupervisorPayloadStartPendingChain };
+export { type BrodcastSetupMessage, type CallbackPayload, type ChainConfig, type ChainRelation, type ChainState, ChainStatus, ChainType, type CombineFonction, DataType, Ext, type NodeConfig, NodeSignal, NodeSupervisor, NodeType, type PipelineData, type PipelineMeta, PipelineProcessor, type ProcessorCallback, type ProcessorPipeline, type ReportingMessage, type ServiceCallback, type ServiceConfig, type SetupCallback, type SupervisorPayload, type SupervisorPayloadCreate, type SupervisorPayloadDelete, type SupervisorPayloadDeployChain, type SupervisorPayloadPrepareChain, type SupervisorPayloadRun, type SupervisorPayloadSendData, type SupervisorPayloadSetup, type SupervisorPayloadStartChain, type SupervisorPayloadStartPendingChain };

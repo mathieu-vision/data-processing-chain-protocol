@@ -4,3 +4,4 @@ node_modules
 logs
 src/logs
 .npmrc
+html-doc
