@@ -91,8 +91,6 @@ export namespace Ext {
 
         case ChainStatus.CHAIN_NOTIFIED: {
           const { signal, payload } = message.signal;
-          Logger.debug(`signal: ${signal} from ${chainId}`);
-          Logger.debug(`message: ${JSON.stringify(message, null, 2)}`);
           const supervisor = NodeSupervisor.retrieveService();
           const nodeStatusMessage: NodeStatusMessage = {
             payload,

@@ -160,10 +160,22 @@ class SupervisorContainer {
           });
           break;
         }
+
         case 'enqueue-status': {
           Logger.info({
             message: `Enqueue status: ${JSON.stringify(req.body)}`,
           });
+          const { targetId } = req.body.payload;
+          const { chainId, signal } = req.body;
+          req.body = { targetId, chainId };
+          switch (signal) {
+            case NodeSignal.NODE_RESUME:
+              await this.resumeNode(req, res);
+              break;
+            case NodeSignal.NODE_SUSPEND:
+              await this.suspendNode(req, res);
+              break;
+          }
           break;
         }
         default:

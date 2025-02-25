@@ -181,19 +181,7 @@ export type SupervisorPayloadDelete = {
   signal: 'node_delete';
   id: string;
 };
-/*
-export type SupervisorPayloadPause = {
-  signal: 'node_pause';
-  id: string;
-};
-*/
-/*
-export type SupervisorPayloadDelay = {
-  signal: 'node_delay';
-  id: string;
-  delay: number;
-};
-*/
+
 export type SupervisorPayloadRun = {
   signal: 'node_run';
   id: string;
@@ -231,8 +219,6 @@ export type SupervisorPayload =
   | SupervisorPayloadSetup
   | SupervisorPayloadCreate
   | SupervisorPayloadDelete
-  //  | SupervisorPayloadPause
-  //  | SupervisorPayloadDelay
   | SupervisorPayloadRun
   | SupervisorPayloadSendData
   | SupervisorPayloadPrepareChain

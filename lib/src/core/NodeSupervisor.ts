@@ -36,20 +36,12 @@ export class NodeSupervisor {
   private ctn: string;
   private static instance: NodeSupervisor;
   private nsLogger: NodeSupervisorLogger;
-
-  // local nodes
-  private nodes: Map<string, Node>;
-  // local chains
-  private chains: Map<string, ChainRelation>;
-  // map children to parents
-  private childChains: Map<string, string[]>;
-
+  private nodes: Map<string, Node>; // local nodes
+  private chains: Map<string, ChainRelation>; // local chains
+  private childChains: Map<string, string[]>; // map children to parents
   private broadcastSetupCallback: SetupCallback;
-
   nodeStatusCallback: NodeStatusCallback;
   remoteServiceCallback: ServiceCallback;
-
-  // private reporting: ReportingAgent | null = null;
 
   /**
    * Creates a new NodeSupervisor instance
@@ -173,14 +165,6 @@ export class NodeSupervisor {
       case NodeSignal.NODE_DELETE:
         Logger.event(`handle NODE_DELETE`);
         return await this.deleteNode(payload.id);
-      /*
-      case NodeSignal.NODE_PAUSE:
-        Logger.event(`handle NODE_PAUSE`);
-        return await this.pauseNode(payload.id);
-      case NodeSignal.NODE_DELAY:
-        Logger.event(`handle NODE_DELAY`);
-        return await this.delayNode(payload.id, payload.delay);
-      */
       case NodeSignal.NODE_RUN:
         Logger.event(`handle NODE_RUN`);
         return await this.runNode(payload.id, payload.data);
@@ -419,39 +403,6 @@ export class NodeSupervisor {
   }
 
   /**
-   * Pauses a node
-   * @param {string} nodeId - The node identifier to pause
-   */
-  /*
-  private async pauseNode(nodeId: string): Promise<void> {
-    const node = this.nodes.get(nodeId);
-    if (node) {
-      node.updateStatus(ChainStatus.NODE_PAUSED);
-      Logger.info(`${this.ctn}: Node ${nodeId} paused.`);
-    } else {
-      Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
-    }
-  }
-  */
-
-  /**
-   * Delays the execution of a node
-   * @param {string} nodeId - The node identifier
-   * @param {number} delay - The delay in milliseconds
-   */
-  /*
-  private async delayNode(nodeId: string, delay: number): Promise<void> {
-    const node = this.nodes.get(nodeId);
-    if (node) {
-      node.setDelay(delay);
-      Logger.info(`${this.ctn}: Node ${nodeId} delayed by ${delay} ms.`);
-    } else {
-      Logger.warn(`${this.ctn}: Node ${nodeId} not found.`);
-    }
-  }
-  */
-
-  /**
    * Creates a new chain with the given configuration
    * @param {ChainConfig} config - The chain configuration
    * @returns {string} The new chain identifier
@@ -508,7 +459,7 @@ export class NodeSupervisor {
     let relation = this.chains.get(chainId);
 
     if (relation) {
-      // todo: to be reviewed /!\
+      // todo: to be reviewed
       relation.config = relation.config.concat(config);
       Logger.info(
         `${this.ctn}: Chain ${chainId} updated with ${config.length} new configurations`,

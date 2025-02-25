@@ -1,6 +1,5 @@
 import {
   DefaultCallback,
-  NodeSignal,
   ReportingCallback,
   ReportingMessage,
   ReportingPayload,
@@ -8,7 +7,7 @@ import {
 import { Logger } from '../utils/Logger';
 import { Agent } from './Agent';
 import { ReportingAgentBase } from './ReportingAgent';
-import { NodeSupervisor } from '../core/NodeSupervisor';
+
 /**
  * Class for a node monitoring and status reporting agent
  */
@@ -66,9 +65,14 @@ export class MonitoringAgent extends Agent {
       DefaultCallback.BROADCAST_REPORTING_CALLBACK;
   }
 
+  /**
+   * Retrieves the current workflow object
+   * @returns {Workflow} The current workflow object
+   */
   getWorkflow(): Workflow {
     return this.workflow;
   }
+
   /**
    * Retrieves or creates a MonitoringAgent instance (Singleton pattern)
    * @param {boolean} refresh - Whether to force create a new instance
@@ -183,7 +187,11 @@ export class MonitoringAgent extends Agent {
     return this.workflow[chainId]?.status;
   }
 
-  //
+  /**
+   * Sets the setup count for a specific chain
+   * @param {string} chainId - The chain identifier
+   * @param {number} count - The setup count to be set
+   */
   setChainSetupCount(chainId: string, count: number): void {
     if (!this.workflow[chainId]) {
       this.workflow[chainId] = {};
@@ -191,11 +199,19 @@ export class MonitoringAgent extends Agent {
     this.workflow[chainId].setupCount = count;
   }
 
+  /**
+   * Retrieves the setup count for a specific chain
+   * @param {string} chainId - The chain identifier
+   * @returns {number|undefined} The setup count if exists
+   */
   getChainSetupCount(chainId: string): number | undefined {
     return this.workflow[chainId]?.setupCount;
   }
 
-  //
+  /**
+   * Marks a chain as deployed
+   * @param {string} chainId - The chain identifier
+   */
   setChainDeployed(chainId: string): void {
     if (!this.workflow[chainId]) {
       this.workflow[chainId] = {};
@@ -203,11 +219,19 @@ export class MonitoringAgent extends Agent {
     this.workflow[chainId].deployed = true;
   }
 
+  /**
+   * Checks if a chain is deployed
+   * @param {string} chainId - The chain identifier
+   * @returns {boolean|undefined} Whether the chain is deployed
+   */
   getChainDeployed(chainId: string): boolean | undefined {
     return this.workflow[chainId]?.deployed;
   }
 
-  //
+  /**
+   * Marks a chain setup as completed
+   * @param {string} chainId - The chain identifier
+   */
   setChainSetupCompleted(chainId: string): void {
     if (!this.workflow[chainId]) {
       this.workflow[chainId] = {};
@@ -215,6 +239,11 @@ export class MonitoringAgent extends Agent {
     this.workflow[chainId].setupCompleted = true;
   }
 
+  /**
+   * Checks if a chain setup is completed
+   * @param {string} chainId - The chain identifier
+   * @returns {boolean|undefined} Whether the chain setup is completed
+   */
   getChainSetupCompleted(chainId: string): boolean | undefined {
     return this.workflow[chainId]?.setupCompleted;
   }

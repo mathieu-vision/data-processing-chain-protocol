@@ -50,8 +50,6 @@ export class NodeStatusManager {
     }
   }
 
-  //    this.pushSignals([NodeSignal.NODE_RESUME]);
-
   suspendExecution<T>(
     generator: Generator<T, void, unknown>,
     currentBatch: T,
@@ -92,10 +90,6 @@ export class NodeStatusManager {
     Logger.info('~ NodeStatusManager: Processing NODE_DELETE signal');
   }
 
-  // private async handleNodeDelay(): Promise<void> {
-  //   Logger.info('~ NodeStatusManager: Processing NODE_DELAY signal');
-  // }
-
   private async handleNodeRun(): Promise<void> {
     Logger.info('~ NodeStatusManager: Processing NODE_RUN signal');
   }
@@ -122,8 +116,6 @@ export class NodeStatusManager {
       switch (currentSignal) {
         case NodeSignal.NODE_STOP:
           return this.handleStopSignal();
-        // case NodeSignal.NODE_PAUSE:
-        //   return this.handlePauseSignal();
         case NodeSignal.NODE_SUSPEND:
           return this.handleSuspendSignal();
         case NodeSignal.NODE_RESUME:
@@ -136,8 +128,6 @@ export class NodeStatusManager {
           return this.handleNodeCreate();
         case NodeSignal.NODE_DELETE:
           return this.handleNodeDelete();
-        // case NodeSignal.NODE_DELAY:
-        //   return this.handleNodeDelay();
         case NodeSignal.NODE_RUN:
           return this.handleNodeRun();
         case NodeSignal.NODE_SEND_DATA:

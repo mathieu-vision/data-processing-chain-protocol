@@ -24,10 +24,9 @@ import { NodeStatusManager } from './NodeStatusManager';
 export class Node {
   private id: string;
   private pipelines: ProcessorPipeline[];
-  private dependencies: string[]; // Todo
+  private dependencies: string[];
   private status: ChainStatus.Type;
   private error?: Error;
-  // private delay: number;
   private progress: number;
   private dataType: DataType.Type;
   private executionQueue: Promise<void>;
@@ -51,7 +50,6 @@ export class Node {
     this.pipelines = [];
     this.dependencies = dependencies;
     this.status = ChainStatus.NODE_PENDING;
-    // this.delay = 0;
     this.progress = 0;
     this.dataType = DataType.RAW;
     this.executionQueue = Promise.resolve();
@@ -147,6 +145,13 @@ export class Node {
     return result;
   }
 
+  /**
+   * Generates pipeline batches of a specified size
+   * @param {ProcessorPipeline[]} pipelines - Array of processor pipelines
+   * @param {number} count - Number of pipelines per batch
+   * @returns {Generator<ProcessorPipeline[], void, unknown>} Generator yielding pipeline batches
+   * @private
+   */
   private *getPipelineGenerator(
     pipelines: ProcessorPipeline[],
     count: number,
@@ -179,6 +184,12 @@ export class Node {
     }
   }
 
+  /**
+   * Processes child chains if configured
+   * @param {PipelineData} data - Data to be processed by the child chain
+   * @returns {Promise<void>}
+   * @private
+   */
   private async processChildChain(data: PipelineData): Promise<void> {
     const childConfig = this.config?.chainConfig;
 
@@ -274,6 +285,13 @@ export class Node {
     });
   }
 
+  /**
+   * Processes a batch of processor pipelines asynchronously
+   * @param {ProcessorPipeline[]} pipelineBatch - Array of processor pipelines to process
+   * @param {PipelineData} data - Data to be processed
+   * @returns {Promise<void>}
+   * @private
+   */
   private async processBatch(
     pipelineBatch: ProcessorPipeline[],
     data: PipelineData,
@@ -310,7 +328,7 @@ export class Node {
   }
 
   /**
-   * Terminates node execution and handles final data
+   * Terminates node execution and handles final processed data
    * @param {string} nodeId - Node identifier
    * @param {PipelineData[]} pipelineData - Array of processed data
    * @private
@@ -399,14 +417,6 @@ export class Node {
   canExecute(executedNodes: Set<string>): boolean {
     return this.dependencies.every((dep) => executedNodes.has(dep));
   }
-
-  /**
-   * Sets execution delay in milliseconds
-   * @param {number} delay - Delay amount
-   */
-  // setDelay(delay: number): void {
-  //   this.delay = delay;
-  // }
 
   /**
    * Gets current data type (RAW/COMPRESSED)
