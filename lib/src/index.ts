@@ -7,7 +7,6 @@ import * as ResolverModule from './extensions/DefaultResolverCallbacks';
 import * as NodeStatusModule from './extensions/DefaultNodeStatusBroadcaster';
 
 export { NodeSupervisor };
-
 export { PipelineProcessor };
 
 export {
@@ -29,8 +28,6 @@ export {
   SupervisorPayloadSetup,
   SupervisorPayloadCreate,
   SupervisorPayloadDelete,
-  //  SupervisorPayloadPause,
-  //  SupervisorPayloadDelay,
   SupervisorPayloadRun,
   SupervisorPayloadSendData,
   SupervisorPayloadPrepareChain,
