@@ -35,7 +35,7 @@ export namespace Ext {
     /**
      * Handles a reporting message and triggers appropriate actions based on the signal type.
      * This function serves as a flexible entry point for processing intercepted signals
-     * originating from the reporting agent, allowing adaptation to various system needs.
+     * originating from the reporting agent, allowing adaptation system needs.
      * Specifically, it processes node setup completion signals in a chain, but can be
      * extended to handle other signal types.
      *
