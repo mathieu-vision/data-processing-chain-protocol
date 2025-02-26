@@ -8,18 +8,22 @@ sequenceDiagram
     participant User
     participant NodeSupervisor
     participant Node
+    participant NodeStatusManager
     participant MonitoringAgent
     participant RemoteService
+    participant MonitoringSignalHandler
 
-    User->>NodeSupervisor: Deploy Chain (config, data)
+    User->>NodeSupervisor: Deploy chain (config, data)
     NodeSupervisor->>NodeSupervisor: Create chain and store config
-    NodeSupervisor->>Node: Setup first node (index=0)
+    NodeSupervisor->>Node: Set up the first node (index = 0)
+    Node->>NodeStatusManager: Initialize with signal queue
     Node->>MonitoringAgent: Emit NODE_SETUP_COMPLETED (local-signal)
-    MonitoringAgent->>MonitoringAgent: Update setupCounts[chainId]++
+    MonitoringAgent->>MonitoringAgent: Increment setupCount[chainId]
     
-    loop For each node in chain
+    loop For each node in the chain
         alt Node location = local
-            NodeSupervisor->>Node: Setup next local node
+            NodeSupervisor->>Node: Set up the next local node
+            Node->>NodeStatusManager: Configure signal handlers
             Node->>MonitoringAgent: NODE_SETUP_COMPLETED
         else Node location = remote
             NodeSupervisor->>RemoteService: Broadcast setup signal
@@ -27,15 +31,17 @@ sequenceDiagram
         end
     end
     
-    MonitoringAgent->>MonitoringSignalHandler: Check setupCounts[chainId] == totalNodes
+    MonitoringAgent->>MonitoringSignalHandler: Check setupCount[chainId] == totalNodes
     MonitoringSignalHandler->>NodeSupervisor: StartPendingChain(chainId)
     NodeSupervisor->>Node: Execute first node with data
+    Node->>NodeStatusManager: Check signal queue
     Node->>Node: Process data through pipelines
     alt Processing successful
         Node->>MonitoringAgent: NODE_COMPLETED
         Node->>NextNode: Send processed data
     else Processing failed
-        Node->>MonitoringAgent: NODE_FAILED
+        Node->>NodeStatusManager: Handle error
+        NodeStatusManager->>MonitoringAgent: NODE_FAILED
         MonitoringAgent->>User: Send alert
     end
 ```
@@ -46,42 +52,34 @@ sequenceDiagram
 sequenceDiagram
     title Detailed Monitoring/Reporting Sequence Flow
     participant Node
+    participant NodeStatusManager
     participant ReportingAgent
     participant MonitoringAgent
     participant HostResolver
     participant CallbackService
-    participant MonitoringSignalHandler
     participant NodeSupervisor
 
+    Node->>NodeStatusManager: Emit internal signal (e.g., SUSPEND)
     Node->>ReportingAgent: Emit signal (local/global)
+    NodeStatusManager->>NodeStatusManager: Update status queue
     
     alt Signal Type = local-signal
-        ReportingAgent->>MonitoringAgent: Update status Map
+        ReportingAgent->>MonitoringAgent: Update status map
         MonitoringAgent-->>MonitoringAgent: Merge statuses
-        MonitoringAgent->>MonitoringAgent: Check if critical status
-        alt Critical status detected
-            MonitoringAgent->>ReportingAgent: Trigger global-signal
-        end
     else Signal Type = global-signal
         ReportingAgent->>MonitoringAgent: Handle callback
-        alt Node index > 0 (Broadcast required)
-            MonitoringAgent->>HostResolver: Get monitoringHost(chainId)
-            HostResolver-->>MonitoringAgent: Return URL
-            MonitoringAgent->>CallbackService: POST /notify
-            CallbackService-->>MonitoringAgent: HTTP response
-        else Node index = 0 (Direct handling)
-            MonitoringAgent->>MonitoringSignalHandler: Handle(message)
-            MonitoringSignalHandler->>MonitoringAgent: Get setupCounts[chainId]
-            alt All nodes setup (setupCount >= total)
-                MonitoringSignalHandler->>NodeSupervisor: startPendingChain(chainId)
-                NodeSupervisor->>Node: Execute first node
-            end
-        end
+    end
+    
+    alt Signal requires external processing
+        MonitoringAgent->>HostResolver: Resolve monitoring host
+        HostResolver-->>MonitoringAgent: Return URL
+        MonitoringAgent->>CallbackService: POST /notify
+        CallbackService-->>MonitoringAgent: HTTP response
     end
     
     loop Heartbeat monitoring
-        MonitoringAgent->>Node: Status check
-        Node-->>MonitoringAgent: Current status
+        MonitoringAgent->>NodeStatusManager: Status check
+        NodeStatusManager-->>MonitoringAgent: Current status and queue state
         alt Status = NODE_FAILED
             MonitoringAgent->>NodeSupervisor: Restart node
         end
@@ -100,6 +98,7 @@ sequenceDiagram
     participant ReportingCallback
     participant SetupCallback
     participant RemoteNodes
+    participant MonitoringAgent
 
     Note over Node,ProcessorCallback: Pipeline Processing Flow
     Node->>ProcessorCallback: Remote service invocation (targetId, meta)
@@ -116,20 +115,45 @@ sequenceDiagram
     RemoteNodes-->>SetupCallback: Setup confirmation
 ```
 
-## 3. Global Lifecycle Flowchart
+## 3. Signal Handling Flow
+
+```mermaid
+sequenceDiagram
+    title Node Signal Handling Sequence Flow
+    participant ExternalService
+    participant NodeSupervisor
+    participant Node
+    participant NodeStatusManager
+    participant MonitoringAgent
+
+    ExternalService->>NodeSupervisor: POST /node/resume {chainId, targetId}
+    NodeSupervisor->>Node: Find target node
+    Node->>NodeStatusManager: Enqueue RESUME signal
+    NodeStatusManager->>NodeStatusManager: Process signal queue
+    alt Suspended state exists
+        NodeStatusManager->>Node: Resume execution
+        Node->>MonitoringAgent: NODE_RESUMED
+        MonitoringAgent->>ExternalService: Confirm resume
+    else No suspended state
+        NodeStatusManager->>MonitoringAgent: Error: Nothing to resume
+        MonitoringAgent->>ExternalService: Return error
+    end
+```
+
+## 4. Global Lifecycle Flowchart
 
 ```mermaid
 flowchart TD
     A[Start: Chain Deployment] --> B[NodeSupervisor: Create Chain]
-    B --> C[Setup First Node index 0]
+    B --> C[Set up the first node (index = 0)]
     C --> D{Node Type?}
     D -->|Local| E[Initialize Local Node]
     D -->|Remote| F[Broadcast Setup Signal]
     
-    E --> G[MonitoringAgent: Update setupCount]
+    E --> G[MonitoringAgent: Increment setupCount]
     F --> H[Remote Service Confirmation]
     
-    G --> I{All nodes setup?}
+    G --> I{All nodes set up?}
     H --> I
     I -->|Yes| J[Start Chain Execution]
     I -->|No| C
@@ -145,7 +169,7 @@ flowchart TD
     O -->|No| P[End: Chain Complete]
 ```
 
-## 4. Monitoring Flowchart
+## 5. Monitoring Flowchart
 
 ```mermaid
 flowchart TD
@@ -187,29 +211,27 @@ flowchart TD
 
 ## Key Components Explanation
 
-1. **Node**: The basic processing unit that executes pipelines and emits status signals
-2. **ReportingAgent**: Mediator between Nodes and MonitoringAgent
-3. **MonitoringAgent**: Central hub for status tracking and decision making
-4. **HostResolver**: Resolves monitoring endpoints based on chain ID
+1. **Node**: The basic processing unit that executes pipelines and emits status signals.
+2. **ReportingAgent**: Mediator between nodes and the MonitoringAgent.
+3. **MonitoringAgent**: Central hub for status tracking and decision making.
+4. **HostResolver**: Resolves monitoring endpoints based on chain ID.
 5. **Callback Services** (Multiple Purposes):
-   - *Reporting Callback* (`reportingCallback`): HTTP service for monitoring notifications
-   - *Broadcast Callback* (`broadcastReportingCallback`): Distributed notifications across nodes
-   - *Processor Callback* (`ProcessorCallback`): Encapsulates remote services in pipelines
-   - *Setup Callback* (`broadcastSetupCallback`): Handles node initialization signals
-6. **MonitoringSignalHandler**: Special handler for chain setup completion
-7. **NodeSupervisor**: Orchestrates node lifecycle and chain execution
+   - *Reporting Callback* (`ReportingCallback`): HTTP service for monitoring notifications.
+   - *Processor Callback* (`ProcessorCallback`): Encapsulates remote services in pipelines.
+   - *Setup Callback* (`SetupCallback`): Handles node initialization signals.
+6. **MonitoringSignalHandler**: Special handler for chain setup completion.
+7. **NodeSupervisor**: Orchestrates node lifecycle and chain execution.
 
 **Critical Decision Points:**
-- `index > 0`: Determines if broadcast is needed (non-initiator nodes)
-- `setupCount >= total`: Chain start condition check
-- `Critical Status`: Determines if escalation is needed
-- `Node Type`: Local vs remote handling differentiation
+- `index > 0`: Determines if broadcast is needed (non-initiator nodes).
+- `setupCount >= totalNodes`: Chain start condition check.
+- `Critical Status`: Determines if escalation is needed.
+- `Node Type`: Differentiates local versus remote handling.
 
 ## Callback Services Taxonomy
 
-| Callback Type          | Scope          | Protocol | Responsibility                          | Example Usage             |
-|------------------------|----------------|----------|-----------------------------------------|---------------------------|
-| ProcessorCallback      | Pipeline level | Any      | Remote service encapsulation            | Data transformation       |
-| ReportingCallback      | Monitoring     | HTTP     | Node status notifications               | NODE_FAILED alerts        |
-| BroadcastCallback      | Chain          | HTTP     | Cross-node communication                | Setup distribution        |
-| SetupCallback          | Initialization | HTTP     | Node configuration broadcasting         | Chain deployment          |
+| Callback Type     | Scope          | Protocol | Responsibility                        | Example Usage         |
+|-------------------|----------------|----------|---------------------------------------|-----------------------|
+| ProcessorCallback | Pipeline level | Any      | Remote service encapsulation          | Data transformation   |
+| ReportingCallback | Monitoring     | HTTP     | Node status notifications             | NODE_FAILED alerts    |
+| SetupCallback     | Initialization | HTTP     | Node configuration broadcasting       | Chain deployment      |
