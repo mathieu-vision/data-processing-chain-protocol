@@ -2,169 +2,237 @@
 
 ## Introduction
 
-The DPCP (Data Processing Chain Protocol) library is a Node.js framework that orchestrates distributed data processing workflows through a hierarchical system of chains, nodes, and pipelines, enabling scalable and modular integration with external services while providing monitoring and control capabilities.
+The DPCP library is a Node.js framework designed to orchestrate distributed data processing workflows. It uses a hierarchical architecture consisting of **chains**, **nodes**, and **pipelines** to enable scalable and modular integration with external services, while offering monitoring and execution control capabilities.
+
+---
 
 ## Project Overview
-This project involves creating executable nodes within a **Node.js** environment. The system architecture is organized in a hierarchical structure where **chains** are composed of **nodes**. Each node operates as an independent unit and executes a set of **pipelines** concurrently. Within each pipeline, tasks are managed in a **serial process flow**, ensuring sequential execution of specific operations. 
 
-Each process within a pipeline encapsulates a **call to an external service**, enabling modular and scalable integration with third-party services or internal APIs.
+The DPCP library facilitates the creation and management of executable nodes within a Node.js environment. Its architecture is structured as follows:
 
-The overall structure of the system can be described as follows:
-- **Chain**: A collection of nodes, defining a sequence of executable units.
-- **Node**: A unit that contains multiple pipelines, each of which executes independently in parallel.
-- **Pipeline**: A group of processes that execute serially within the node.
-- **Process**: Encapsulates individual service interactions, representing calls to external services or APIs.
+- **Chain**: A sequence of nodes that collectively define a data processing workflow.
+- **Node**: An independent processing unit that executes multiple pipelines concurrently.
+- **Pipeline**: A series of processes within a node, executed serially.
+- **Process**: An encapsulated interaction with an external service or API.
 
-This layered architecture promotes modularity and simplifies the orchestration of complex workflows, making it suitable for scalable and distributed applications.
+This design allows nodes to process data in parallel via pipelines, with each pipeline handling sequential tasks making the system capable of handling complex, distributed workflows.
 
+---
 
 ## Core Components
 
 ### 1. NodeSupervisor
-**Primary Role**: Central orchestrator of the processing chain system
-- Manages node lifecycle (creation, execution, deletion)
-- Creates and coordinates processing chains
-- Handles chain distribution across local/remote nodes
-- Coordinates chain execution
-- Maintains relationships between nodes
+**Primary Role**: Central orchestrator of the DPCP system.
 
-- **Signal Handling**: Intercepts and manages specific signals for node and chain actions. Key signals include:
-- `NodeSignal.NODE_SETUP`: Initializes a node with a provided configuration.
-- `NodeSignal.NODE_CREATE`: Creates a new node with specified parameters.
-- `NodeSignal.NODE_DELETE`: Removes an existing node by its ID.
-- `NodeSignal.NODE_PAUSE`: Pauses the execution of a node.
-- `NodeSignal.NODE_DELAY`: Delays the execution of a node with a specified duration.
-- `NodeSignal.NODE_RUN`: Executes a node with provided data.
-- `NodeSignal.NODE_SEND_DATA`: Sends data to a node.
-- `NodeSignal.CHAIN_PREPARE`: Prepares chain distribution for execution.
-- `NodeSignal.CHAIN_START`: Starts a chain with given data.
-- `NodeSignal.CHAIN_START_PENDING`: Begins execution of a pending chain.
-- `NodeSignal.CHAIN_DEPLOY`: Deploys a chain with specific configurations and data.
+- **Responsibilities**:
+  - Manages the lifecycle of nodes (creation, execution, deletion).
+  - Creates and coordinates processing chains.
+  - Distributes chains across local and remote nodes.
+  - Handles execution and maintains relationships between nodes.
+  - Processes signals for node and chain actions.
 
-**Key Features & Summary**:
-- Singleton pattern for centralized management
-- Flexible chain deployment and distribution across nodes
-- Dynamic node setup, configuration, and lifecycle management
-- Local and remote node coordination for distributed processing
-- Comprehensive signal handling for precise control over node and chain actions
+- **Signal Handling**:  
+  The NodeSupervisor intercepts and manages a range of signals to control node and chain behavior. Key signals include:
+  - **`NODE_SETUP`**: Initializes a node with a provided configuration.
+  - **`NODE_CREATE`**: Creates a new node with specified parameters.
+  - **`NODE_DELETE`**: Removes an existing node by its ID.
+  - **`NODE_PAUSE`**: Pauses the execution of a node.
+  - **`NODE_DELAY`**: Delays the execution of a node for a specified duration.
+  - **`NODE_RUN`**: Executes a node with provided data.
+  - **`NODE_SEND_DATA`**: Sends data to a node.
+  - **`CHAIN_PREPARE`**: Prepares chain distribution for execution.
+  - **`CHAIN_START`**: Starts a chain with the provided data.
+  - **`CHAIN_START_PENDING`**: Begins execution of a chain that was pending.
+  - **`CHAIN_DEPLOY`**: Deploys a chain with specific configurations and data.
+  - **`NODE_SUSPEND`/`NODE_RESUME`**: Suspends or resumes node execution.
+
+- **Key Features**:
+  - **Singleton Pattern**: Ensures centralized management.
+  - **Dynamic Deployment**: Supports flexible chain deployment and node distribution across local and remote environments.
+  - **Comprehensive Signal Handling**: Provides control over node and chain actions via the signal set listed above.
+
+---
 
 ### 2. Node
-**Primary Role**: Core processing unit within the chain
-- Could executes multiple processing pipelines
-- Tracks execution state and manages data flow
-- Provides status updates via `ReportingAgent`
-- Routes output data to the next node
+**Primary Role**: Core processing unit within a chain.
 
-**Key Features & Summary**:
-- Unique identifier and dependency management
-- Orchestrates sequential and parallel pipeline execution
-- Status monitoring and event reporting
-- Configurable routing to local or remote nodes
+- **Responsibilities**:
+  - Executes multiple pipelines concurrently.
+  - Tracks execution state and manages data flow.
+  - Reports status updates via the **ReportingAgent**.
+  - Routes output data to subsequent nodes.
+  - Supports child chains for nested workflows.
+
+- **Key Features**:
+  - Manages dependencies and execution queues.
+  - Provides execution control (suspend, resume) via the **NodeStatusManager**.
+  - Configurable for both local and remote routing.
+
+---
 
 ### 3. PipelineProcessor
-**Primary Role**: Encapsulates and executes external service processes
-- Integrates with external services for specific processing tasks
-- Optionally transforms data before and after service communication
-- Manages service requests and responses in sequence
+**Primary Role**: Executes processes that interact with external services.
 
-**Key Features & Summary**:
-- Dynamic service configuration
-- Optional data transformation and processing
-- Callback-based service interaction
-- Metadata handling and data enrichment
+- **Responsibilities**:
+  - Integrates with external services using a callback mechanism.
+  - Optionally transforms data before and after service calls.
+  - Manages sequential request–response flows within a pipeline.
+
+- **Key Features**:
+  - **Callback-Based Interaction**: Supports service integration through methods like `PipelineProcessor.setCallbackService`.
+  - **Dynamic Configuration**: Allows configuration of service targets.
+  - **Metadata Handling**: Supports enriched processing by incorporating metadata.
+
+---
 
 ### 4. ReportingAgent
-**Primary Role**: Status tracking and signal reporting for nodes
-- Created exclusively by the `MonitoringAgent` in response to a node’s request for monitoring support
-- Each node retains a direct reference to its `ReportingAgent`, allowing seamless status updates
-- Relays node status changes back to the `MonitoringAgent` that generated it using a structured notification system
+**Primary Role**: Tracks and reports node status.
 
-**Key Features & Summary**:
-- Controlled creation: only the `MonitoringAgent` can instantiate `ReportingAgent` instances
-- Direct link between nodes and `ReportingAgent` for real-time status updates
-- Supports `local-signal` and `global-signal` options, sending notifications back to `MonitoringAgent`
-- Maintains a record of all status updates within `MonitoringAgent`, ensuring complete status history
+- **Responsibilities**:
+  - Instantiated by the **MonitoringAgent** for each node.
+  - Relays real-time status updates to the **MonitoringAgent**.
+  - Supports both **local-signal** (internal) and **global-signal** (broadcasted) notifications.
+
+- **Key Features**:
+  - Maintains a comprehensive status history.
+  - Provides a direct communication channel between nodes and the **MonitoringAgent**.
+
+---
 
 ### 5. MonitoringAgent
-**Primary Role**: Central coordinator for node status tracking and external signal broadcasting
-- Manages creation and lifecycle of all `ReportingAgent` instances, responding to node requests for monitoring
-- Collects status updates from `ReportingAgents` and tracks aggregated statuses across the entire chain
-- Broadcasts status signals externally, enabling integration with remote monitoring systems
+**Primary Role**: Coordinates status tracking and external signal broadcasting.
 
-**Key Features & Summary**:
-- Singleton structure for consistent, centralized tracking
-- Configurable callback functions for handling reports and broadcasts
-- Aggregates and maintains comprehensive chain status data
-- Supports remote host configuration for scalable, distributed monitoring
-- Direct signal broadcasting capability to relay critical node updates externally
+- **Responsibilities**:
+  - Manages the lifecycle of **ReportingAgent** instances.
+  - Aggregates node status updates into a unified workflow view.
+  - Broadcasts chain-level status updates to external systems.
 
+- **Key Features**:
+  - **Singleton Design**: Ensures centralized monitoring.
+  - **Configurable Callbacks**: Offers customizable reporting and broadcasting options.
+  - **Remote Support**: Facilitates remote monitoring configurations.
 
-# Component Flows and Relationships
+---
 
-## Component Relationships
+### 6. NodeStatusManager
+**Primary Role**: Manages node execution state and signals.
+
+- **Responsibilities**:
+  - Handles signals such as `NODE_SUSPEND`, `NODE_RESUME`, and `NODE_STOP`.
+  - Manages the node’s execution queue and state transitions.
+  - Saves and restores execution state during suspension and resumption.
+
+- **Interactions**:
+  - Works with the **Node** to control execution flow.
+  - Receives signals from the **NodeSupervisor** to adjust behavior.
+  - Ensures orderly state transitions to prevent invalid operations.
+
+- **Key Features**:
+  - **Signal Queue Management**: Allows control over node state.
+  - **State Preservation**: Ensures resumption after suspension.
+  - **Error Handling**: Prevents invalid state transitions.
+
+---
+
+## Component Flows and Relationships
+
+### Components and Relationships
+
+```plaintext
+NodeSupervisor
+    ↓ manages
+    Node
+        ↔ ReportingAgent (for status reporting)
+        contains →
+            NodeStatusManager (manages signals and execution state)
+            [Pipeline 1 || Pipeline n] (concurrent execution)
+            executes →
+                [PipelineProcessor 1, PipelineProcessor n] (serial processes)
+                interacts with → External Service
+    ↓ can deploy
+    Child Chains (serial or parallel execution)
+    ↑ monitored by
+    MonitoringAgent
 ```
-  NodeSupervisor
-      ↓ manages
-      Node ←→ ReportingAgent
-          ↓ contains
-          [Pipeline 1 || Pipeline n]
-          ↓ executes
-              [PipelineProcessor 1, PipelineProcessor n]
-              ↓ executes
-              External Service
-      ↑ monitored by
-      MonitoringAgent
-```
+
+### Explanation of Components and Relationships:
+- **NodeSupervisor**: Manages the overall node operations.
+- **Node**: 
+  - Interacts bidirectionally with the **ReportingAgent** for status updates.
+  - Contains the **NodeStatusManager** to handle signals and manage execution state.
+  - Executes one or more pipelines concurrently.
+  - Supports the integration of child chains for nested workflows.
+- **PipelineProcessors**: Execute processes in serial order, interacting with external services as needed.
+- **MonitoringAgent**: Aggregates status updates and broadcasts chain statuses externally.
+
+---
 
 ## Data Flows
 
 ### 1. Chain Initialization
-The `NodeSupervisor` oversees chain initialization by setting up configurations and distributing nodes. Nodes request a `ReportingAgent` from the `MonitoringAgent` as needed.
-
-```
-  NodeSupervisor
-  → Creates Chain Configuration
-  → Distributes Nodes (Local/Remote)
-  → Configures Monitoring via MonitoringAgent
-```
+- **Process**:
+  - The **NodeSupervisor** configures and distributes nodes.
+  - Nodes request **ReportingAgent** instances from the **MonitoringAgent**.
+- **Flow**:
+  ```
+  NodeSupervisor → Create Chain Config → Distribute Nodes → Set Up Monitoring
+  ```
 
 ### 2. Execution Flow
-Each `Node` operates on incoming data, using `PipelineProcessor` for processing and communicating with external services as necessary. Status updates are continuously sent to `MonitoringAgent` via `ReportingAgent`.
-
-```
-  Node
-  → Receives Data
-  → Processes Data with PipelineProcessor
-  → Reports Status Updates via ReportingAgent
-  → Forwards Data to Next Node
-```
+- **Process**:
+  - Nodes process incoming data via **PipelineProcessors**.
+  - Status updates are continuously sent via the **ReportingAgent**.
+  - Processed data is forwarded to the next node in the chain.
+- **Flow**:
+  ```
+  Node → Process Data → Report Status → Forward Data
+  ```
 
 ### 3. Monitoring Flow
-The `ReportingAgent` captures status changes in each node and communicates them to the `MonitoringAgent`, which aggregates the updates and broadcasts chain-level status externally as needed.
+- **Process**:
+  - **ReportingAgents** capture status changes from each node.
+  - The **MonitoringAgent** aggregates these updates and broadcasts chain status externally.
+- **Flow**:
+  ```
+  ReportingAgent → Capture Status → MonitoringAgent → Broadcast Status
+  ```
 
-```
-  ReportingAgent
-  → Captures Node Status Changes
-  → Reports Status to MonitoringAgent
-  MonitoringAgent
-  → Aggregates Status Updates
-  → Broadcasts Chain-Level Status to Remote Systems
-```
+---
 
+## Typical Workflow Example
 
-# Typical Workflow Example
+1. **Configure Callbacks**: Set up service and monitoring callbacks.
+2. **Create Chain Configuration**: Define nodes, services, and locations.
+3. **Deploy Chain**: Issue a `CHAIN_DEPLOY` signal via `NodeSupervisor.handleRequest`.
+4. **Prepare Distribution**: The **NodeSupervisor** sets up local/remote nodes.
+5. **Start Chain**: Initiate execution with a `CHAIN_START` signal and provide input data.
+6. **Execute and Monitor**: Nodes process data while the **MonitoringAgent** tracks progress and aggregates status updates.
 
-1. Configuration of connectors
-2. Creation of a chain
-3. Preparation of chain distribution
-4. Chain startup
-5. Execution and monitoring
+---
 
-# Error Handling and Logging
+## Error Handling and Logging
 
-The library uses a logging system to track operations and errors.
+- **Mechanism**: A built-in logging system (**Logger**) tracks operations, warnings, and errors.
+- **Customization**: Users can configure logging outputs as needed, ensuring that error handling aligns with specific workflow requirements.
 
-# Conclusion
+---
 
-The DPCP library offers a flexible solution for managing distributed data processing chains. It provides tools for configuration, execution, monitoring, and error management in processing workflows.
+## Advanced Features
 
+### Child Chains
+- **Description**: Nodes can deploy nested workflows (child chains) to handle sub-processes.
+- **Execution Modes**:
+  - **Serial**: Child chains execute sequentially; the parent waits for their completion.
+  - **Parallel**: Child chains run concurrently with the parent’s processing.
+- **Configuration**: Defined via `chainConfig` and the `childMode` parameter in node configurations.
+- **Management**: The **NodeSupervisor** deploys and coordinates child chains, while the **MonitoringAgent** tracks their status.
+
+### Execution Control
+- **Signals**: In addition to the comprehensive set managed by **NodeSupervisor**, signals like `NODE_SUSPEND`, `NODE_RESUME`, and `NODE_STOP` offer execution control.
+- **State Management**: The **NodeStatusManager** manages signal queues and state transitions, preserving execution state during suspensions for resumption.
+
+---
+
+## Conclusion
+
+The DPCP library offers a solution for managing distributed data processing chains. Its hierarchical design, augmented with signal handling, execution control (including child chains), and monitoring, makes it an adapted tool for orchestrating complex workflows in Node.js environments.
