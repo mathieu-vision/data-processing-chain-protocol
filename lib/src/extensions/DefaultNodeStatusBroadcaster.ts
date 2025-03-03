@@ -19,6 +19,12 @@ export namespace Ext {
     path: string;
   }
 
+  /**
+   * Resolves the host for a given node status message.
+   * Extracts the host URI from the message payload.
+   * @param {any} message - The node status message containing the host URI
+   * @returns {Promise<string | undefined>}
+   */
   export const defaultHostResolver = async (
     message: any,
   ): Promise<string | undefined> => {
@@ -34,6 +40,12 @@ export namespace Ext {
     }
   };
 
+  /**
+   * Handles the callback for node status updates.
+   * Sends the node status message to the resolved host.
+   * @param {NSCPayload} payload - Contains the node status message, path, and host resolver
+   * @returns {Promise<void>}
+   */
   const nodeStatusCallback = async (payload: NSCPayload): Promise<void> => {
     try {
       const { message, path, hostResolver } = payload;
@@ -47,6 +59,12 @@ export namespace Ext {
     }
   };
 
+  /**
+   * Configures the node status resolver callbacks.
+   * - Sets up the local node status callback with the provided or default host resolver.
+   * @param {DefaultNodeStatusCallbackPayload} dcPayload - Configuration for paths and handlers
+   * @returns {Promise<void>}
+   */
   export const setNodeStatusResolverCallbacks = async (
     dcPayload: DefaultNodeStatusCallbackPayload,
   ): Promise<void> => {

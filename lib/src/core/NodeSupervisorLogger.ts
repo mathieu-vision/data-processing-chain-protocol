@@ -3,7 +3,16 @@ import { ChainRelation } from '../types/types';
 import { Workflow } from '../agents/MonitoringAgent';
 
 export class NodeSupervisorLogger {
+  /**
+   * Creates a new instance of NodeSupervisorLogger.
+   * @private
+   */
   constructor() {}
+
+  /**
+   * Logs the content of the chains map.
+   * @param {Map<string, ChainRelation>} chains - The map of chains to log.
+   */
   logChains(chains: Map<string, ChainRelation>) {
     Logger.debug('--Logging chains content:');
     chains.forEach((relation, chainId) => {
@@ -28,6 +37,10 @@ export class NodeSupervisorLogger {
     });
   }
 
+  /**
+   * Logs the content of the workflow object.
+   * @param {Workflow} workflow - The workflow object to log.
+   */
   logWorkflow(workflow: Workflow) {
     Logger.debug('--Logging chains content:');
     Object.entries(workflow).forEach(([workflowId, node]) => {

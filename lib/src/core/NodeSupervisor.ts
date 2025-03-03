@@ -72,6 +72,10 @@ export class NodeSupervisor {
     return NodeSupervisor.instance;
   }
 
+  /**
+   * Logs information based on the specified type.
+   * @param {string} type - The type of log to generate ('chains' or 'monitoring-workflow').
+   */
   log(type: string) {
     switch (type) {
       case 'chains':
@@ -89,10 +93,19 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Retrieves the chain relation for the given chain ID.
+   * @param {string} chainId - The identifier of the chain.
+   * @returns {ChainRelation | undefined} The chain relation or undefined if not found.
+   */
   getChain(chainId: string): ChainRelation | undefined {
     return this.chains.get(chainId);
   }
 
+  /**
+   * Sets the callback function for node status updates.
+   * @param {NodeStatusCallback} nodeStatusCallback - The callback to handle node status changes.
+   */
   setNodeStatusCallback(nodeStatusCallback: NodeStatusCallback): void {
     this.nodeStatusCallback = nodeStatusCallback;
   }
@@ -142,6 +155,12 @@ export class NodeSupervisor {
     this.uid = `@supervisor:${uid}`;
   }
 
+  /**
+   * Enqueues signals for a specific node to process.
+   * @param {string} nodeId - The identifier of the node.
+   * @param {NodeSignal.Type[]} status - The signals to enqueue.
+   * @returns {Promise<void>} A promise that resolves when the signals are enqueued.
+   */
   async enqueueSignals(
     nodeId: string,
     status: NodeSignal.Type[],
@@ -191,6 +210,11 @@ export class NodeSupervisor {
     }
   }
 
+  /**
+   * Reports a notification remotely for a specific chain.
+   * @param {Notification & Partial<NodeStatusMessage>} notification - The notification to report.
+   * @param {string} chainId - The identifier of the chain.
+   */
   remoteReport(
     notification: Notification & Partial<NodeStatusMessage>,
     chainId: string,
@@ -205,6 +229,11 @@ export class NodeSupervisor {
     reporting.notify(notification, 'global-signal');
   }
 
+  /**
+   * Reports a local status update for a specific chain.
+   * @param {ChainStatus.Type} status - The status to report.
+   * @param {string} chainId - The identifier of the chain.
+   */
   private localReport(status: ChainStatus.Type, chainId: string) {
     const monitoring = MonitoringAgent.retrieveService();
     const reporting = monitoring.genReportingAgent({
