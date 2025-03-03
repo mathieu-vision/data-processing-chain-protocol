@@ -3,6 +3,12 @@
 ### Start the connectors
 
 ```
+node ./launch-connectors.js --type 1
+```
+
+or 
+
+```
 ./launch-connectors.sh --type 1
 ```
 

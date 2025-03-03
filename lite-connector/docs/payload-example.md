@@ -3,6 +3,12 @@
 ### Starting the Connectors
 
 ```
+node ./launch-connectors.js
+```
+
+or
+
+```
 ./launch-connectors.sh
 ```
 
@@ -163,6 +169,11 @@ This endpoint allows you to configure and start a chain in a single request.
 ### Start Connectors with Signal Type
 
 ```
+node ./launch-connectors.js --type 1
+```
+or 
+
+```
 ./launch-connectors.sh --type 1
 ```
 
@@ -220,6 +231,12 @@ Note: The same approach can be used with `POST http://localhost:8888/node/suspen
 ## Legacy Example (LiteConnector.0)
 
 ### Start Legacy Connectors
+
+```
+node ./launch-connectors.js --type 0
+```
+
+or
 
 ```
 ./launch-connectors.sh --type 0

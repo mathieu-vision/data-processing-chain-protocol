@@ -30,12 +30,21 @@ const caseSwitch = argType ? parseInt(argType, 10) : 0;
 
 switch (caseSwitch) {
   case 0:
+    Logger.info({
+      message: 'Starting type 0 connector',
+    });
     connector = new LiteConnector0(port, connectorUid);
     break;
   case 1:
+    Logger.info({
+      message: 'Starting type 1 connector',
+    });
     connector = new ParallelNodesConnector(port, connectorUid);
     break;
   default:
+    Logger.info({
+      message: 'Starting default type connector',
+    });
     connector = new LiteConnector(port, connectorUid);
     break;
 }
